@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 · Contacts, grasps, and hand-offs</title><link rel="stylesheet" href="../assets/learning/lesson.css"><script defer src="../assets/learning/lesson.js"></script></head>
+<body><main class="lesson">
+<nav><a href="../README.md">Project home</a> / <a href="../docs/LEARNING.md">Learning path</a> / Lesson 03</nav>
+<p class="eyebrow">Lesson 03 · 15 minutes · Preparation concept</p>
+<h1>A grasp is a physical<br>relationship.</h1>
+<p class="intro">Your next win: explain why a convincing animation is not enough to call an object grasped or handed off.</p>
+<div class="callout">This lesson prepares you to inspect the future SO-101 contact code. That code and scene do not exist yet. The pendulum lab does not test a grasp.</div>
+<h2>Contact is a constraint, not a magic attachment</h2>
+<p>When a finger touches a spoon, the simulator computes a contact force that prevents interpenetration. Friction can resist sliding along the contact surface. A successful grasp needs enough geometry, normal force, friction, and a feasible approach for the object to stay controlled when the arm moves.</p>
+<p>Teleporting an object into a gripper or welding it to a hand would hide exactly the failure we need to learn from. The planned evaluator will therefore check contacts and object stability after release, rather than trust an animation.</p>
+<form class="quiz" data-answer="1" data-explanation="The motion may have exceeded the frictional hold. A closed gripper alone does not prove the object is retained."><fieldset><legend>A cup slips while a gripper appears closed. What is the best first hypothesis?</legend>
+<label><input type="radio" name="slip" value="0">The camera lost focus.</label>
+<label><input type="radio" name="slip" value="1">The contact cannot hold.</label>
+<label><input type="radio" name="slip" value="2">The seed was random.</label>
+</fieldset><button type="submit">Check my answer</button><p class="feedback" aria-live="polite"></p></form>
+<h2>A hand-off has an overlap, then a transfer</h2>
+<div class="loop"><span>Donor holds<br><small>object stable</small></span><b>→</b><span>Receiver closes<br><small>contact established</small></span><b>→</b><span>Verify overlap<br><small>both contact</small></span><b>→</b><span>Donor releases<br><small>receiver retains</small></span></div>
+<p>The arms share workspace during the overlap. A supervisor assigns ownership so both policies do not independently pull the object in incompatible directions. The donor must not release simply because the receiver reached a pose; the receiver needs a stable physical hold first.</p>
+<form class="quiz" data-answer="2" data-explanation="Release follows evidence that the receiver holds the object. Pose agreement or a language response is not physical evidence."><fieldset><legend>Which signal should permit the donor to release?</legend>
+<label><input type="radio" name="release" value="0">The plan says release.</label>
+<label><input type="radio" name="release" value="1">The receiver arrived nearby.</label>
+<label><input type="radio" name="release" value="2">The receiver holds stably.</label>
+</fieldset><button type="submit">Check my answer</button><p class="feedback" aria-live="polite"></p></form>
+<h2>Practice the inspection question</h2>
+<p>Imagine the future log says “hand-off complete,” but the spoon falls after the donor opens. Name the three questions you would ask first: about contact, ownership, and the post-release observation. Share your answer with the agent for feedback.</p>
+<p>Primary reading: MuJoCo’s <a href="https://mujoco.readthedocs.io/en/stable/computation/index.html">computation guide</a> for contact mechanics, then MIT’s <a href="https://manipulation.csail.mit.edu/">Robotic Manipulation notes</a> for picking and grasping.</p>
+<footer><a href="0002-frames-and-reach.html">← Previous lesson</a> · <a href="../reference/glossary.html">Vocabulary reference</a> · <a href="0004-demonstrations-and-act.html">Next: demonstrations and ACT →</a></footer>
+</main></body></html>

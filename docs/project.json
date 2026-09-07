@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-05",
+  "updated_at": "2026-09-07",
   "title": "Bimanual manipulation lab",
   "phase": "preparation",
   "phase_label": "Preparation ready",
@@ -30,6 +30,11 @@
   ],
   "lessons": [
     {"number": "01", "title": "Observe, act, and step time", "duration": "15 min", "href": "/read/lessons/0001-observe-act-step.html", "detail": "Explore a real MuJoCo trajectory and distinguish action from observation."},
-    {"number": "02", "title": "Frames and reachable positions", "duration": "15 min", "href": "/read/lessons/0002-frames-and-reach.html", "detail": "Use an interactive two-link sketch to see why a target can be unreachable."}
+    {"number": "02", "title": "Frames and reachable positions", "duration": "15 min", "href": "/read/lessons/0002-frames-and-reach.html", "detail": "Use an interactive two-link sketch to see why a target can be unreachable."},
+    {"number": "03", "title": "Contacts, grasps, and hand-offs", "duration": "15 min", "href": "/read/lessons/0003-contacts-grasps-handoffs.html", "detail": "Identify the physical evidence required for a grasp and a hand-off."},
+    {"number": "04", "title": "Demonstrations and ACT", "duration": "15 min", "href": "/read/lessons/0004-demonstrations-and-act.html", "detail": "Learn how aligned demonstrations support bounded imitation learning."},
+    {"number": "05", "title": "Supervision and recovery", "duration": "15 min", "href": "/read/lessons/0005-supervision-and-recovery.html", "detail": "Separate visual planning, action policy, and the supervisor that may stop."},
+    {"number": "06", "title": "Evaluation and uncertainty", "duration": "15 min", "href": "/read/lessons/0006-evaluation-and-uncertainty.html", "detail": "Freeze evaluation conditions and interpret task results honestly."},
+    {"number": "07", "title": "OpenVINO and benchmarks", "duration": "15 min", "href": "/read/lessons/0007-openvino-and-benchmarks.html", "detail": "Measure actual device use and end-to-end timing on the Intel target."}
   ]
 }

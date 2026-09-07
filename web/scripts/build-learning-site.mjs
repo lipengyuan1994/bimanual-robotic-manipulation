@@ -12,7 +12,30 @@ const replacements = new Map([
   ['href="../docs/LEARNING.md"', 'href="../index.html#learning-path"'],
   ['href="../docs/SETUP.md"', `href="${repositoryUrl}/blob/main/docs/SETUP.md"`],
   ['href="../RESOURCES.md"', `href="${repositoryUrl}/blob/main/RESOURCES.md"`],
+  [
+    'href="../docs/ARCHITECTURE.md"',
+    `href="${repositoryUrl}/blob/main/docs/ARCHITECTURE.md"`,
+  ],
+  ['href="../docs/EVIDENCE.md"', `href="${repositoryUrl}/blob/main/docs/EVIDENCE.md"`],
+  [
+    'href="../docs/REQUIREMENTS.md"',
+    `href="${repositoryUrl}/blob/main/docs/REQUIREMENTS.md"`,
+  ],
+  [
+    'href="../docs/DEPLOYMENT.md"',
+    `href="${repositoryUrl}/blob/main/docs/DEPLOYMENT.md"`,
+  ],
 ]);
+
+const lessonPages = [
+  "lessons/0001-observe-act-step.html",
+  "lessons/0002-frames-and-reach.html",
+  "lessons/0003-contacts-grasps-handoffs.html",
+  "lessons/0004-demonstrations-and-act.html",
+  "lessons/0005-supervision-and-recovery.html",
+  "lessons/0006-evaluation-and-uncertainty.html",
+  "lessons/0007-openvino-and-benchmarks.html",
+];
 
 async function copyPage(relativePath) {
   const source = resolve(projectRoot, relativePath);
@@ -46,6 +69,16 @@ function indexPage() {
       Understand observations, actions, control intervals, physics steps, and what a runtime check establishes.</li>
       <li><a href="lessons/0002-frames-and-reach.html"><strong>Lesson 02 — Frames and reachable positions</strong></a><br>
       Use an interactive two-link sketch to see how coordinates, frames, and reachability relate.</li>
+      <li><a href="lessons/0003-contacts-grasps-handoffs.html"><strong>Lesson 03 — Contacts, grasps, and hand-offs</strong></a><br>
+      See why a grasp and hand-off require physical evidence, not a convincing animation.</li>
+      <li><a href="lessons/0004-demonstrations-and-act.html"><strong>Lesson 04 — Demonstrations and ACT</strong></a><br>
+      Learn the aligned observation-action records that a bounded learned policy needs.</li>
+      <li><a href="lessons/0005-supervision-and-recovery.html"><strong>Lesson 05 — Supervision and recovery</strong></a><br>
+      Separate visual reasoning, bounded action policies, and the component that can stop.</li>
+      <li><a href="lessons/0006-evaluation-and-uncertainty.html"><strong>Lesson 06 — Evaluation and uncertainty</strong></a><br>
+      Freeze test conditions and report every outcome before trusting a score.</li>
+      <li><a href="lessons/0007-openvino-and-benchmarks.html"><strong>Lesson 07 — OpenVINO and benchmarks</strong></a><br>
+      Measure actual device selection and complete application timing on Intel hardware.</li>
     </ol>
     <h2>Keep nearby</h2>
     <p><a href="reference/glossary.html">Robotics vocabulary reference</a></p>
@@ -66,8 +99,7 @@ await cp(resolve(projectRoot, "assets"), resolve(outputRoot, "assets"), { recurs
 await mkdir(resolve(outputRoot, "lessons"), { recursive: true });
 await mkdir(resolve(outputRoot, "reference"), { recursive: true });
 await Promise.all([
-  copyPage("lessons/0001-observe-act-step.html"),
-  copyPage("lessons/0002-frames-and-reach.html"),
+  ...lessonPages.map(copyPage),
   copyPage("reference/glossary.html"),
 ]);
 await writeFile(resolve(outputRoot, "index.html"), indexPage());

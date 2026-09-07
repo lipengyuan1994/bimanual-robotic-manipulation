@@ -15,7 +15,9 @@ is not complete. See [decision 0001](decisions/0001-preparation-boundary.md).
 - CLI diagnostics, CPU/MPS arithmetic probe, and compiled-extension architecture audit.
 - General MuJoCo pendulum at 200 Hz physics / 20 Hz control; CSV and rendered replay.
 - File-integrity manifests, explicit evidence types, retained failures, and a SQLite run index.
-- Read-only FastAPI/React project portal, documentation navigation, and beginner lessons.
+- Read-only FastAPI/React project portal, documentation navigation, and seven
+  beginner lessons. Lessons 3–7 are conceptual preparation for later code and
+  make no claim that contact, ACT, supervisor, evaluation, or Intel components exist.
 - Requirement/rubric matrix, architecture and interface specifications, staged roadmap,
   experiment protocol, organizer-question draft, and learning records.
 - Project-scoped OpenViking retrieval instructions and an explicit

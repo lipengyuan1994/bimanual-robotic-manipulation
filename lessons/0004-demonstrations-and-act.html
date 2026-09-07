@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04 · Demonstrations and ACT</title><link rel="stylesheet" href="../assets/learning/lesson.css"><script defer src="../assets/learning/lesson.js"></script></head>
+<body><main class="lesson">
+<nav><a href="../README.md">Project home</a> / <a href="../docs/LEARNING.md">Learning path</a> / Lesson 04</nav>
+<p class="eyebrow">Lesson 04 · 15 minutes · Preparation concept</p>
+<h1>A policy learns from<br>aligned examples.</h1>
+<p class="intro">Your next win: tell the difference between one pretty trajectory and a training demonstration that can teach a policy.</p>
+<div class="callout">ACT training is planned after the teacher and two-arm scene exist. This lesson teaches the data contract first; it does not claim that an ACT policy has been trained.</div>
+<h2>One time step, one aligned record</h2>
+<div class="loop"><span>Camera images<br><small>declared order</small></span><b>+</b><span>Joint observation<br><small>documented units</small></span><b>→</b><span>Action target<br><small>same time base</small></span><b>→</b><span>Outcome<br><small>kept or failed</small></span></div>
+<p>A demonstration is useful only if the images, joint observations, actions, timestamps, and instruction agree about the same moment. The scripted teacher may use simulator truth to generate safe examples, but the deployed policy must receive only its declared images and robot observations. That separation prevents hidden ground-truth leakage.</p>
+<form class="quiz" data-answer="0" data-explanation="The record needs synchronized observations and the action that follows from them. A video by itself cannot reproduce the policy input/output pairing."><fieldset><legend>What makes a demonstration usable for imitation learning?</legend>
+<label><input type="radio" name="demo" value="0">Aligned observation-action pairs.</label>
+<label><input type="radio" name="demo" value="1">A high-resolution video only.</label>
+<label><input type="radio" name="demo" value="2">A successful final frame.</label>
+</fieldset><button type="submit">Check my answer</button><p class="feedback" aria-live="polite"></p></form>
+<h2>ACT predicts a short future sequence</h2>
+<p>Action Chunking with Transformers (ACT) predicts a chunk of future actions from the current observation. A chunk can smooth control and make the policy less reactive to tiny visual changes, but it also creates a safety obligation: actions must be bounded, checked, and cleared when the task changes or a stop is requested.</p>
+<form class="quiz" data-answer="1" data-explanation="An action chunk is a short predicted sequence, not proof that every future state will be safe. The control layer still validates every command."><fieldset><legend>What is an ACT action chunk?</legend>
+<label><input type="radio" name="chunk" value="0">A single camera image.</label>
+<label><input type="radio" name="chunk" value="1">A short action sequence.</label>
+<label><input type="radio" name="chunk" value="2">A final success score.</label>
+</fieldset><button type="submit">Check my answer</button><p class="feedback" aria-live="polite"></p></form>
+<h2>Practice a split decision</h2>
+<p>Suppose demonstrations use scene seeds 1–80. Choose a validation range and a frozen test range without looking at their outcomes. Explain why changing the test set after selecting a checkpoint would distort the evidence. Share your answer with the agent.</p>
+<p>Primary reading: the <a href="https://huggingface.co/docs/lerobot/act">LeRobot ACT documentation</a>. Return to the project’s <a href="../docs/ARCHITECTURE.md">architecture</a> when the first dataset contract is implemented.</p>
+<footer><a href="0003-contacts-grasps-handoffs.html">← Previous lesson</a> · <a href="../reference/glossary.html">Vocabulary reference</a> · <a href="0005-supervision-and-recovery.html">Next: supervision and recovery →</a></footer>
+</main></body></html>

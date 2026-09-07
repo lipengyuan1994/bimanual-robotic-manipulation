@@ -3,7 +3,7 @@
 The learning website is published at
 <https://lipengyuan1994.github.io/bimanual-robotic-manipulation/>. It is a static
 subset of the project, intentionally separate from the local FastAPI/React portal.
-The public site contains the two lessons, their browser-only exercises, the shared
+The public site contains seven lessons, their browser-only exercises, the shared
 learning CSS/JavaScript, and the glossary. It contains no local run records,
 operator controls, credentials, or simulator service.
 

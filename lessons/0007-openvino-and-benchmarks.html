@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07 · OpenVINO and benchmarks</title><link rel="stylesheet" href="../assets/learning/lesson.css"><script defer src="../assets/learning/lesson.js"></script></head>
+<body><main class="lesson">
+<nav><a href="../README.md">Project home</a> / <a href="../docs/LEARNING.md">Learning path</a> / Lesson 07</nav>
+<p class="eyebrow">Lesson 07 · 15 minutes · Preparation concept</p>
+<h1>Fast enough means<br>measured on target.</h1>
+<p class="intro">Your next win: distinguish a requested accelerator from the device and performance actually observed.</p>
+<div class="callout">No Core Ultra Series 2/3 host is available yet. The local MPS arithmetic probe and this lesson are preparation only; neither establishes Intel compliance.</div>
+<h2>One model, several execution questions</h2>
+<table><thead><tr><th>Question</th><th>Evidence needed</th></tr></thead><tbody>
+<tr><td>Does exported inference match the baseline?</td><td>Paired task results on the same frozen scenes.</td></tr>
+<tr><td>Which device actually ran?</td><td>Runtime-reported device and precision.</td></tr>
+<tr><td>Is it fast enough for the application?</td><td>Cold start, warm p50/p95, throughput, memory, and end-to-end timing.</td></tr>
+</tbody></table>
+<p>OpenVINO is the planned Intel inference runtime. The correct path is CPU correctness first, then measured iGPU acceleration if available. An NPU is optional and component-specific. A request for a device is not proof that the runtime selected it; fallbacks must stay visible in the benchmark record.</p>
+<form class="quiz" data-answer="0" data-explanation="The benchmark must log what the runtime actually used. A requested iGPU can fall back to CPU, and that result must remain visible."><fieldset><legend>Which device value belongs in the benchmark report?</legend>
+<label><input type="radio" name="device" value="0">The actual runtime device.</label>
+<label><input type="radio" name="device" value="1">The preferred device name.</label>
+<label><input type="radio" name="device" value="2">The developer’s laptop.</label>
+</fieldset><button type="submit">Check my answer</button><p class="feedback" aria-live="polite"></p></form>
+<h2>Latency is not one number</h2>
+<p>Cold-start latency includes initialization. Warm p50 describes a typical repeated request, while p95 shows a slower but still common tail. Throughput measures completed work over time. End-to-end timing includes more than model inference: image preparation, planning, action validation, simulation, and record writing can all matter.</p>
+<form class="quiz" data-answer="1" data-explanation="End-to-end timing includes the surrounding application work. Model-only latency cannot prove that a camera-to-action loop meets its timing goal."><fieldset><legend>What does end-to-end timing include?</legend>
+<label><input type="radio" name="latency" value="0">Model inference only.</label>
+<label><input type="radio" name="latency" value="1">The complete application path.</label>
+<label><input type="radio" name="latency" value="2">Only the cold start.</label>
+</fieldset><button type="submit">Check my answer</button><p class="feedback" aria-live="polite"></p></form>
+<h2>Practice an honest result</h2>
+<p>Write a two-line report for this hypothetical: “iGPU requested, CPU used, 10 paired seeds retained, success unchanged.” State the fallback and the remaining limitation. Ask the agent to review it.</p>
+<p>Primary reading: OpenVINO’s <a href="https://docs.openvino.ai/2026/documentation/compatibility-and-support/supported-models.html">supported-model documentation</a> and the project’s <a href="../docs/DEPLOYMENT.md">Intel deployment plan</a>.</p>
+<footer><a href="0006-evaluation-and-uncertainty.html">← Previous lesson</a> · <a href="../reference/glossary.html">Vocabulary reference</a> · <a href="0001-observe-act-step.html">Review lesson 01 →</a></footer>
+</main></body></html>

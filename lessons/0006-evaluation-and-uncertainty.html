@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06 · Evaluation and uncertainty</title><link rel="stylesheet" href="../assets/learning/lesson.css"><script defer src="../assets/learning/lesson.js"></script></head>
+<body><main class="lesson">
+<nav><a href="../README.md">Project home</a> / <a href="../docs/LEARNING.md">Learning path</a> / Lesson 06</nav>
+<p class="eyebrow">Lesson 06 · 15 minutes · Preparation concept</p>
+<h1>Evidence starts before<br>the test runs.</h1>
+<p class="intro">Your next win: recognize evaluation leakage before it turns a promising demo into an unreliable result.</p>
+<div class="callout">The frozen task suite does not exist yet. The rules in this lesson describe how we will evaluate it honestly when the learned system is available.</div>
+<h2>Keep three scene sets apart</h2>
+<table><thead><tr><th>Set</th><th>Purpose</th><th>May guide checkpoint choice?</th></tr></thead><tbody>
+<tr><td>Training</td><td>Teach the policy from demonstrations.</td><td>Yes</td></tr>
+<tr><td>Validation</td><td>Compare choices while developing.</td><td>Yes</td></tr>
+<tr><td>Frozen test</td><td>Estimate final behavior on held-out scenes.</td><td>No</td></tr>
+</tbody></table>
+<p>Randomization changes placements, mass, friction, shape, lighting, and background. It does not make a result reliable by itself. The seed list and conditions must be frozen before selecting the final checkpoint, and every attempted episode—including failures and interventions—must remain in the report.</p>
+<form class="quiz" data-answer="1" data-explanation="A frozen test is kept out of development decisions. Picking a new checkpoint after inspecting it leaks test information into model selection."><fieldset><legend>When may a frozen test result choose a new checkpoint?</legend>
+<label><input type="radio" name="frozen" value="0">After every failure.</label>
+<label><input type="radio" name="frozen" value="1">Never during selection.</label>
+<label><input type="radio" name="frozen" value="2">Only after a demo.</label>
+</fieldset><button type="submit">Check my answer</button><p class="feedback" aria-live="polite"></p></form>
+<h2>Define success before the episode</h2>
+<p>For the full dinner-table task, success requires every requested step, stable placement after release, and the required physical hand-off. A nice final image, a partial task, or an operator correction does not meet that definition. Paired comparisons keep the scene and seed fixed when comparing a high-precision model with a quantized version.</p>
+<form class="quiz" data-answer="2" data-explanation="A full-task success needs every requested step and the post-release and hand-off checks. Partial completion is valuable diagnostic data, not a success."><fieldset><legend>What must a full-task success include?</legend>
+<label><input type="radio" name="success" value="0">One appealing camera view.</label>
+<label><input type="radio" name="success" value="1">One completed subtask.</label>
+<label><input type="radio" name="success" value="2">All defined checks passed.</label>
+</fieldset><button type="submit">Check my answer</button><p class="feedback" aria-live="polite"></p></form>
+<h2>Uncertainty is part of the result</h2>
+<p>A result such as 9 successes from 10 seeds estimates behavior for a limited sample; it is not evidence of 90% reliability in every future scene. We will report sample counts, confidence intervals, intervention rates, and failure classes alongside percentages.</p>
+<p>Practice: explain why replacing one hard test seed after seeing a failure changes the meaning of a reported score. Ask the agent to check your explanation.</p>
+<p>Primary reading: the project’s <a href="../docs/EVIDENCE.md">evidence rules</a> and <a href="../docs/REQUIREMENTS.md">requirements matrix</a>.</p>
+<footer><a href="0005-supervision-and-recovery.html">← Previous lesson</a> · <a href="../reference/glossary.html">Vocabulary reference</a> · <a href="0007-openvino-and-benchmarks.html">Next: OpenVINO and benchmarks →</a></footer>
+</main></body></html>
