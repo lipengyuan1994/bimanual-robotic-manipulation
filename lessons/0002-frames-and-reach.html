@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 · Frames and reachable positions</title><link rel="stylesheet" href="../assets/learning/lesson.css"><script defer src="../assets/learning/lesson.js"></script></head>
+<body><main class="lesson">
+<nav><a href="../README.md">Project home</a> / <a href="../docs/LEARNING.md">Learning path</a> / Lesson 02</nav>
+<p class="eyebrow">Lesson 02 · 15 minutes · Preparation</p>
+<h1>A position needs<br>a point of view.</h1>
+<p class="intro">Your next win: explain why “move to x = 0.4” is incomplete, and why a visible object can still be unreachable.</p>
+<h2>A coordinate frame is a measuring convention</h2>
+<p>A frame specifies an origin and axis directions. The same cup can have one position relative to the table and another relative to an arm's base. Before a controller acts on a position, it needs the frame and units. A camera pixel is not automatically a position in metres.</p>
+<p>We will eventually use two arm-base frames, camera frames, and a world frame. For now, explore a two-link drawing in one plane. This is an educational sketch, not the SO-101 geometry, an IK solver, or a physics engine.</p>
+<div class="interactive"><h3>Turn the joints; watch the tip</h3>
+<svg viewBox="0 0 480 400" role="img" aria-label="Two-link schematic with a fixed base and moving endpoint">
+<circle cx="240" cy="220" r="170" fill="#e5efe1" stroke="#b5c7b0" stroke-dasharray="5 7"/>
+<path d="M40 220H450 M240 385V30" stroke="#bdc9bd" fill="none"/>
+<text x="451" y="242" fill="#62715e">x</text><text x="250" y="34" fill="#62715e">y</text>
+<line id="link1" stroke="#345b48" stroke-width="14" stroke-linecap="round"/>
+<line id="link2" stroke="#8aab7c" stroke-width="12" stroke-linecap="round"/>
+<circle cx="240" cy="220" r="10" fill="#203e2d"/><circle id="tip" r="9" fill="#c37032"/>
+<text x="250" y="250" fill="#546c56">base</text></svg>
+<div class="sliders"><label>Shoulder angle <input id="shoulder" type="range" min="-180" max="180" value="30"></label><label>Elbow angle <input id="elbow" type="range" min="-180" max="180" value="45"></label></div>
+<p id="angles" class="small"></p><p id="endpoint" class="readout" aria-live="polite"></p>
+<p class="small">Link lengths: 0.3 m and 0.2 m. The dashed circle marks the maximum geometric reach in this simplified sketch.</p></div>
+<h2>Forward and inverse questions</h2>
+<p><strong>Forward kinematics</strong> asks where the tip is when the joint angles are known. For our two-link sketch, adding the two link vectors gives the tip position:</p>
+<pre><code>x = 0.3 cos(shoulder) + 0.2 cos(shoulder + elbow)
+y = 0.3 sin(shoulder) + 0.2 sin(shoulder + elbow)</code></pre>
+<p><strong>Inverse kinematics</strong> asks which joint angles could place the tip at a desired target. There may be several answers, or none. Actual robot joint limits, orientation requirements and obstacles remove additional possibilities. Seeing a target is not evidence that an arm can grasp it.</p>
+<form class="quiz" data-answer="2" data-explanation="A point needs its coordinate frame and units. For a grasp we will also need orientation and a feasible approach."><fieldset><legend>What is missing from “move to x = 0.4, y = 0.1”?</legend>
+<label><input type="radio" name="frame" value="0">Only the image brightness.</label>
+<label><input type="radio" name="frame" value="1">Only the model name.</label>
+<label><input type="radio" name="frame" value="2">Coordinate frame and units.</label>
+</fieldset><button type="submit">Check my answer</button><p class="feedback" aria-live="polite"></p></form>
+<h2>Try three configurations</h2>
+<ol><li>Set both angles to 0°. Read the tip position. It should be 0.5 m along the x axis.</li><li>Leave the shoulder at 0° and fold the elbow to 180°. The tip is now 0.1 m from the base.</li><li>Predict whether this drawing can reach x = 0.6 m, y = 0.0 m. Explain why without moving a slider.</li></ol>
+<div class="callout">For the future two-arm scene, “reachable” must be checked for both arms and their shared space. A language model proposing a target cannot waive the robot's geometry or collision constraints.</div>
+<h2>Read a little deeper</h2>
+<p>Read the coordinate-frame and kinematics material in <a href="https://manipulation.csail.mit.edu/">MIT's Robotic Manipulation notes</a>. Connect the diagrams to the sketch before worrying about the course's software stack.</p>
+<footer><strong>Explain it back:</strong> two arms see the same cup. Why might they require different joint commands to reach it? Ask the agent for feedback; understanding is recorded only after you demonstrate it.
+<p><a href="0001-observe-act-step.html">← Previous lesson</a> · <a href="../reference/glossary.html">Vocabulary reference</a></p></footer>
+</main></body></html>

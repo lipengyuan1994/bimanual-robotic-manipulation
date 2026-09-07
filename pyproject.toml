@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bimanual-sim"
+version = "0.1.0"
+description = "Simulation preparation, reproducible evidence, and learning for bimanual manipulation"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = "MIT"
+dependencies = [
+  "mujoco==3.12.0",
+  "numpy==2.2.6",
+  "pillow>=11,<13",
+  "pydantic>=2.12,<3",
+  "fastapi>=0.115,<1",
+  "uvicorn>=0.35,<1",
+  "markdown-it-py>=3,<5",
+]
+
+[project.optional-dependencies]
+ml = ["torch==2.11.0", "torchvision==0.26.0"]
+training = ["bimanual-sim[ml]", "lerobot[training]==0.6.1"]
+reasoning = ["bimanual-sim[ml]", "transformers==5.5.4", "qwen-vl-utils>=0.0.11,<0.1"]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "httpx>=0.28,<1", "ruff>=0.14,<1"]
+
+[project.scripts]
+bimanual = "bimanual.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bimanual"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = ["render: requires a working offscreen OpenGL context"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]

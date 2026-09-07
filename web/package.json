@@ -1,0 +1,28 @@
+{
+  "name": "bimanual-preparation-portal",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "check": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build",
+    "build:learning-site": "node scripts/build-learning-site.mjs",
+    "check:learning-site": "node scripts/check-learning-site.mjs"
+  },
+  "dependencies": {
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "@vitejs/plugin-react": "6.1.1",
+    "prettier": "3.6.2",
+    "typescript": "7.0.2",
+    "vite": "8.2.2"
+  }
+}

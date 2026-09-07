@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-09-05",
+  "title": "Bimanual manipulation lab",
+  "phase": "preparation",
+  "phase_label": "Preparation ready",
+  "manipulation_available": false,
+  "intel_validated": false,
+  "compute_budget_usd": 0,
+  "summary": "Build the foundations. Learn the mechanics. Keep every result inspectable.",
+  "milestones": [
+    {"id": "M0", "title": "Preparation", "state": "complete", "detail": "Native runtime, rendered lab, evidence, portal, and lessons validated locally."},
+    {"id": "M1", "title": "Physical foundation", "state": "blocked", "detail": "Await early-work clarification before challenge implementation."},
+    {"id": "M2", "title": "Learned workflow", "state": "pending", "detail": "Demonstrations, trained ACT skills, visual planning, and recovery."},
+    {"id": "M3", "title": "Intel / hackathon release", "state": "blocked", "detail": "Requires a working learned system and actual Core Ultra access."},
+    {"id": "M4", "title": "Production hardening", "state": "pending", "detail": "Broader held-out tests, fault handling, reproducibility, and operations."}
+  ],
+  "blockers": [
+    {"id": "B1", "title": "Early-work clarification", "detail": "Record the event-specific ruling before building submission AI functionality."},
+    {"id": "B2", "title": "Intel machine access", "detail": "Final MuJoCo and inference must both execute on Core Ultra Series 2/3."},
+    {"id": "B3", "title": "Final event details", "detail": "Confirm supplied assets/seeds, hand-off scope, deadline, and submission fields."}
+  ],
+  "rubric": [
+    {"name": "Task completion and bimanual manipulation", "points": 30},
+    {"name": "VLA / multimodal reasoning", "points": 20},
+    {"name": "Robustness and generalization", "points": 15},
+    {"name": "OpenVINO and Intel optimization", "points": 20},
+    {"name": "Technical quality and reproducibility", "points": 10},
+    {"name": "Innovation and demonstration", "points": 5}
+  ],
+  "lessons": [
+    {"number": "01", "title": "Observe, act, and step time", "duration": "15 min", "href": "/read/lessons/0001-observe-act-step.html", "detail": "Explore a real MuJoCo trajectory and distinguish action from observation."},
+    {"number": "02", "title": "Frames and reachable positions", "duration": "15 min", "href": "/read/lessons/0002-frames-and-reach.html", "detail": "Use an interactive two-link sketch to see why a target can be unreachable."}
+  ]
+}

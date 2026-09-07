@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 · Observe, act, and step time</title>
+<link rel="stylesheet" href="../assets/learning/lesson.css"><script defer src="../assets/learning/lesson.js"></script></head>
+<body><main class="lesson">
+<nav><a href="../README.md">Project home</a> / <a href="../docs/LEARNING.md">Learning path</a> / Lesson 01</nav>
+<p class="eyebrow">Lesson 01 · 15 minutes · Preparation</p>
+<h1>Observe, act,<br>and step time.</h1>
+<p class="intro">Your first win: read a simulation trace and explain what the world did, what we asked it to do, and how time moved.</p>
+<div class="callout">You already understand simulation in general. We will use one swinging joint to make the robotics vocabulary concrete. This is a learning example, not the dinner-table robot or a learned policy.</div>
+<h2>Four pieces of one loop</h2>
+<div class="loop"><span>Observe<br><small>measure the angle</small></span><b>→</b><span>Choose an action<br><small>set motor torque</small></span><b>→</b><span>Step physics<br><small>advance time</small></span><b>→</b><span>Observe again</span></div>
+<p>An <strong>observation</strong> describes the current state. In this lab it includes a hinge angle and angular velocity. An <strong>action</strong> is a requested motor torque. The action is not a guarantee of the next position: gravity, inertia, damping, and the previous state also matter.</p>
+<p>MuJoCo separates the model (the scene and its settings) from the changing simulation data. Our code applies a motor command, advances the physics, and copies measurements into a trajectory record. Read <a href="https://mujoco.readthedocs.io/en/stable/python.html#basic-usage">MuJoCo's basic usage</a> for the API behind this loop.</p>
+<form class="quiz" data-answer="1" data-explanation="Torque is the requested action. The hinge angle is a measurement of the current state."><fieldset><legend>Which item is an observation in this lab?</legend>
+<label><input type="radio" name="observation" value="0">The commanded motor torque.</label>
+<label><input type="radio" name="observation" value="1">The measured hinge angle.</label>
+<label><input type="radio" name="observation" value="2">The chosen simulation duration.</label>
+</fieldset><button type="submit">Check my answer</button><p class="feedback" aria-live="polite"></p></form>
+<h2>Run the real example</h2>
+<p>After following <a href="../docs/SETUP.md">setup</a>, run this from the repository root:</p>
+<pre><code>.venv/bin/bimanual lab --seed 7 --seconds 4
+.venv/bin/bimanual evidence list</code></pre>
+<p>The command prints a run ID. In that run's directory under <code>.artifacts/runs</code>, open <code>replay.gif</code> and <code>trajectory.csv</code>. The portal also shows the replay. It was rendered from actual MuJoCo states.</p>
+<table><thead><tr><th>CSV field</th><th>Meaning</th></tr></thead><tbody>
+<tr><td>simulation_seconds</td><td>Time advanced inside the simulated world.</td></tr>
+<tr><td>angle_rad</td><td>Measured hinge angle, in radians.</td></tr>
+<tr><td>velocity_rad_s</td><td>How fast that angle is changing.</td></tr>
+<tr><td>action_nm</td><td>Torque applied over the following control interval; the last row has no following action.</td></tr>
+</tbody></table>
+<h2>One control step is not one physics step</h2>
+<p>Our lab updates actions at 20 Hz, every 0.05 simulated seconds. Physics runs at 200 Hz, every 0.005 seconds. The same requested torque is therefore held for ten physics steps. A four-second run has 80 control intervals and 81 recorded observations, including the initial and final states.</p>
+<p>Wall time is the time your computer spends doing the work. Rendering may make a run slower; removing rendering may make it faster. Neither changes the requested four seconds of simulated time.</p>
+<form class="quiz" data-answer="0" data-explanation="200 physics steps per second divided by 20 control intervals per second gives 10 physics steps per interval."><fieldset><legend>One control interval contains how much physics work?</legend>
+<label><input type="radio" name="timing" value="0">Ten smaller physics steps.</label>
+<label><input type="radio" name="timing" value="1">One smaller physics step.</label>
+<label><input type="radio" name="timing" value="2">Two smaller physics steps.</label>
+</fieldset><button type="submit">Check my answer</button><p class="feedback" aria-live="polite"></p></form>
+<h2>Change one thing, predict, then inspect</h2>
+<ol><li>Predict what stronger damping might do to the motion.</li><li>Run the same seed with <code>--damping 0.8</code>.</li><li>Compare the angle and velocity columns against the first run.</li><li>Explain which condition stayed the same and which changed. Do not compare wall times as if they were task success.</li></ol>
+<pre><code>.venv/bin/bimanual lab --seed 7 --seconds 4 --damping 0.8</code></pre>
+<p>The tests check identical traces under the same configuration and a changed trace when damping changes. That is evidence about this controlled numerical example, not about learned robot generalization.</p>
+<h2>What did the GPU test establish?</h2>
+<p><code>bimanual doctor --require-device mps</code> runs a small PyTorch computation on Metal and compares its answer with CPU. MuJoCo rendering uses a different graphics path. Keep those results separate.</p>
+<form class="quiz" data-answer="1" data-explanation="A passing arithmetic probe establishes only that tested workload. ACT and the visual planner need their own runtime and quality tests."><fieldset><legend>The MPS arithmetic probe passes. What follows?</legend>
+<label><input type="radio" name="gpu" value="0">All models run correctly.</label>
+<label><input type="radio" name="gpu" value="1">One tested workload worked.</label>
+<label><input type="radio" name="gpu" value="2">Robot task success established.</label>
+</fieldset><button type="submit">Check my answer</button><p class="feedback" aria-live="polite"></p></form>
+<footer><strong>Explain it back:</strong> what would be wrong with calling a successful pendulum render a successful robot hand-off? Ask the agent follow-up questions or share your answer for feedback.
+<p><a href="../reference/glossary.html">Vocabulary reference</a> · <a href="0002-frames-and-reach.html">Next: frames and reach →</a></p></footer>
+</main></body></html>

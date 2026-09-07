@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Robotics vocabulary</title><link rel="stylesheet" href="../assets/learning/lesson.css"></head>
+<body><main class="lesson"><nav><a href="../README.md">Project home</a> / Reference</nav><p class="eyebrow">Keep nearby</p><h1>Robotics vocabulary.</h1><p class="intro">Use these terms consistently when reading the code and discussing results.</p>
+<dl><dt>Simulation model</dt><dd>The world description: bodies, joints, physical parameters, cameras and actuators.</dd>
+<dt>Simulation state</dt><dd>The changing quantities at an instant, such as joint positions and velocities.</dd>
+<dt>Observation</dt><dd>The information deliberately exposed to an operating component. It is usually a subset of simulator truth.</dd>
+<dt>Action</dt><dd>A control request. Our preparation pendulum uses torque; the future SO-101 interface uses documented joint targets.</dd>
+<dt>Joint / actuator</dt><dd>A joint constrains relative motion; an actuator applies a controllable input associated with that motion.</dd>
+<dt>Control rate / physics rate</dt><dd>How often action requests update / how often the simulator advances its dynamics.</dd>
+<dt>Coordinate frame</dt><dd>An origin and axis directions used to describe a position or orientation.</dd>
+<dt>Forward / inverse kinematics</dt><dd>Joint configuration to endpoint pose / desired endpoint pose to possible joint configurations.</dd>
+<dt>Policy</dt><dd>A rule or learned model that maps observations to actions.</dd>
+<dt>ACT</dt><dd>Action Chunking with Transformers, an imitation-learning policy approach that predicts sequences of actions.</dd>
+<dt>VLM / VLA</dt><dd>Vision-language model / vision-language-action model. A VLM text response alone is not a validated motor action.</dd>
+<dt>Teacher / evaluator</dt><dd>A demonstration-generating reference / an independent component judging what happened.</dd>
+<dt>Seed / randomization</dt><dd>A reproducible random-number initialization / deliberately varied scene conditions.</dd>
+<dt>Ground-truth leakage</dt><dd>Giving the deployed policy hidden simulator answers that the declared observation interface does not permit.</dd>
+<dt>MPS / OpenVINO</dt><dd>PyTorch's Apple Metal execution backend / an inference optimization and runtime toolkit used for the Intel target.</dd>
+</dl><footer>Sources and reading order: <a href="../RESOURCES.md">resource index</a>. Start with <a href="../lessons/0001-observe-act-step.html">lesson 1</a>.</footer></main></body></html>
