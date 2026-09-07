@@ -12,8 +12,10 @@ operator controls, credentials, or simulator service.
 [`pages.yml`](../.github/workflows/pages.yml) runs after a relevant change reaches
 `main`, and can also be started manually from the Actions tab. It pins Node 24,
 installs the lockfile with `npm ci`, type-checks the TypeScript portal, generates
-the learning artifact, verifies the generated navigation, then uses GitHub's
-official Pages artifact/deployment actions.
+the learning artifact, verifies the generated navigation, configures Pages, then
+uses GitHub's official Pages artifact/deployment actions. The workflow uses the
+current Node-24-compatible action releases to avoid the GitHub-hosted runner's
+Node 20 deprecation path.
 
 The Pages build copies tracked learning sources into `web/dist-learning` and
 rewrites only repository-only navigation to static-site or source-repository URLs.
