@@ -33,7 +33,8 @@ See [the preparation validation record](experiments/2026-09-05-preparation.md).
 The native bootstrap, 85-library architecture audit, CPU/MPS arithmetic,
 18 Python tests (including rendering), TypeScript checks, and frontend build pass.
 The portal, actual replay, lesson navigation, quiz feedback, and frame sliders
-were also checked in the in-app browser. Remote CI has not run.
+were also checked in the in-app browser. GitHub-hosted CI completed successfully
+for the seven-lesson publication.
 
 Recorded runtime: `20260905T152424-e96b10d91751`.
 Recorded four-second lab: `20260905T152602-c1fb0930e38a` (81 observations).
@@ -57,8 +58,8 @@ No paid credits are assumed. No organizer message has been sent.
 
 1. Open the local portal at <http://127.0.0.1:8767>; restart with
    `.venv/bin/bimanual serve` if needed.
-2. Work through [lesson 1](../lessons/0001-observe-act-step.html), then compare a
-   second run: `.venv/bin/bimanual lab --seed 7 --seconds 4 --damping 0.8`.
+2. Continue from [lesson 3](../lessons/0003-contacts-grasps-handoffs.html); lessons
+   3–7 are concepts for later implementation and are clearly labelled as such.
 3. Obtain the event-specific answers in [the organizer draft](ORGANIZER_QUESTIONS.md)
    and arrange remote Intel access. No response is assumed.
 

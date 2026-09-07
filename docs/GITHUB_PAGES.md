@@ -13,6 +13,10 @@ recorded in [GitHub Actions run 34139968641](https://github.com/lipengyuan1994/b
 The live site was then checked directly: the index, lesson 02, coordinate slider,
 and correct quiz feedback all loaded and behaved as expected.
 
+The seven-lesson curriculum was published from commit
+`598967c9c77ac1a987801c80d474666caad81c24` in [GitHub Actions run 34156905523](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34156905523).
+The public index and lesson 07 were checked directly after that deployment.
+
 ## Deployment
 
 [`pages.yml`](../.github/workflows/pages.yml) runs after a relevant change reaches

@@ -46,10 +46,10 @@ was validated; a clean-machine installation and remote CI execution remain pendi
 | PyTorch | 2.11.0; CPU and actual `mps:0` float32 matrix multiplication agree, max absolute error 0.0 | Small arithmetic probe only |
 | Other runtime packages | NumPy 2.2.6, torchvision 0.26.0, FastAPI 0.141.1 | Installed versions |
 | Python validation | 17 non-render tests and 1 actual-render test passed; Ruff lint and format passed | Determinism, failures, integrity, API boundaries, native-runtime guard, docs |
-| Documentation graph | 84 local links resolve; rubric totals 100 | Files and milestone status data |
+| Documentation graph | 130 local links resolve; rubric totals 100 | Files and milestone status data |
 | Portal | TypeScript check and Vite production build passed | Local build with React 19.2.8 / Vite 8.2.2 |
 | Node extensions | Lightning CSS and Rolldown arm64; fsevents universal with arm64 | Native build path |
-| Browser | Portal/replay, documentation and both lessons load; correct/incorrect quiz feedback works; sliders update geometry and coordinates | In-app browser at loopback URL |
+| Browser | Portal/replay, local lessons and the seven-lesson public site load; quiz feedback and sliders work | In-app browser at loopback and Pages URLs |
 | Browser diagnostics | No warning/error logs on checked pages | Manual local smoke check |
 
 The slider check set both angles to 180 degrees and observed a tip at
