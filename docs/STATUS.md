@@ -1,6 +1,6 @@
 # Project status
 
-Updated: 2026-09-05. Branch: `codex/preparation-foundation`.
+Updated: 2026-09-07. Branch: `codex/preparation-foundation`.
 
 ## Current boundary
 
@@ -26,12 +26,15 @@ is not complete. See [decision 0001](decisions/0001-preparation-boundary.md).
 - A static GitHub Pages learning-site build and deployment workflow. It is
   separate from the local operator portal. The public site and clean deployment
   run are verified; see [public-site operations](GITHUB_PAGES.md).
+- Generated README release and lesson sections, sourced from `project.json`, with
+  a local hook and required CI validation. See [native setup](SETUP.md).
 
 ## Verification
 
 See [the preparation validation record](experiments/2026-09-05-preparation.md).
 The native bootstrap, 85-library architecture audit, CPU/MPS arithmetic,
-18 Python tests (including rendering), TypeScript checks, and frontend build pass.
+18 Python tests (including rendering), TypeScript checks, frontend build, and 136
+documentation links pass.
 The portal, actual replay, lesson navigation, quiz feedback, and frame sliders
 were also checked in the in-app browser. GitHub-hosted CI completed successfully
 for the seven-lesson publication.
@@ -40,9 +43,9 @@ Recorded runtime: `20260905T152424-e96b10d91751`.
 Recorded four-second lab: `20260905T152602-c1fb0930e38a` (81 observations).
 Both local manifests verify. These are preparation checks, not learned-task results.
 
-Current checkpoint: uncommitted preparation work on the branch above, based on
-`e561487f537bbeb52410715a2967b42f14b62bdd`. Each recorded run includes the dirty
-flag and source-file digests. No manipulation checkpoint or dataset exists yet.
+Current checkpoint: the verified seven-lesson publication and its CI are on the
+branch above. Each recorded run includes the dirty flag and source-file digests.
+No manipulation checkpoint or dataset exists yet.
 
 ## Blocking dependencies
 

@@ -22,4 +22,5 @@ if [ -e .venv/bin/python ]; then
   .venv/bin/python -c 'import platform; assert platform.machine() == "arm64"'
 fi
 "$BIMANUAL_UV" sync --frozen --python "$BIMANUAL_PYTHON" --extra ml
+scripts/install-git-hooks.sh
 .venv/bin/bimanual doctor --require-device mps

@@ -27,6 +27,18 @@ The `ml` extra installs PyTorch/torchvision for runtime arithmetic checks. Train
 and reasoning extras are locked for later use but are not required for preparation.
 Installing packages alone is not an ACT or VLM implementation.
 
+Bootstrap also installs the repository's local Git hook. It checks that the generated
+README status sections agree with `docs/project.json` before each commit. To install
+it in an existing checkout without re-running bootstrap, use:
+
+```sh
+scripts/install-git-hooks.sh
+```
+
+The hook is a convenience check; GitHub Actions runs the same validation for every
+push and pull request. Update the project record and narrative status first, then
+refresh the README with `.venv/bin/python scripts/sync_readme.py --write`.
+
 ## Current CLI
 
 ```sh

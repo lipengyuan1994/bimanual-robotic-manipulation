@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+if [ ! -x .venv/bin/python ]; then
+  echo 'README status check requires the verified project environment. Run scripts/bootstrap.sh.' >&2
+  exit 1
+fi
+.venv/bin/python scripts/sync_readme.py --check
