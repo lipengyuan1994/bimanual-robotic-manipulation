@@ -7,6 +7,12 @@ The public site contains the two lessons, their browser-only exercises, the shar
 learning CSS/JavaScript, and the glossary. It contains no local run records,
 operator controls, credentials, or simulator service.
 
+First publication completed on 2026-09-07 from commit
+`239005e83dc13ba8200c5d7a7645e231237fedf8`. The clean build and deployment are
+recorded in [GitHub Actions run 34139968641](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34139968641).
+The live site was then checked directly: the index, lesson 02, coordinate slider,
+and correct quiz feedback all loaded and behaved as expected.
+
 ## Deployment
 
 [`pages.yml`](../.github/workflows/pages.yml) runs after a relevant change reaches

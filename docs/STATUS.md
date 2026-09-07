@@ -22,7 +22,8 @@ is not complete. See [decision 0001](decisions/0001-preparation-boundary.md).
   [indexing prompt](OPENVIKING.md). This documentation change does not ingest
   project files; the initial project index is still pending.
 - A static GitHub Pages learning-site build and deployment workflow. It is
-  separate from the local operator portal; see [public-site operations](GITHUB_PAGES.md).
+  separate from the local operator portal. The public site and clean deployment
+  run are verified; see [public-site operations](GITHUB_PAGES.md).
 
 ## Verification
 

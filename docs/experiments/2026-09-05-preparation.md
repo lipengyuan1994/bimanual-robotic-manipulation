@@ -88,6 +88,6 @@ digests; later formatting, portal and documentation edits do not rewrite them.
 - The portal is a read-only preparation application, without dinner-table controls.
 - Early-work clarification, Intel access, and remaining submission details are
   still needed. See [status](../STATUS.md) and [the organizer draft](../ORGANIZER_QUESTIONS.md).
-- The public learning-site workflow is locally built and checked, but its first
-  GitHub Actions deployment is recorded separately after the publishing change
-  reaches `main`. It does not broaden the preparation boundary.
+- The public learning site is published and its clean GitHub Actions build/deploy
+  is recorded in [GitHub Pages operations](../GITHUB_PAGES.md). It does not
+  broaden the preparation boundary.
