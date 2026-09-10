@@ -1,7 +1,46 @@
 # Zero-cost Intel access
 
-Checked September 10, 2026. No instance has been requested or allocated; no
-payment, terms acceptance, or organizer message has been made.
+Checked September 10, 2026. The user completed registration and sign-in with an
+eligible university account. A free-access request has been submitted and is
+**Pending Review**. No machine has been allocated or tested, no payment was made,
+and no separate organizer message was sent.
+
+## Current request
+
+Verified in the signed-in [Instances page](https://cloud.intel.com/preview/compute?region=us-region-3):
+
+| Field | Observed value |
+|---|---|
+| Instance name | `bimanual-sim-intel` |
+| Hardware | `BM-PTL`, Intel Core Ultra Series 3, Panther Lake |
+| State | Pending Review |
+| Use case | AI PC USA |
+| Requested duration | 1 week |
+| Reservation start shown | 09/10/2026 |
+| Reservation end shown | 09/17/2026 6:21 pm; UI did not identify the timezone |
+| Operating system | Windows 11, fixed in the request form |
+| Access | No SSH key uploaded; browser Connect is documented as available without a key after approval |
+
+The submitted Intended Use is exactly:
+
+> AI Infra Summit hackathon, due Sep 16. Free Core Ultra for MuJoCo and OpenVINO. Ubuntu preferred.
+
+The form permits at most 128 characters and only letters, numbers, spaces,
+hyphens, periods and commas. The longer draft below was not submitted.
+No secondary owner or Intel co-development access was added. No new agreement
+acceptance was presented during the instance request.
+
+The signed-in portal says email review notification is expected within **3 days**,
+superseding the shorter public-guide estimate for planning. Approval is not
+guaranteed. Wait for the user's approval email or a Ready state before attempting
+host access; inspect the actual expiry because pending review already shows dates.
+
+Both BM-LNL and BM-PTL were visible in this account's catalog. BM-LNL lists 32 GB
+RAM; BM-PTL lists 32–64 GB. Both request forms offered only Windows 11 with the
+OS selector disabled. Ubuntu is a request, not an available selection or promise.
+If Windows is supplied, validate a separate native Windows setup and MuJoCo
+rendering plus OpenVINO CPU inference before claiming support; the current Mac
+bootstrap and Linux setup instructions are not Windows validation. B2 remains open.
 
 ## Preferred route: Intel AI PC Cloud
 
@@ -18,12 +57,9 @@ links [the prerelease portal](https://prerelease.intel.com/); follow Intel's acc
 flow if redirected. Do not substitute a Xeon, Gaudi, Series 1 or non-Ultra host.
 Select only an explicitly free allocation; decline any paid alternative.
 
-The in-app browser currently opens the Cloud Services header without catalog
-controls. User assistance is needed to complete account access and inspect actual
-availability. Do not put passwords or access tokens in this repository.
-The user confirmed they can register with an eligible email; registration and
-terms acceptance must be completed by the user. The alternate prerelease entry
-redirected to the same portal without exposing catalog controls.
+The earlier header-only browser issue was resolved after the user completed
+registration and sign-in. Catalog and request controls now work. Do not put
+passwords or access tokens in this repository.
 
 Suggested instance name: `bimanual-sim-intel`.
 

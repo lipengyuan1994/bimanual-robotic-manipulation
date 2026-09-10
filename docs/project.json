@@ -16,7 +16,7 @@
     {"id": "M4", "title": "Production hardening", "state": "pending", "detail": "Broader held-out tests, fault handling, reproducibility, and operations."}
   ],
   "blockers": [
-    {"id": "B2", "title": "Intel machine access", "detail": "Final MuJoCo and inference must both execute on Core Ultra Series 2/3."},
+    {"id": "B2", "title": "Intel machine access", "detail": "BM-PTL Series 3 request submitted, Pending Review. Catalog offers Windows 11; host execution remains untested."},
     {"id": "B3", "title": "Remaining event details", "detail": "Confirm assets/seeds, pouring scope, prior-code eligibility and interactive hosting interpretation. Deadline and presentation requirements verified."}
   ],
   "rubric": [

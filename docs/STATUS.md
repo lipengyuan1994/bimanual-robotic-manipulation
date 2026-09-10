@@ -28,8 +28,9 @@ manipulation exit checks remain incomplete.
   [foundation walkthrough](DUAL_ARM_FOUNDATION.md), including a short exercise.
 - Existing native bootstrap/doctor, generic pendulum lab, evidence store/SQLite
   index, read-only portal, seven lessons, GitHub Pages and README synchronization.
-- [Zero-cost Intel access research and request drafts](INTEL_ACCESS.md).
-  Intel AI PC Cloud is a candidate; there is no granted host or spend.
+- [Zero-cost Intel access request](INTEL_ACCESS.md) submitted for
+  `bimanual-sim-intel`, BM-PTL Series 3, one week. Intel shows Pending Review;
+  there is no granted host or spend.
 
 ## Verification and checkpoint
 
@@ -54,13 +55,14 @@ source digests; only the named clean checkpoint has a false dirty flag.
 | ID | Needed | Consequence |
 |---|---|---|
 | B1 | Event-window authorization | Resolved for new implementation by decision 0003; prior-code eligibility remains a submission question |
-| B2 | Actual free Core Ultra Series 2/3 allocation | Intel deployment and final compliance remain blocked |
+| B2 | Actual free Core Ultra Series 2/3 allocation | BM-PTL request Pending Review; Intel deployment and final compliance remain blocked |
 | B3 | Assets/seeds, pouring scope, prior-code eligibility, interactive-hosting interpretation | Submission packaging and scope remain provisional |
 
 Verified deadline: September 16, 2:30 PM EDT (18:30 UTC). Event Guidelines require
 an application URL, cover, video and slides as well as the track package. See the
-[signed-in source comparison](ORGANIZER_QUESTIONS.md). No organizer message,
-account registration, instance request or submission has been sent.
+[signed-in source comparison](ORGANIZER_QUESTIONS.md). The user completed Intel
+registration and an instance request has been submitted. No organizer message or
+hackathon submission has been sent.
 
 ## Next executable step
 
@@ -69,6 +71,9 @@ portal. Next implementation slice: add a reachable object and constrained IK
 teacher, then validate a genuine contact grasp/release before drawer and hand-off.
 M1 is complete only after the [roadmap](ROADMAP.md) exit checks pass.
 
-In parallel, the user confirmed access to an eligible registration email and needs
-to complete Intel account access. The portal currently renders only its header without
-catalog controls; allocation and permissions have not been verified.
+In parallel, await Intel review notification, advertised within three days. The
+request currently shows September 10–17, with no timezone identified for its
+displayed end time. Both eligible catalog options offered only Windows 11;
+Ubuntu was requested in the short intended-use field. Once approved, verify
+actual hardware, expiry, installation permissions, rendering and OpenVINO CPU
+inference. Windows compatibility and Intel compliance are still untested.
