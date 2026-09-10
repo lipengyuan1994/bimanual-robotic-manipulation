@@ -20,6 +20,7 @@ Read [STATUS](STATUS.md) first when resuming work.
 | Contact-driven drawer opening | [Drawer walkthrough](DRAWER.md), [attempt register](experiments/2026-09-10-drawer-feasibility.md) |
 | Training datasets | [LeRobot export](DATASETS.md) |
 | Native ACT execution | [Training runtime probe](TRAINING.md) |
+| Learned actions in the simulator | [Policy rollout and failure evidence](POLICY_ROLLOUT.md) |
 | Problems and exact next checks | [Troubleshooting](TROUBLESHOOTING.md) |
 | Optional indexed project context | [OpenViking retrieval and indexing](OPENVIKING.md) |
 | Eligibility and external access | [Organizer questions](ORGANIZER_QUESTIONS.md) |

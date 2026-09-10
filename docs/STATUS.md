@@ -51,6 +51,10 @@ manipulation exit checks remain incomplete.
   on CPU/MPS and saves policy, normalization processors, optimizer/RNG state and
   dataset/code lineage. Reload checks reproduce raw joint targets. The tiny
   pilot checkpoints have not demonstrated learned manipulation or generalization.
+- `policy-rollout` executes a verified ACT checkpoint with image/joint inputs,
+  saved preprocessing, whole-chunk action validation and explicit right-arm
+  ownership. No teacher targets control the left arm. The first real rollout
+  failed its airborne-hold check; [diagnostic and evidence](POLICY_ROLLOUT.md).
 - Existing native bootstrap/doctor, generic pendulum lab, evidence store/SQLite
   index, read-only portal, seven lessons, GitHub Pages and README synchronization.
 - [Zero-cost Intel access request](INTEL_ACCESS.md) submitted for
@@ -59,13 +63,14 @@ manipulation exit checks remain incomplete.
 
 ## Verification and checkpoint
 
-Current core changes passed **166 ordinary tests and five actual rendering tests**,
+Current changes passed **176 ordinary tests and five actual rendering tests**,
 Ruff, documentation-link checks, README synchronization and the TypeScript/portal
 production build. Optional real LeRobot/ACT tests run separately in the isolated
-training environment; skips in the base environment are not counted as passes.
+training environment: 30 checks passed together and the explicit real LeRobot
+export check passed separately. Skips in the base environment are not counted as passes.
 The reviewer reproduced and fixed failed-outcome vocabulary mismatches in held-out
 dataset checks and duplicate-timestamp false positives in physical grasp scoring.
-Regression tests now cover both. New learned-rollout work remains in progress.
+Regression tests now cover both. Learned-rollout checks are recorded below.
 
 Previous committed checkpoint validation: **45 tests pass** (43 ordinary checks and two rendering
 checks), Ruff, documentation links, README synchronization, TypeScript and
@@ -128,6 +133,18 @@ the small 11.9-million-parameter ACT and all three full-resolution cameras.
 The earlier CPU pilot with inaccurate constant-joint statistics is retained;
 current training computes numeric statistics in float64 with a declared standard
 deviation floor. See [dataset/training evidence](DATASETS.md).
+
+The first actual learned diagnostic, `20260910T212314-08d05dd65d98`, applied 230
+control steps from 23 ACT chunks and stopped at 11.5 simulated seconds: 0/400
+airborne-hold samples passed. It had no forbidden contacts, but the block stayed
+at pickup. The failed run, camera images, raw/accepted proposals and replay are
+retained. This uses the one-step CPU pilot and its training scene; it is not a
+held-out or full-task result. The bounded 500-update MPS run
+`20260910T212647-8c539d28090b` completed in 110.93 seconds, but its learned rollout
+`20260910T212856-6da67f992681` also failed the hold (0/400 samples) at 11.5 seconds.
+Training loss decreased without a successful grasp. Diagnosis of prediction
+error and approach/closure timing is the next learning step; do not promote either
+checkpoint as a working manipulation policy.
 
 ## External dependencies
 

@@ -99,14 +99,15 @@ function App() {
   }, [revision]);
   const labs = runs.filter(
     (run) =>
-      ["preparation_pendulum", "dual_arm_foundation", "contact_grasp_teacher", "contact_placement_teacher", "contact_handoff_teacher", "contact_drawer_teacher"].includes(run.kind ?? "") &&
+      ["preparation_pendulum", "dual_arm_foundation", "contact_grasp_teacher", "contact_placement_teacher", "contact_handoff_teacher", "contact_drawer_teacher", "act_policy_rollout"].includes(run.kind ?? "") &&
       run.integrity === "verified",
   );
   const selected = labs.find((run) => run.run_id === selectedId) ?? labs.find((run) => run.files?.["replay.gif"]) ?? labs[0];
   const isHandoff = selected?.kind === "contact_handoff_teacher";
+  const isLearned = selected?.kind === "act_policy_rollout";
   const isDrawer = selected?.kind === "contact_drawer_teacher";
   const isPlacement = selected?.kind === "contact_placement_teacher";
-  const isGrasp = selected?.kind === "contact_grasp_teacher" || isPlacement || isHandoff || isDrawer;
+  const isGrasp = selected?.kind === "contact_grasp_teacher" || isPlacement || isHandoff || isDrawer || isLearned;
   const isDual = selected?.kind === "dual_arm_foundation" || isGrasp;
   const doctor = runs.find(
     (run) => run.kind === "preparation_runtime" && run.integrity === "verified",
@@ -223,7 +224,7 @@ function App() {
             <div className="card-heading">
               <div>
                 <span className="small-label">MUJOCO LEARNING LAB</span>
-                <h2>{isDrawer ? "Grasp the handle. Open the drawer." : isHandoff ? "Grasp. Share. Hand over." : isPlacement ? "Pick up. Carry. Place." : isGrasp ? "Reach. Grasp. Release." : isDual ? "Two arms. Three camera views." : "One joint. A complete loop."}</h2>
+                <h2>{isLearned ? "What did the policy learn?" : isDrawer ? "Grasp the handle. Open the drawer." : isHandoff ? "Grasp. Share. Hand over." : isPlacement ? "Pick up. Carry. Place." : isGrasp ? "Reach. Grasp. Release." : isDual ? "Two arms. Three camera views." : "One joint. A complete loop."}</h2>
               </div>
               <span className="tag">Recorded simulation · {selected?.outcome ?? "no run"}</span>
             </div>
@@ -252,12 +253,12 @@ function App() {
               <span>
                 <b>20 Hz</b> control
               </span>
-              <span>{isDual ? "Dual SO-101 · no learned policy" : "Generic pendulum · no learned policy"}</span>
+              <span>{isLearned ? "ACT · training-scene diagnostic" : isDual ? "Dual SO-101 · scripted control" : "Generic pendulum · no learned policy"}</span>
             </div>
             {isGrasp && selected && (
               <p className="scope-note">
                 {isDrawer ? "Drawer" : isHandoff ? "Hand-off" : isPlacement ? "Placement" : "Grasp"} test: <strong>{selected.metrics?.[isDrawer ? "drawer_success" : isHandoff ? "handoff_success" : "grasp_success"] === true ? "passed" : "failed"}</strong>.
-                {" "}Scripted teacher with simulator truth; full dinner task remains untested.
+                {" "}{isLearned ? "Learned left-arm actions from images and joints; right arm held by supervisor. This is a training-scene test." : "Scripted teacher with simulator truth; full dinner task remains untested."}
                 {" "}<a href={`/api/runs/${selected.run_id}/files/scoring-truth.jsonl`}>Inspect contact evidence →</a>
               </p>
             )}
@@ -363,6 +364,8 @@ function App() {
                             ? "ACT runtime probe"
                           : run.kind === "act_training"
                             ? "ACT training"
+                          : run.kind === "act_policy_rollout"
+                            ? "ACT learned rollout"
                           : run.kind === "preparation_runtime"
                             ? "Runtime probe"
                             : "Unreadable run"}

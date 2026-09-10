@@ -90,6 +90,15 @@ def main(argv: list[str] | None = None) -> int:
     train.add_argument("--batch-size", type=int, default=1)
     train.add_argument("--chunk-size", type=int, default=10)
     train.add_argument("--seed", type=int, default=0)
+    rollout = commands.add_parser(
+        "policy-rollout", help="Evaluate an ACT checkpoint in its declared placement scene"
+    )
+    rollout.add_argument("training_run", type=Path)
+    rollout.add_argument("--device", choices=["cpu", "mps"], default="cpu")
+    rollout.add_argument("--max-seconds", type=float, default=23)
+    rollout.add_argument(
+        "--no-replay", action="store_true", help="Keep policy cameras; omit display GIF"
+    )
     commands.add_parser("docs-check", help="Validate local documentation links and rubric weights")
     evidence = commands.add_parser("evidence", help="List or verify sealed preparation runs")
     evidence.add_argument("operation", choices=["list", "verify"])
@@ -191,6 +200,22 @@ def main(argv: list[str] | None = None) -> int:
                     render=not args.no_render,
                     missing_object=args.fault == "missing-object",
                     skip_receiver_close=args.fault == "skip-receiver-close",
+                ),
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
+        elif args.command == "policy-rollout":
+            from bimanual.policy_rollout import PolicyRolloutConfig, run_policy_rollout
+
+            result = invoke_with_diagnostics(
+                run_policy_rollout,
+                PolicyRolloutConfig(
+                    training_run=args.training_run,
+                    device=args.device,
+                    max_seconds=args.max_seconds,
+                    replay=not args.no_replay,
                 ),
                 store=store,
                 project_root=root,

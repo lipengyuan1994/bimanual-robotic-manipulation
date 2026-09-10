@@ -24,8 +24,8 @@
     {
       "id": "M2",
       "title": "Learned workflow",
-      "state": "pending",
-      "detail": "Recordings, LeRobot export and tiny real-data ACT training run on CPU/MPS. Learned manipulation, visual planning and recovery remain unproven."
+      "state": "in_progress",
+      "detail": "Real-data ACT training runs on CPU/MPS and guarded learned rollouts execute. First rollout failed; full learned workflow, planning and recovery remain."
     },
     {
       "id": "M3",
