@@ -1,13 +1,22 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import platform
+import sys
 from pathlib import Path
 
 
 def emit(data: object) -> None:
     print(json.dumps(data, indent=2, allow_nan=False))
+
+
+def invoke_with_diagnostics(function, *args, **kwargs):
+    # Optional model libraries print progress even when their loggers are quiet.
+    # Keep the CLI result parseable JSON; progress belongs on stderr.
+    with contextlib.redirect_stdout(sys.stderr):
+        return function(*args, **kwargs)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -32,7 +41,55 @@ def main(argv: list[str] | None = None) -> int:
     grasp = commands.add_parser("grasp", help="Contact-only teacher experiment, not learned policy")
     grasp.add_argument("--no-render", action="store_true")
     grasp.add_argument("--fault", choices=["missing-object", "skip-close"])
+    grasp.add_argument("--arm", choices=["left", "right"], default="left")
+    grasp.add_argument(
+        "--record-demo", action="store_true", help="Record three raw cameras at 20 Hz"
+    )
+    grasp.add_argument(
+        "--seed", type=int, default=0, help="Lineage label; no scene randomization yet"
+    )
+    grasp.add_argument("--split", choices=["train", "validation", "test"], default="train")
+    grasp.add_argument(
+        "--destination",
+        nargs=2,
+        type=float,
+        metavar=("X", "Y"),
+        help="World XY placement destination in metres",
+    )
     commands.add_parser("status", help="Read the maintained project status")
+    handoff = commands.add_parser("handoff", help="Physical teacher hand-off with ownership checks")
+    handoff.add_argument("--no-render", action="store_true")
+    handoff.add_argument("--fault", choices=["missing-object", "skip-receiver-close"])
+    drawer = commands.add_parser(
+        "drawer", help="Open and release a passive drawer through physical contact"
+    )
+    drawer.add_argument("--no-render", action="store_true")
+    drawer.add_argument("--fault", choices=["missing-handle", "skip-close"])
+    dataset_export = commands.add_parser(
+        "dataset-export", help="Export verified recordings to local LeRobot v3"
+    )
+    dataset_export.add_argument("run_roots", type=Path, nargs="+")
+    dataset_export.add_argument("--destination", type=Path, required=True)
+    dataset_export.add_argument(
+        "--repo-id", required=True, help="Local dataset identifier; nothing is uploaded"
+    )
+    dataset_export.add_argument("--comparison-run", type=Path, action="append", default=[])
+    probe = commands.add_parser(
+        "training-probe", help="ACT optimizer/inference runtime check, not task training"
+    )
+    probe.add_argument("--device", choices=["cpu", "mps"], default="cpu")
+    probe.add_argument("--architecture", choices=["small", "default"], default="small")
+    probe.add_argument("--seed", type=int, default=0)
+    probe.add_argument("--train-steps", type=int, default=1)
+    probe.add_argument("--chunk-size", type=int, default=10)
+    train = commands.add_parser("train", help="Train ACT on a verified local demonstration dataset")
+    train.add_argument("--dataset", type=Path, required=True)
+    train.add_argument("--device", choices=["cpu", "mps"], default="cpu")
+    train.add_argument("--architecture", choices=["small", "default"], default="small")
+    train.add_argument("--steps", type=int, default=3)
+    train.add_argument("--batch-size", type=int, default=1)
+    train.add_argument("--chunk-size", type=int, default=10)
+    train.add_argument("--seed", type=int, default=0)
     commands.add_parser("docs-check", help="Validate local documentation links and rubric weights")
     evidence = commands.add_parser("evidence", help="List or verify sealed preparation runs")
     evidence.add_argument("operation", choices=["list", "verify"])
@@ -99,12 +156,94 @@ def main(argv: list[str] | None = None) -> int:
                     render=not args.no_render,
                     missing_object=args.fault == "missing-object",
                     skip_close=args.fault == "skip-close",
+                    arm=args.arm,
+                    record_demo=args.record_demo,
+                    seed=args.seed,
+                    split=args.split,
+                    destination_xy=tuple(args.destination)
+                    if args.destination is not None
+                    else None,
                 ),
                 store=store,
                 project_root=root,
             )
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1
+        elif args.command == "drawer":
+            from bimanual.drawer import DrawerConfig, run_drawer
+
+            result = run_drawer(
+                DrawerConfig(
+                    render=not args.no_render,
+                    missing_handle=args.fault == "missing-handle",
+                    skip_close=args.fault == "skip-close",
+                ),
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
+        elif args.command == "handoff":
+            from bimanual.handoff import HandoffConfig, run_handoff
+
+            result = run_handoff(
+                HandoffConfig(
+                    render=not args.no_render,
+                    missing_object=args.fault == "missing-object",
+                    skip_receiver_close=args.fault == "skip-receiver-close",
+                ),
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
+        elif args.command == "train":
+            from bimanual.training import ACTTrainingConfig, run_train
+
+            result = invoke_with_diagnostics(
+                run_train,
+                ACTTrainingConfig(
+                    dataset_path=args.dataset,
+                    device=args.device,
+                    architecture=args.architecture,
+                    steps=args.steps,
+                    batch_size=args.batch_size,
+                    chunk_size=args.chunk_size,
+                    seed=args.seed,
+                ),
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
+        elif args.command == "training-probe":
+            from bimanual.training_probe import TrainingProbeConfig, run_training_probe
+
+            result = invoke_with_diagnostics(
+                run_training_probe,
+                TrainingProbeConfig(
+                    device=args.device,
+                    architecture=args.architecture,
+                    seed=args.seed,
+                    train_steps=args.train_steps,
+                    chunk_size=args.chunk_size,
+                ),
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
+        elif args.command == "dataset-export":
+            from bimanual.dataset_export import export_lerobot_dataset
+
+            result = invoke_with_diagnostics(
+                export_lerobot_dataset,
+                tuple(args.run_roots),
+                args.destination,
+                repo_id=args.repo_id,
+                comparison_run_roots=tuple(args.comparison_run),
+            )
+            emit({"destination": str(result), "manifest": str(result / "export_manifest.json")})
         elif args.command == "status":
             emit(json.loads((root / "docs/project.json").read_text()))
         elif args.command == "docs-check":

@@ -1,6 +1,6 @@
 # Architecture and implementation boundaries
 
-## Current preparation system
+## Current local implementation
 
 `bimanual lab` runs a generic single-hinge pendulum, writes actual observations and
 actions to CSV, and seals its scene/config/replay. `doctor` tests the environment.
@@ -16,8 +16,21 @@ remain unimplemented.
 `bimanual grasp` adds a privileged IK teacher and contact-only block experiment.
 Scratch-state IK never edits the live object's state. Per-step collision guards
 and force/pose scoring run at 200 Hz; truth is stored separately from the joint
-observation/action trace. This first teacher records replay, not a training dataset.
+observation/action trace. Either arm can place the block in a distinct zone.
+Optional raw recording synchronizes all three camera images with confirmed 20 Hz
+action transitions and stores explicit terminal/failure records.
 See [the contact experiment contract](CONTACT_GRASP.md).
+
+`bimanual handoff` coordinates a donor, shared grasp and receiving arm with
+explicit ownership checks. The practice bar remains a freely moving contact
+object. It is not yet a dinner utensil or an integrated table-setting workflow.
+
+`dataset-export` verifies sealed recordings and writes actual LeRobot v3 image
+datasets, retaining the original source evidence. `training-probe` runs ACT on
+synthetic inputs to test local CPU/MPS operations. The real-data trainer consumes
+the exported format and saves model, preprocessing and lineage artifacts; physical
+policy quality requires a separate rollout. See [interfaces](INTERFACES.md),
+[datasets](DATASETS.md) and [training](TRAINING.md).
 
 ## Target manipulation system (partially implemented)
 
@@ -39,6 +52,11 @@ Qwen handles language and visual task state. The supervisor controls execution
 semantics. This distinction must remain visible in technical claims.
 
 ## Interface specification for M1/M2
+
+Implemented data and action contracts live in `src/bimanual/contracts.py`.
+The table retains the complete target; the end-to-end supervisor/run-result
+contract is still pending. Simulator actions currently use synchronous identity
+and limit checks; the action-chunk contract is not yet a queued policy executor.
 
 | Interface | Required contract |
 |---|---|

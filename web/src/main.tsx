@@ -44,12 +44,12 @@ function RunLink({ run, select }: { run: Run; select: (id: string) => void }) {
     return <span title={run.error}>Check local files</span>;
   if (run.files?.["replay.gif"])
     return <button onClick={() => select(run.run_id)}>Replay ↑</button>;
-  const filename = ["error.txt", "doctor.json", "trajectory.csv", "observations.jsonl"].find(
+  const filename = ["error.txt", "failure.txt", "metrics.json", "doctor.json", "trajectory.csv", "observations.jsonl", "act_config.json"].find(
     (name) => run.files?.[name],
   );
   return filename ? (
     <a href={`/api/runs/${run.run_id}/files/${filename}`}>
-      {filename === "error.txt"
+      {filename === "error.txt" || filename === "failure.txt"
         ? "Error"
         : filename === "trajectory.csv" || filename === "observations.jsonl"
           ? "Trace"
@@ -99,16 +99,20 @@ function App() {
   }, [revision]);
   const labs = runs.filter(
     (run) =>
-      ["preparation_pendulum", "dual_arm_foundation", "contact_grasp_teacher"].includes(run.kind ?? "") &&
+      ["preparation_pendulum", "dual_arm_foundation", "contact_grasp_teacher", "contact_placement_teacher", "contact_handoff_teacher", "contact_drawer_teacher"].includes(run.kind ?? "") &&
       run.integrity === "verified",
   );
   const selected = labs.find((run) => run.run_id === selectedId) ?? labs.find((run) => run.files?.["replay.gif"]) ?? labs[0];
-  const isGrasp = selected?.kind === "contact_grasp_teacher";
+  const isHandoff = selected?.kind === "contact_handoff_teacher";
+  const isDrawer = selected?.kind === "contact_drawer_teacher";
+  const isPlacement = selected?.kind === "contact_placement_teacher";
+  const isGrasp = selected?.kind === "contact_grasp_teacher" || isPlacement || isHandoff || isDrawer;
   const isDual = selected?.kind === "dual_arm_foundation" || isGrasp;
   const doctor = runs.find(
     (run) => run.kind === "preparation_runtime" && run.integrity === "verified",
   );
   const mps = doctor?.metrics?.mps as { status?: string } | undefined;
+  const actProbe = runs.find(run => run.kind === "act_runtime_probe" && run.integrity === "verified" && run.outcome === "completed");
   const replay = selected?.files?.["replay.gif"]
     ? `/api/runs/${selected.run_id}/files/replay.gif`
     : null;
@@ -200,11 +204,11 @@ function App() {
           <div>
             <span className="fact-label">LOCAL ML PROBE</span>
             <strong>
-              {mps?.status === "passed"
+              {actProbe ? `ACT on ${String(actProbe.metrics?.actual_device ?? "local device")}` : mps?.status === "passed"
                 ? "MPS + CPU checked"
                 : "Awaiting recorded probe"}
             </strong>
-            <small>Arithmetic only · model tests come later</small>
+            <small>{actProbe ? "Runtime checked · task learning unproven" : "Arithmetic only · model tests come later"}</small>
           </div>
           <div>
             <span className="fact-label">FINAL INTEL TARGET</span>
@@ -219,7 +223,7 @@ function App() {
             <div className="card-heading">
               <div>
                 <span className="small-label">MUJOCO LEARNING LAB</span>
-                <h2>{isGrasp ? "Reach. Grasp. Release." : isDual ? "Two arms. Three camera views." : "One joint. A complete loop."}</h2>
+                <h2>{isDrawer ? "Grasp the handle. Open the drawer." : isHandoff ? "Grasp. Share. Hand over." : isPlacement ? "Pick up. Carry. Place." : isGrasp ? "Reach. Grasp. Release." : isDual ? "Two arms. Three camera views." : "One joint. A complete loop."}</h2>
               </div>
               <span className="tag">Recorded simulation · {selected?.outcome ?? "no run"}</span>
             </div>
@@ -252,7 +256,7 @@ function App() {
             </div>
             {isGrasp && selected && (
               <p className="scope-note">
-                Contact test: <strong>{selected.metrics?.grasp_success === true ? "passed" : "failed"}</strong>.
+                {isDrawer ? "Drawer" : isHandoff ? "Hand-off" : isPlacement ? "Placement" : "Grasp"} test: <strong>{selected.metrics?.[isDrawer ? "drawer_success" : isHandoff ? "handoff_success" : "grasp_success"] === true ? "passed" : "failed"}</strong>.
                 {" "}Scripted teacher with simulator truth; full dinner task remains untested.
                 {" "}<a href={`/api/runs/${selected.run_id}/files/scoring-truth.jsonl`}>Inspect contact evidence →</a>
               </p>
@@ -266,16 +270,16 @@ function App() {
               Change one thing.
             </h2>
             <p>
-              Watch the left arm lift a block, hold it, and release it using physical contacts.
+              Watch an arm lift a block, carry it to a separate place, and release it using physical contacts.
             </p>
-            <code>.venv/bin/bimanual grasp</code>
+            <code>.venv/bin/bimanual grasp --destination -.15 .08</code>
             <a className="text-link" href="/read/docs/CONTACT_GRASP.md">
               Open contact-grasp walkthrough <span>→</span>
             </a>
             <div className="scope-note">
               <strong>What this establishes</strong>
               <p>
-                This is one bounded contact skill. Drawer use, hand-offs, learned
+                These are bounded contact skills. Utensil retrieval, plate and cup placement, learned
                 control, task reasoning, and Intel deployment remain to be built and tested.
               </p>
             </div>
@@ -349,6 +353,16 @@ function App() {
                             ? "Dual-arm foundation"
                           : run.kind === "contact_grasp_teacher"
                             ? "Contact grasp teacher"
+                          : run.kind === "contact_placement_teacher"
+                            ? "Contact placement teacher"
+                          : run.kind === "contact_handoff_teacher"
+                            ? "Contact hand-off teacher"
+                          : run.kind === "contact_drawer_teacher"
+                            ? "Contact drawer teacher"
+                          : run.kind === "act_runtime_probe"
+                            ? "ACT runtime probe"
+                          : run.kind === "act_training"
+                            ? "ACT training"
                           : run.kind === "preparation_runtime"
                             ? "Runtime probe"
                             : "Unreadable run"}
@@ -379,7 +393,7 @@ function App() {
             </table>
           </div>
           <p className="table-note">
-            These development runs cover runtime checks and an isolated contact skill.
+            These development runs cover runtime checks and bounded contact skills.
             They are not full dinner-task evaluations or judging scores.{" "}
             <a href="/read/docs/EVIDENCE.md">Evidence protocol ↗</a>
           </p>

@@ -3,37 +3,130 @@
   "updated_at": "2026-09-10",
   "title": "Bimanual manipulation lab",
   "phase": "physical_foundation",
-  "phase_label": "Local contact-grasp teacher",
+  "phase_label": "Local placement, hand-off, drawer and ACT pilots",
   "manipulation_available": false,
   "intel_validated": false,
   "compute_budget_usd": 0,
   "summary": "Build the foundations. Learn the mechanics. Keep every result inspectable.",
   "milestones": [
-    {"id": "M0", "title": "Preparation", "state": "complete", "detail": "Native runtime, rendered lab, evidence, portal, and lessons validated locally."},
-    {"id": "M1", "title": "Physical foundation", "state": "in_progress", "detail": "Dual arms, three cameras and a left-arm contact grasp/hold/release teacher verified locally. Drawer and hand-off pending."},
-    {"id": "M2", "title": "Learned workflow", "state": "pending", "detail": "Demonstrations, trained ACT skills, visual planning, and recovery."},
-    {"id": "M3", "title": "Intel / hackathon release", "state": "blocked", "detail": "Requires a working learned system and actual Core Ultra access."},
-    {"id": "M4", "title": "Production hardening", "state": "pending", "detail": "Broader held-out tests, fault handling, reproducibility, and operations."}
+    {
+      "id": "M0",
+      "title": "Preparation",
+      "state": "complete",
+      "detail": "Native runtime, rendered lab, evidence, portal, and lessons validated locally."
+    },
+    {
+      "id": "M1",
+      "title": "Physical foundation",
+      "state": "in_progress",
+      "detail": "Contact placement, bar hand-off and passive drawer opening run locally. Utensil retrieval, plate/cup handling and unified scene remain."
+    },
+    {
+      "id": "M2",
+      "title": "Learned workflow",
+      "state": "pending",
+      "detail": "Recordings, LeRobot export and tiny real-data ACT training run on CPU/MPS. Learned manipulation, visual planning and recovery remain unproven."
+    },
+    {
+      "id": "M3",
+      "title": "Intel / hackathon release",
+      "state": "blocked",
+      "detail": "Requires a working learned system and actual Core Ultra access."
+    },
+    {
+      "id": "M4",
+      "title": "Production hardening",
+      "state": "pending",
+      "detail": "Broader held-out tests, fault handling, reproducibility, and operations."
+    }
   ],
   "blockers": [
-    {"id": "B2", "title": "Intel machine access", "detail": "BM-PTL Series 3 request submitted, Pending Review. Catalog offers Windows 11; host execution remains untested."},
-    {"id": "B3", "title": "Remaining event details", "detail": "Confirm assets/seeds, pouring scope, prior-code eligibility and interactive hosting interpretation. Deadline and presentation requirements verified."}
+    {
+      "id": "B2",
+      "title": "Intel machine access",
+      "detail": "BM-PTL Series 3 request submitted, Pending Review. Catalog offers Windows 11; host execution remains untested."
+    },
+    {
+      "id": "B3",
+      "title": "Remaining event details",
+      "detail": "Confirm assets/seeds, pouring scope, prior-code eligibility and interactive hosting interpretation. Deadline and presentation requirements verified."
+    }
   ],
   "rubric": [
-    {"name": "Task completion and bimanual manipulation", "points": 30},
-    {"name": "VLA / multimodal reasoning", "points": 20},
-    {"name": "Robustness and generalization", "points": 15},
-    {"name": "OpenVINO and Intel optimization", "points": 20},
-    {"name": "Technical quality and reproducibility", "points": 10},
-    {"name": "Innovation and demonstration", "points": 5}
+    {
+      "name": "Task completion and bimanual manipulation",
+      "points": 30
+    },
+    {
+      "name": "VLA / multimodal reasoning",
+      "points": 20
+    },
+    {
+      "name": "Robustness and generalization",
+      "points": 15
+    },
+    {
+      "name": "OpenVINO and Intel optimization",
+      "points": 20
+    },
+    {
+      "name": "Technical quality and reproducibility",
+      "points": 10
+    },
+    {
+      "name": "Innovation and demonstration",
+      "points": 5
+    }
   ],
   "lessons": [
-    {"number": "01", "title": "Observe, act, and step time", "duration": "15 min", "href": "/read/lessons/0001-observe-act-step.html", "detail": "Explore a real MuJoCo trajectory and distinguish action from observation."},
-    {"number": "02", "title": "Frames and reachable positions", "duration": "15 min", "href": "/read/lessons/0002-frames-and-reach.html", "detail": "Use an interactive two-link sketch to see why a target can be unreachable."},
-    {"number": "03", "title": "Contacts, grasps, and hand-offs", "duration": "15 min", "href": "/read/lessons/0003-contacts-grasps-handoffs.html", "detail": "Identify the physical evidence required for a grasp and a hand-off."},
-    {"number": "04", "title": "Demonstrations and ACT", "duration": "15 min", "href": "/read/lessons/0004-demonstrations-and-act.html", "detail": "Learn how aligned demonstrations support bounded imitation learning."},
-    {"number": "05", "title": "Supervision and recovery", "duration": "15 min", "href": "/read/lessons/0005-supervision-and-recovery.html", "detail": "Separate visual planning, action policy, and the supervisor that may stop."},
-    {"number": "06", "title": "Evaluation and uncertainty", "duration": "15 min", "href": "/read/lessons/0006-evaluation-and-uncertainty.html", "detail": "Freeze evaluation conditions and interpret task results honestly."},
-    {"number": "07", "title": "OpenVINO and benchmarks", "duration": "15 min", "href": "/read/lessons/0007-openvino-and-benchmarks.html", "detail": "Measure actual device use and end-to-end timing on the Intel target."}
+    {
+      "number": "01",
+      "title": "Observe, act, and step time",
+      "duration": "15 min",
+      "href": "/read/lessons/0001-observe-act-step.html",
+      "detail": "Explore a real MuJoCo trajectory and distinguish action from observation."
+    },
+    {
+      "number": "02",
+      "title": "Frames and reachable positions",
+      "duration": "15 min",
+      "href": "/read/lessons/0002-frames-and-reach.html",
+      "detail": "Use an interactive two-link sketch to see why a target can be unreachable."
+    },
+    {
+      "number": "03",
+      "title": "Contacts, grasps, and hand-offs",
+      "duration": "15 min",
+      "href": "/read/lessons/0003-contacts-grasps-handoffs.html",
+      "detail": "Identify the physical evidence required for a grasp and a hand-off."
+    },
+    {
+      "number": "04",
+      "title": "Demonstrations and ACT",
+      "duration": "15 min",
+      "href": "/read/lessons/0004-demonstrations-and-act.html",
+      "detail": "Learn how aligned demonstrations support bounded imitation learning."
+    },
+    {
+      "number": "05",
+      "title": "Supervision and recovery",
+      "duration": "15 min",
+      "href": "/read/lessons/0005-supervision-and-recovery.html",
+      "detail": "Separate visual planning, action policy, and the supervisor that may stop."
+    },
+    {
+      "number": "06",
+      "title": "Evaluation and uncertainty",
+      "duration": "15 min",
+      "href": "/read/lessons/0006-evaluation-and-uncertainty.html",
+      "detail": "Freeze evaluation conditions and interpret task results honestly."
+    },
+    {
+      "number": "07",
+      "title": "OpenVINO and benchmarks",
+      "duration": "15 min",
+      "href": "/read/lessons/0007-openvino-and-benchmarks.html",
+      "detail": "Measure actual device use and end-to-end timing on the Intel target."
+    }
   ]
 }

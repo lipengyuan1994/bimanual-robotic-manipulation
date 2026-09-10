@@ -15,6 +15,11 @@ Read [STATUS](STATUS.md) first when resuming work.
 | Free Intel hardware access | [Access routes and request drafts](INTEL_ACCESS.md) |
 | First dual-arm implementation | [Foundation walkthrough](DUAL_ARM_FOUNDATION.md) |
 | First local contact manipulation | [Grasp walkthrough](CONTACT_GRASP.md), [attempt register](experiments/2026-09-10-contact-grasp.md) |
+| Object transport and recording | [Placement results](experiments/2026-09-10-placement.md), [versioned interfaces](INTERFACES.md) |
+| Physical transfer between arms | [Hand-off walkthrough](HANDOFF.md), [feasibility attempts](experiments/2026-09-10-handoff-feasibility.md) |
+| Contact-driven drawer opening | [Drawer walkthrough](DRAWER.md), [attempt register](experiments/2026-09-10-drawer-feasibility.md) |
+| Training datasets | [LeRobot export](DATASETS.md) |
+| Native ACT execution | [Training runtime probe](TRAINING.md) |
 | Problems and exact next checks | [Troubleshooting](TROUBLESHOOTING.md) |
 | Optional indexed project context | [OpenViking retrieval and indexing](OPENVIKING.md) |
 | Eligibility and external access | [Organizer questions](ORGANIZER_QUESTIONS.md) |

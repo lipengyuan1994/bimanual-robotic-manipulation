@@ -5,7 +5,7 @@ arms. The long-term product is an inspectable workstation application with learn
 manipulation, recovery, reproducible evaluation, and Intel OpenVINO deployment.
 
 <!-- README-STATUS:START -->
-**Current release: Local contact-grasp teacher.**
+**Current release: Local placement, hand-off, drawer and ACT pilots.**
 
 - Challenge manipulation: not available
 - Intel target: not validated

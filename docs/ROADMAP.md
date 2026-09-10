@@ -12,8 +12,12 @@ pretending the whole product is complete.
 
 The event-window authorization is recorded in [decision 0003](decisions/0003-event-window-implementation.md).
 Dual-arm loading, mapping, bounded controls and camera rendering are implemented;
-see the [foundation walkthrough](DUAL_ARM_FOUNDATION.md). A left-arm contact
-grasp/hold/release with bounded IK is also implemented; see the [contact walkthrough](CONTACT_GRASP.md).
+see the [foundation walkthrough](DUAL_ARM_FOUNDATION.md). Either arm can grasp and place a practice block with bounded IK; see the
+[contact walkthrough](CONTACT_GRASP.md). A contact-only practice-bar transfer is
+implemented with independent ownership checks; see [hand-off](HANDOFF.md).
+A passive [drawer](DRAWER.md) now opens through contact and remains open after
+release with its utensil proxies retained. Retrieval and plate/cup handling still
+need integration into the full scene.
 The steps below still
 require task-level evidence before M1 is complete.
 

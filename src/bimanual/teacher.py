@@ -12,13 +12,18 @@ class ReachError(ValueError):
     """The requested position/direction was not solved within the joint limits."""
 
 
-def solve_downward(env: DualArm, target: np.ndarray, initial: np.ndarray) -> np.ndarray:
+def solve_downward(
+    env: DualArm, target: np.ndarray, initial: np.ndarray, *, arm: str = "left"
+) -> np.ndarray:
     """Position plus tool-axis DLS IK, using a separate kinematics-only MjData.
 
     Five arm joints cannot realize arbitrary six-dimensional poses. Constrain the
     pinch site's X axis downward and let rotation about that axis remain free.
     The live simulation's positions, velocities and object state are never edited.
     """
+    if arm not in {"left", "right"}:
+        raise ReachError("Unknown arm")
+    channels = slice(0, 5) if arm == "left" else slice(6, 11)
     target = np.asarray(target, dtype=float)
     initial = np.asarray(initial, dtype=float)
     if target.shape != (3,) or not np.isfinite(target).all():
@@ -30,7 +35,7 @@ def solve_downward(env: DualArm, target: np.ndarray, initial: np.ndarray) -> np.
     data = mujoco.MjData(env.model)
     data.qpos[:] = env.data.qpos
     data.qpos[env.qadr] = initial
-    site = env.model.site("left/pinch").id
+    site = env.model.site(f"{arm}/pinch").id
     jp = np.zeros((3, env.model.nv))
     jr = np.zeros_like(jp)
     for _ in range(250):
@@ -42,11 +47,13 @@ def solve_downward(env: DualArm, target: np.ndarray, initial: np.ndarray) -> np.
             return data.qpos[env.qadr].copy()
         mujoco.mj_jacSite(env.model, data, jp, jr, site)
         # Derivative of a unit direction is omega cross direction.
-        jacobian = np.vstack([jp, 0.1 * np.cross(jr.T, axis).T])[:, env.vadr[:5]]
+        jacobian = np.vstack([jp, 0.1 * np.cross(jr.T, axis).T])[:, env.vadr[channels]]
         error = np.r_[position_error, 0.1 * axis_error]
         delta = jacobian.T @ np.linalg.solve(jacobian @ jacobian.T + 1e-5 * np.eye(6), error)
-        data.qpos[env.qadr[:5]] = np.clip(
-            data.qpos[env.qadr[:5]] + np.clip(delta, -0.1, 0.1), env.lower[:5], env.upper[:5]
+        data.qpos[env.qadr[channels]] = np.clip(
+            data.qpos[env.qadr[channels]] + np.clip(delta, -0.1, 0.1),
+            env.lower[channels],
+            env.upper[channels],
         )
     raise ReachError("Downward grasp target unreachable within IK tolerances and joint limits")
 

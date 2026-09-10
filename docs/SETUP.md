@@ -23,8 +23,20 @@ An already verified native interpreter can be selected explicitly:
 BIMANUAL_PYTHON=/absolute/path/to/macos-aarch64/bin/python3.12 scripts/bootstrap.sh
 ```
 
-The `ml` extra installs PyTorch/torchvision for runtime arithmetic checks. Training
-and reasoning extras are locked for later use but are not required for preparation.
+The `ml` extra installs PyTorch/torchvision. The training extra now supports
+verified recordings, LeRobot dataset export and ACT execution. To create its
+separate native environment without changing the simulator environment:
+
+```sh
+sh scripts/bootstrap-training.sh
+HF_HOME="$PWD/.artifacts/huggingface" .artifacts/training-venv/bin/bimanual training-probe --device cpu
+```
+
+This selects the existing verified native `.venv/bin/python` (or an explicit
+`BIMANUAL_PYTHON`), uses a separate ARM-only interpreter/cache location, installs
+the frozen training extra and audits compiled libraries. It does not download
+model weights or upload data. See [training details](TRAINING.md) and
+[dataset operations](DATASETS.md). The reasoning extra remains for later use.
 Installing packages alone is not an ACT or VLM implementation.
 
 Bootstrap also installs the repository's local Git hook. It checks that the generated
@@ -48,6 +60,10 @@ refresh the README with `.venv/bin/python scripts/sync_readme.py --write`.
 .venv/bin/bimanual lab --seed 7 --seconds 4 --damping 0.8 --no-render
 .venv/bin/bimanual sim --seconds 4
 .venv/bin/bimanual sim --seconds 4 --no-render
+.venv/bin/bimanual grasp --destination -.15 .08
+.venv/bin/bimanual grasp --arm right --destination .15 -.08
+.venv/bin/bimanual grasp --destination -.15 .08 --record-demo --seed 0 --split train
+.venv/bin/bimanual handoff
 .venv/bin/bimanual evidence list
 .venv/bin/bimanual evidence verify RUN_ID
 .venv/bin/bimanual status

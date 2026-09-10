@@ -14,8 +14,9 @@ portal, simulator artifacts, or any control endpoint.
 | Preparation | [Observe, act, and step time](../lessons/0001-observe-act-step.html): inspect an actual trajectory | Ready |
 | Preparation | [Frames and reach](../lessons/0002-frames-and-reach.html): explore a two-link sketch | Ready |
 | M1 foundation | [Two real simulated arms](DUAL_ARM_FOUNDATION.md): inspect channel ordering, timestamps and wrist views | Running code and five-minute exercise |
-| M1 contact skill | [Contacts, grasps, and hand-offs](../lessons/0003-contacts-grasps-handoffs.html), then [run a contact grasp](CONTACT_GRASP.md) | Grasp/hold/release teacher runs locally; hand-off remains conceptual |
-| Preparation extension | [Demonstrations and ACT](../lessons/0004-demonstrations-and-act.html): build an aligned data contract | Ready; conceptual, no training yet |
+| M1 contact skill | [Contacts, grasps, and hand-offs](../lessons/0003-contacts-grasps-handoffs.html), then [run a contact grasp](CONTACT_GRASP.md) | Grasp and placement run locally; [physical hand-off walkthrough](HANDOFF.md) available |
+| M1 drawer | [Open a physical drawer](DRAWER.md): distinguish motor commands, handle contact and passive movement | Runs locally; retrieval remains next |
+| M2 data groundwork | [Demonstrations and ACT](../lessons/0004-demonstrations-and-act.html): build an aligned data contract | [Recording contracts](INTERFACES.md) and [dataset export](DATASETS.md) connect to running code; no task-trained policy yet |
 | Preparation extension | [Supervision and recovery](../lessons/0005-supervision-and-recovery.html): separate planning from stopping | Ready; conceptual, no planner/supervisor yet |
 | Preparation extension | [Evaluation and uncertainty](../lessons/0006-evaluation-and-uncertainty.html): freeze the test before model choice | Ready; conceptual, no frozen task suite yet |
 | Preparation extension | [OpenVINO and benchmarks](../lessons/0007-openvino-and-benchmarks.html): measure actual target-device behavior | Ready; conceptual, no Intel host yet |
