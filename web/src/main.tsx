@@ -44,14 +44,14 @@ function RunLink({ run, select }: { run: Run; select: (id: string) => void }) {
     return <span title={run.error}>Check local files</span>;
   if (run.files?.["replay.gif"])
     return <button onClick={() => select(run.run_id)}>Replay ↑</button>;
-  const filename = ["error.txt", "doctor.json", "trajectory.csv"].find(
+  const filename = ["error.txt", "doctor.json", "trajectory.csv", "observations.jsonl"].find(
     (name) => run.files?.[name],
   );
   return filename ? (
     <a href={`/api/runs/${run.run_id}/files/${filename}`}>
       {filename === "error.txt"
         ? "Error"
-        : filename === "trajectory.csv"
+        : filename === "trajectory.csv" || filename === "observations.jsonl"
           ? "Trace"
           : "Report"}{" "}
       ↗
@@ -99,11 +99,12 @@ function App() {
   }, [revision]);
   const labs = runs.filter(
     (run) =>
-      run.kind === "preparation_pendulum" &&
+      (run.kind === "preparation_pendulum" || run.kind === "dual_arm_foundation") &&
       run.integrity === "verified" &&
       run.outcome === "completed",
   );
-  const selected = labs.find((run) => run.run_id === selectedId) ?? labs[0];
+  const selected = labs.find((run) => run.run_id === selectedId) ?? labs.find((run) => run.files?.["replay.gif"]) ?? labs[0];
+  const isDual = selected?.kind === "dual_arm_foundation";
   const doctor = runs.find(
     (run) => run.kind === "preparation_runtime" && run.integrity === "verified",
   );
@@ -193,7 +194,7 @@ function App() {
         <div className="facts">
           <div>
             <span className="fact-label">CURRENT SCOPE</span>
-            <strong>Preparation lab</strong>
+            <strong>{project?.phase_label ?? "Loading"}</strong>
             <small>Dinner-table control is pending</small>
           </div>
           <div>
@@ -213,12 +214,12 @@ function App() {
             <small>Core Ultra Series 2 / 3</small>
           </div>
         </div>
-        <section className="lab-grid" aria-label="Preparation simulation">
+        <section className="lab-grid" aria-label="Foundation simulation">
           <div className="simulation-card">
             <div className="card-heading">
               <div>
                 <span className="small-label">MUJOCO LEARNING LAB</span>
-                <h2>One joint. A complete loop.</h2>
+                <h2>{isDual ? "Two arms. Three camera views." : "One joint. A complete loop."}</h2>
               </div>
               <span className="tag">Recorded simulation</span>
             </div>
@@ -226,7 +227,7 @@ function App() {
               {replay ? (
                 <img
                   src={replay}
-                  alt="Actual MuJoCo replay of the driven pendulum"
+                  alt={isDual ? "MuJoCo SO-101 replay: overhead, left wrist, right wrist" : "Actual MuJoCo replay of the driven pendulum"}
                 />
               ) : (
                 <div className="empty">
@@ -247,7 +248,7 @@ function App() {
               <span>
                 <b>20 Hz</b> control
               </span>
-              <span>Generic pendulum · no learned policy</span>
+              <span>{isDual ? "Dual SO-101 · no learned policy" : "Generic pendulum · no learned policy"}</span>
             </div>
           </div>
           <div className="next-card">
@@ -258,12 +259,11 @@ function App() {
               Change one thing.
             </h2>
             <p>
-              Watch a real physics trace, then increase damping and compare the
-              motion.
+              Inspect both arms, their joint targets, and synchronized camera views.
             </p>
-            <code>.venv/bin/bimanual lab --seed 7 --seconds 4</code>
-            <a className="text-link" href="/read/docs/SETUP.md">
-              Open setup & commands <span>→</span>
+            <code>.venv/bin/bimanual sim --seconds 4</code>
+            <a className="text-link" href="/read/docs/DUAL_ARM_FOUNDATION.md">
+              Open foundation walkthrough <span>→</span>
             </a>
             <div className="scope-note">
               <strong>What this establishes</strong>
@@ -302,7 +302,7 @@ function App() {
           <div className="section-heading">
             <div>
               <p className="eyebrow">RECORDED, THEN VERIFIED</p>
-              <h2>Preparation evidence.</h2>
+              <h2>Run evidence.</h2>
             </div>
             <button
               className="refresh"
@@ -338,6 +338,8 @@ function App() {
                       <td>
                         {run.kind === "preparation_pendulum"
                           ? "Pendulum lab"
+                          : run.kind === "dual_arm_foundation"
+                            ? "Dual-arm foundation"
                           : run.kind === "preparation_runtime"
                             ? "Runtime probe"
                             : "Unreadable run"}
@@ -368,7 +370,7 @@ function App() {
             </table>
           </div>
           <p className="table-note">
-            These runs validate preparation tools. They are not manipulation
+            These runs validate runtime and simulation foundations. They are not manipulation
             trials or judging scores.{" "}
             <a href="/read/docs/EVIDENCE.md">Evidence protocol ↗</a>
           </p>

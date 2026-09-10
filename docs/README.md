@@ -12,10 +12,12 @@ Read [STATUS](STATUS.md) first when resuming work.
 | Native install and commands | [Setup](SETUP.md) |
 | Reproducibility and release evidence | [Evidence](EVIDENCE.md) |
 | Future Intel deployment | [Deployment](DEPLOYMENT.md) |
+| Free Intel hardware access | [Access routes and request drafts](INTEL_ACCESS.md) |
+| First dual-arm implementation | [Foundation walkthrough](DUAL_ARM_FOUNDATION.md) |
 | Problems and exact next checks | [Troubleshooting](TROUBLESHOOTING.md) |
 | Optional indexed project context | [OpenViking retrieval and indexing](OPENVIKING.md) |
 | Eligibility and external access | [Organizer questions](ORGANIZER_QUESTIONS.md) |
-| Why preparation is the current boundary | [Decision 0001](decisions/0001-preparation-boundary.md) |
+| Scope and event-window authorization | [Historical preparation decision](decisions/0001-preparation-boundary.md), [Decision 0003](decisions/0003-event-window-implementation.md) |
 | Runtime/model choices | [Decision 0002](decisions/0002-runtime-and-policy-design.md) |
 | Repeatable experiment notes | [Experiment template](experiments/TEMPLATE.md) |
 | Current validation results | [Preparation validation](experiments/2026-09-05-preparation.md) |

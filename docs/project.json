@@ -1,24 +1,23 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-07",
+  "updated_at": "2026-09-10",
   "title": "Bimanual manipulation lab",
-  "phase": "preparation",
-  "phase_label": "Preparation ready",
+  "phase": "physical_foundation",
+  "phase_label": "Dual-arm foundation",
   "manipulation_available": false,
   "intel_validated": false,
   "compute_budget_usd": 0,
   "summary": "Build the foundations. Learn the mechanics. Keep every result inspectable.",
   "milestones": [
     {"id": "M0", "title": "Preparation", "state": "complete", "detail": "Native runtime, rendered lab, evidence, portal, and lessons validated locally."},
-    {"id": "M1", "title": "Physical foundation", "state": "blocked", "detail": "Await early-work clarification before challenge implementation."},
+    {"id": "M1", "title": "Physical foundation", "state": "in_progress", "detail": "Two SO-101 arms, bounded controls and three cameras implemented. Drawer, grasp and hand-off remain pending."},
     {"id": "M2", "title": "Learned workflow", "state": "pending", "detail": "Demonstrations, trained ACT skills, visual planning, and recovery."},
     {"id": "M3", "title": "Intel / hackathon release", "state": "blocked", "detail": "Requires a working learned system and actual Core Ultra access."},
     {"id": "M4", "title": "Production hardening", "state": "pending", "detail": "Broader held-out tests, fault handling, reproducibility, and operations."}
   ],
   "blockers": [
-    {"id": "B1", "title": "Early-work clarification", "detail": "Record the event-specific ruling before building submission AI functionality."},
     {"id": "B2", "title": "Intel machine access", "detail": "Final MuJoCo and inference must both execute on Core Ultra Series 2/3."},
-    {"id": "B3", "title": "Final event details", "detail": "Confirm supplied assets/seeds, hand-off scope, deadline, and submission fields."}
+    {"id": "B3", "title": "Remaining event details", "detail": "Confirm assets/seeds, pouring scope, prior-code eligibility and interactive hosting interpretation. Deadline and presentation requirements verified."}
   ],
   "rubric": [
     {"name": "Task completion and bimanual manipulation", "points": 30},

@@ -13,6 +13,7 @@ portal, simulator artifacts, or any control endpoint.
 |---|---|---|
 | Preparation | [Observe, act, and step time](../lessons/0001-observe-act-step.html): inspect an actual trajectory | Ready |
 | Preparation | [Frames and reach](../lessons/0002-frames-and-reach.html): explore a two-link sketch | Ready |
+| M1 foundation | [Two real simulated arms](DUAL_ARM_FOUNDATION.md): inspect channel ordering, timestamps and wrist views | Running code and five-minute exercise |
 | Preparation extension | [Contacts, grasps, and hand-offs](../lessons/0003-contacts-grasps-handoffs.html): identify physical hand-off evidence | Ready; conceptual, no contact code yet |
 | Preparation extension | [Demonstrations and ACT](../lessons/0004-demonstrations-and-act.html): build an aligned data contract | Ready; conceptual, no training yet |
 | Preparation extension | [Supervision and recovery](../lessons/0005-supervision-and-recovery.html): separate planning from stopping | Ready; conceptual, no planner/supervisor yet |

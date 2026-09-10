@@ -5,30 +5,33 @@ arms. The long-term product is an inspectable workstation application with learn
 manipulation, recovery, reproducible evaluation, and Intel OpenVINO deployment.
 
 <!-- README-STATUS:START -->
-**Current release: Preparation ready.**
+**Current release: Dual-arm foundation.**
 
 - Challenge manipulation: not available
 - Intel target: not validated
-- Active blockers: B1, B2, B3
-- Status data updated: 2026-09-07
+- Active blockers: B2, B3
+- Status data updated: 2026-09-10
 
 The complete evidence and handoff record is in [docs/STATUS.md](docs/STATUS.md).
 <!-- README-STATUS:END -->
 
-The accepted plan reserves submission-specific AI work until the early-work policy
-is clarified. [Accepted plan](docs/PLAN.md)
+Event-window implementation is authorized in [decision 0003](docs/decisions/0003-event-window-implementation.md).
+The first M1 slice loads two SO-101 arms with bounded control and three cameras.
+Drawer use, grasping, hand-off and learned execution remain pending. [Accepted plan](docs/PLAN.md)
 
 ## Start here
 
 1. Follow the [native setup guide](docs/SETUP.md).
 2. Run `.venv/bin/bimanual doctor --require-device mps --record`.
-3. Run `.venv/bin/bimanual lab --seed 7 --seconds 4`.
+3. Run `.venv/bin/bimanual sim --seconds 4` for the two-arm foundation.
 4. Build the portal in `web` with `npm ci` and `npm run build` using native Node.
 5. Run `.venv/bin/bimanual serve` and open <http://127.0.0.1:8767>.
 
-Every lab run saves a real MuJoCo replay, trajectory CSV, scene, configuration,
+Every rendered run saves a real MuJoCo replay, trajectory, scene, configuration,
 versions, source digests, and an integrity manifest under ignored `.artifacts/`.
-Failures are retained. These are preparation results, not hackathon scores.
+Failures are retained. These foundation results do not establish task success.
+Follow the [two-arm walkthrough](docs/DUAL_ARM_FOUNDATION.md) to inspect mappings
+and camera views; the original pendulum remains available with `bimanual lab`.
 
 ## Learn while we build
 
@@ -55,5 +58,5 @@ Run `scripts/check.sh --render` for Python, documentation, and rendering checks.
 Run `npm run check` and `npm run build` in `web` for the portal.
 
 No paid compute, hosted inference, physical robot, or account credentials are needed
-for this preparation release. The final challenge requires separate access to an
-actual Intel Core Ultra Series 2/3 machine.
+for this foundation release. The final challenge requires separate access to an
+actual Intel Core Ultra Series 2/3 machine; see [free access routes](docs/INTEL_ACCESS.md).

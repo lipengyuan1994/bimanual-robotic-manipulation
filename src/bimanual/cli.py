@@ -24,6 +24,11 @@ def main(argv: list[str] | None = None) -> int:
     lab.add_argument("--damping", type=float, default=0.1)
     lab.add_argument("--torque", type=float, default=0.2)
     lab.add_argument("--no-render", action="store_true")
+    foundation = commands.add_parser(
+        "sim", help="Run dual SO-101 foundation checks (no task policy)"
+    )
+    foundation.add_argument("--seconds", type=int, default=4)
+    foundation.add_argument("--no-render", action="store_true")
     commands.add_parser("status", help="Read the maintained project status")
     commands.add_parser("docs-check", help="Validate local documentation links and rubric weights")
     evidence = commands.add_parser("evidence", help="List or verify sealed preparation runs")
@@ -70,6 +75,15 @@ def main(argv: list[str] | None = None) -> int:
                     torque=args.torque,
                     render=not args.no_render,
                 ),
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+        elif args.command == "sim":
+            from bimanual.dual_arm import FoundationConfig, run_foundation
+
+            result = run_foundation(
+                FoundationConfig(seconds=args.seconds, render=not args.no_render),
                 store=store,
                 project_root=root,
             )

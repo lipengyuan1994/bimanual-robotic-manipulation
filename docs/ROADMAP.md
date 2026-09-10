@@ -8,7 +8,12 @@ MuJoCo stepping/rendering, deterministic lab replay, usable portal/lessons,
 passing checks, and a current handoff record. B1/B2 may remain open without
 pretending the whole product is complete.
 
-## M1 — Physical foundation (B1 required)
+## M1 — Physical foundation (authorized; in progress)
+
+The event-window authorization is recorded in [decision 0003](decisions/0003-event-window-implementation.md).
+Dual-arm loading, mapping, bounded controls and camera rendering are implemented;
+see the [foundation walkthrough](DUAL_ARM_FOUNDATION.md). The steps below still
+require task-level evidence before M1 is complete.
 
 1. Import the pinned SO-101 assets with license; namespace joints, actuators and cameras.
 2. Build the reachable table/drawer/utensil scene and verify valid reset configurations.

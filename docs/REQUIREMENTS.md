@@ -5,7 +5,7 @@ five pages, inspected 2026-09-05. See [source register](sources/README.md).
 
 | ID | Requirement | Evidence / acceptance | Current state |
 |---|---|---|---|
-| R1 | Two simulated SO-101 arms in MuJoCo | Reproducible scene and exact asset lineage | Pending M1 |
+| R1 | Two simulated SO-101 arms in MuJoCo | Reproducible scene and exact asset lineage | Foundation implemented; [local evidence](experiments/2026-09-10-dual-arm-foundation.md) |
 | R2 | Multi-step dinner task with dual-arm coordination | Full task, released stable objects, contact-based hand-off | Pending M1/M2 |
 | R3 | Language and raw-camera reasoning | Visual step decisions, changed instructions/scenes, context | Pending M2 |
 | R4 | Training/fine-tuning with LeRobot or compatible tooling | Validated demonstrations, train code/config, learned checkpoint | Pending M2 |
@@ -37,8 +37,10 @@ the user and are not additional official hackathon rules. Report uncertainty.
 
 ## Interpretations still awaiting confirmation
 
-Hand-off-first scope, any organizer scene/seed package, deadline/time zone, and
-whether a publicly accessible live prototype is mandatory in addition to the
-track's reproducible repository/video package. Generic lablab guidance mentions
-a URL, pitch video and deck; do not substitute a recorded replay for a required
-live application. See [organizer questions](ORGANIZER_QUESTIONS.md).
+Hand-off-first scope, any organizer scene/seed package, and the track-specific
+hosting interpretation remain open. The signed-in event page checked September 10
+confirms the September 16, 2:30 PM EDT deadline and explicitly lists an application
+URL, cover image, video, and slides alongside the public repository. Its linked
+Rule Book specifies interactive URL evaluation, MP4 video, PDF slides, and a 16:9
+PNG/JPG cover. Do not substitute the learning site or a recorded replay for the
+requested interactive application. See [organizer questions](ORGANIZER_QUESTIONS.md).

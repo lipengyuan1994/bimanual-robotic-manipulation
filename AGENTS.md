@@ -34,16 +34,12 @@ Ask for clarification when unsure about intent or a material constraint.
 
 ## Current scope
 
-The user approved a staged, simulation-only dinner-table product. Their accepted
-plan explicitly limits work before early-work clarification to documentation,
-research, learning, and general environment preparation. That clarification has
-not arrived. Do not implement the dinner scene, teacher, ACT training, VLM planner,
-or manipulation supervisor yet. This boundary comes from the accepted user plan,
-not a claim that a general lablab guide is an event-specific ruling.
-
-Complete independent preparation work without asking for permission again.
-Record organizer clarification in the decision log before advancing this boundary.
-Do not infer clarification from elapsed time or a changed date.
+The user approved a staged, simulation-only dinner-table product. The event's
+explicit online build instructions and the user's September 10 go-ahead now
+authorize implementation; read [decision 0003](docs/decisions/0003-event-window-implementation.md).
+Follow M1–M4 exit checks and preserve pre-event Git history. Existing-code
+eligibility is still unconfirmed; do not claim organizer approval of prior work.
+Spend remains zero and remote Intel compliance requires actual target execution.
 
 ## Native local runtime
 

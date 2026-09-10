@@ -46,6 +46,8 @@ refresh the README with `.venv/bin/python scripts/sync_readme.py --write`.
 .venv/bin/bimanual doctor --require-device cpu
 .venv/bin/bimanual lab --seed 7 --seconds 4
 .venv/bin/bimanual lab --seed 7 --seconds 4 --damping 0.8 --no-render
+.venv/bin/bimanual sim --seconds 4
+.venv/bin/bimanual sim --seconds 4 --no-render
 .venv/bin/bimanual evidence list
 .venv/bin/bimanual evidence verify RUN_ID
 .venv/bin/bimanual status

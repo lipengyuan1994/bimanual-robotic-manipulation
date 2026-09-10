@@ -16,14 +16,14 @@ from bimanual.evidence import EvidenceStore
 def create_app(project_root: Path, artifact_root: Path) -> FastAPI:
     root = project_root.resolve()
     store = EvidenceStore(artifact_root)
-    app = FastAPI(title="Bimanual preparation portal", version="0.1.0", docs_url="/api/docs")
+    app = FastAPI(title="Bimanual project portal", version="0.1.0", docs_url="/api/docs")
     app.add_middleware(
         TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "[::1]", "testserver"]
     )
 
     @app.get("/api/health")
     def health():
-        return {"status": "ok", "scope": "preparation", "control_available": False}
+        return {"status": "ok", "scope": "read_only_evidence", "control_available": False}
 
     @app.get("/api/project")
     def project():

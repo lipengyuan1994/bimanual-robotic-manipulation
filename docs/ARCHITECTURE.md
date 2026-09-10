@@ -8,7 +8,12 @@ The local portal reads project status and verifies artifacts before showing them
 It cannot start training or send robot actions. SQLite is a rebuildable index;
 manifests are the authoritative run records.
 
-## Target manipulation system (not yet implemented)
+The [dual-arm foundation](DUAL_ARM_FOUNDATION.md) now implements the simulator,
+synchronous joint-target validation, and three-camera observations. `bimanual sim`
+records its free-space demonstration; task planning and learned execution below
+remain unimplemented.
+
+## Target manipulation system (partially implemented)
 
 ```mermaid
 flowchart TD

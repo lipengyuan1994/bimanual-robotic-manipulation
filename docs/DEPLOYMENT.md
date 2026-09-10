@@ -5,6 +5,8 @@
 Local preparation uses native macOS ARM64. CPU and MPS availability/results are
 captured in [the validation record](experiments/2026-09-05-preparation.md).
 No Intel host has been provisioned or tested; there is no compliant final demo yet.
+The native dual-arm foundation is now tested locally; see [M1 evidence](experiments/2026-09-10-dual-arm-foundation.md).
+Free host candidates and account-dependent next steps are in [Intel access](INTEL_ACCESS.md).
 
 ## Planned execution profiles
 
@@ -32,6 +34,7 @@ Deploy simulator, visual reasoning and policy inference together on the Intel
 machine for final evidence. Transfer versioned model/data artifacts instead of
 copying a Mac virtual environment. Ensure actual device selection is logged.
 
-Public live access, if required by the submission form, needs a separately
-reviewed authenticated access arrangement. The current read-only loopback portal
-does not satisfy an unconfirmed public live manipulation requirement.
+The event Guidelines list an application URL and the linked rules call for
+interactive evaluation. Public live access needs a separately reviewed access
+arrangement. The current read-only loopback portal does not satisfy live
+manipulation evaluation; confirm the online track's hosting interpretation.
