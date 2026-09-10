@@ -16,8 +16,8 @@ see the [foundation walkthrough](DUAL_ARM_FOUNDATION.md). Either arm can grasp a
 [contact walkthrough](CONTACT_GRASP.md). A contact-only practice-bar transfer is
 implemented with independent ownership checks; see [hand-off](HANDOFF.md).
 A passive [drawer](DRAWER.md) now opens through contact and remains open after
-release with its utensil proxies retained. Retrieval and plate/cup handling still
-need integration into the full scene.
+release with its utensil proxies retained. A hollow [cup](CUP.md) now passes nominal upright placement. Retrieval and plate
+handling remain incomplete; all skills still need integration into the full scene.
 The steps below still
 require task-level evidence before M1 is complete.
 

@@ -6,7 +6,8 @@ Updated: 2026-09-10. Branch: `codex/preparation-foundation`.
 
 M0 is complete. M1 is in progress: either arm can physically grasp and place a
 practice block, the arms can transfer a practice bar through contact, and a
-contact-driven drawer opens and remains open after release. The user authorized event-window implementation following
+contact-driven drawer opens and remains open after release. A small hollow cup
+can also be carried and released upright in its nominal scene. The user authorized event-window implementation following
 the event's explicit online kickoff instructions; see [decision 0003](decisions/0003-event-window-implementation.md).
 Earlier preparation remains identified in Git history. No organizer ruling on
 pre-existing-code reuse is claimed.
@@ -37,6 +38,9 @@ manipulation exit checks remain incomplete.
 - New `bimanual drawer`: opens a passive slide-joint drawer by its handle, releases
   it, and checks that the drawer stays open with spoon/fork proxies retained.
   [Drawer walkthrough](DRAWER.md); utensil retrieval remains unimplemented.
+- New `bimanual cup`: physical transport and upright release of a hollow 60 g cup.
+  [Cup walkthrough](CUP.md) records the declared geometry, contact forces,
+  carried-object path prediction, acceptance checks and rendered evidence.
 - `grasp --record-demo` records raw three-camera RGB observations and confirmed
   actions at 20 Hz, with terminal observations, failure outcomes and source lineage.
   [Versioned interfaces](INTERFACES.md) reject malformed/stale action chunks and
@@ -63,21 +67,25 @@ manipulation exit checks remain incomplete.
 
 ## Verification and checkpoint
 
-Current changes passed **176 ordinary tests and five actual rendering tests**,
+Current changes passed **189 ordinary tests and six actual rendering tests**,
 Ruff, documentation-link checks, README synchronization and the TypeScript/portal
 production build. Optional real LeRobot/ACT tests run separately in the isolated
 training environment: 30 checks passed together and the explicit real LeRobot
 export check passed separately. Skips in the base environment are not counted as passes.
 The reviewer reproduced and fixed failed-outcome vocabulary mismatches in held-out
 dataset checks and duplicate-timestamp false positives in physical grasp scoring.
-Regression tests now cover both. Learned-rollout checks are recorded below.
+Regression tests now cover both. Learned-rollout checks are recorded below. The cup addition passed 13 ordinary
+checks and its separate three-camera rendering check; the full ordinary suite
+passed in `.artifacts/checks-cup.log`. The earlier five rendering checks remain
+recorded in `.artifacts/render-checks-placement-handoff.log`.
 
 Previous committed checkpoint validation: **45 tests pass** (43 ordinary checks and two rendering
 checks), Ruff, documentation links, README synchronization, TypeScript and
 portal production build pass. Contact-grasp tests cover physical completion,
 failure cases, collision guards, IK and truth separation.
-The implementation also passed [GitHub CI](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34515825221)
+The earlier implementation also passed [GitHub CI](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34515825221)
 on Linux, including offscreen rendering and the portal build.
+The more recent checkpoint `224b87d` also passed [Linux CI, rendering and portal build](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34532628755).
 Native doctor previously passed an 85-library architecture
 audit and CPU/MPS arithmetic comparison. These are not learned-policy tests.
 
@@ -165,7 +173,7 @@ hackathon submission has been sent.
 Run `.venv/bin/bimanual handoff` and inspect the replay and contact evidence in the
 portal. Use `--fault skip-receiver-close --no-render` to verify that the donor
 keeps ownership when the receiver fails to establish its grasp.
-Next implementation slice: retrieve the stored utensils, add plate/cup handling,
+Next implementation slice: retrieve the stored utensils, finish plate handling, integrate cup handling,
 and combine skills in one dinner scene. In parallel, run the early ACT checkpoint
 through the same physics and action checks; retain any failed learned rollout.
 M1 is complete only after the [roadmap](ROADMAP.md) exit checks pass.

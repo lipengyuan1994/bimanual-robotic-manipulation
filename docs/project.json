@@ -3,7 +3,7 @@
   "updated_at": "2026-09-10",
   "title": "Bimanual manipulation lab",
   "phase": "physical_foundation",
-  "phase_label": "Local placement, hand-off, drawer and ACT pilots",
+  "phase_label": "Local drawer, cup placement, hand-off and ACT learning",
   "manipulation_available": false,
   "intel_validated": false,
   "compute_budget_usd": 0,
@@ -19,7 +19,7 @@
       "id": "M1",
       "title": "Physical foundation",
       "state": "in_progress",
-      "detail": "Contact placement, bar hand-off and passive drawer opening run locally. Utensil retrieval, plate/cup handling and unified scene remain."
+      "detail": "Contact placement, bar hand-off, passive drawer opening and hollow cup placement run locally. Complete utensil/plate handling and a unified scene remain."
     },
     {
       "id": "M2",

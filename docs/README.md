@@ -18,6 +18,7 @@ Read [STATUS](STATUS.md) first when resuming work.
 | Object transport and recording | [Placement results](experiments/2026-09-10-placement.md), [versioned interfaces](INTERFACES.md) |
 | Physical transfer between arms | [Hand-off walkthrough](HANDOFF.md), [feasibility attempts](experiments/2026-09-10-handoff-feasibility.md) |
 | Contact-driven drawer opening | [Drawer walkthrough](DRAWER.md), [attempt register](experiments/2026-09-10-drawer-feasibility.md) |
+| Hollow cup placement | [Cup walkthrough and evidence](CUP.md) |
 | Training datasets | [LeRobot export](DATASETS.md) |
 | Native ACT execution | [Training runtime probe](TRAINING.md) |
 | Learned actions in the simulator | [Policy rollout and failure evidence](POLICY_ROLLOUT.md) |

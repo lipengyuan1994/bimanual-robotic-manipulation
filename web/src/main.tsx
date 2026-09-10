@@ -99,15 +99,16 @@ function App() {
   }, [revision]);
   const labs = runs.filter(
     (run) =>
-      ["preparation_pendulum", "dual_arm_foundation", "contact_grasp_teacher", "contact_placement_teacher", "contact_handoff_teacher", "contact_drawer_teacher", "act_policy_rollout"].includes(run.kind ?? "") &&
+      ["preparation_pendulum", "dual_arm_foundation", "contact_grasp_teacher", "contact_placement_teacher", "contact_handoff_teacher", "contact_drawer_teacher", "contact_cup_teacher", "act_policy_rollout"].includes(run.kind ?? "") &&
       run.integrity === "verified",
   );
   const selected = labs.find((run) => run.run_id === selectedId) ?? labs.find((run) => run.files?.["replay.gif"]) ?? labs[0];
   const isHandoff = selected?.kind === "contact_handoff_teacher";
   const isLearned = selected?.kind === "act_policy_rollout";
+  const isCup = selected?.kind === "contact_cup_teacher";
   const isDrawer = selected?.kind === "contact_drawer_teacher";
   const isPlacement = selected?.kind === "contact_placement_teacher";
-  const isGrasp = selected?.kind === "contact_grasp_teacher" || isPlacement || isHandoff || isDrawer || isLearned;
+  const isGrasp = selected?.kind === "contact_grasp_teacher" || isPlacement || isHandoff || isDrawer || isCup || isLearned;
   const isDual = selected?.kind === "dual_arm_foundation" || isGrasp;
   const doctor = runs.find(
     (run) => run.kind === "preparation_runtime" && run.integrity === "verified",
@@ -224,7 +225,7 @@ function App() {
             <div className="card-heading">
               <div>
                 <span className="small-label">MUJOCO LEARNING LAB</span>
-                <h2>{isLearned ? "What did the policy learn?" : isDrawer ? "Grasp the handle. Open the drawer." : isHandoff ? "Grasp. Share. Hand over." : isPlacement ? "Pick up. Carry. Place." : isGrasp ? "Reach. Grasp. Release." : isDual ? "Two arms. Three camera views." : "One joint. A complete loop."}</h2>
+                <h2>{isLearned ? "What did the policy learn?" : isCup ? "Carry the cup. Set it upright." : isDrawer ? "Grasp the handle. Open the drawer." : isHandoff ? "Grasp. Share. Hand over." : isPlacement ? "Pick up. Carry. Place." : isGrasp ? "Reach. Grasp. Release." : isDual ? "Two arms. Three camera views." : "One joint. A complete loop."}</h2>
               </div>
               <span className="tag">Recorded simulation · {selected?.outcome ?? "no run"}</span>
             </div>
@@ -257,7 +258,7 @@ function App() {
             </div>
             {isGrasp && selected && (
               <p className="scope-note">
-                {isDrawer ? "Drawer" : isHandoff ? "Hand-off" : isPlacement ? "Placement" : "Grasp"} test: <strong>{selected.metrics?.[isDrawer ? "drawer_success" : isHandoff ? "handoff_success" : "grasp_success"] === true ? "passed" : "failed"}</strong>.
+                {isCup ? "Cup placement" : isDrawer ? "Drawer" : isHandoff ? "Hand-off" : isPlacement ? "Placement" : "Grasp"} test: <strong>{selected.metrics?.[isCup ? "cup_success" : isDrawer ? "drawer_success" : isHandoff ? "handoff_success" : "grasp_success"] === true ? "passed" : "failed"}</strong>.
                 {" "}{isLearned ? "Learned left-arm actions from images and joints; right arm held by supervisor. This is a training-scene test." : "Scripted teacher with simulator truth; full dinner task remains untested."}
                 {" "}<a href={`/api/runs/${selected.run_id}/files/scoring-truth.jsonl`}>Inspect contact evidence →</a>
               </p>
@@ -360,6 +361,8 @@ function App() {
                             ? "Contact hand-off teacher"
                           : run.kind === "contact_drawer_teacher"
                             ? "Contact drawer teacher"
+                          : run.kind === "contact_cup_teacher"
+                            ? "Contact cup teacher"
                           : run.kind === "act_runtime_probe"
                             ? "ACT runtime probe"
                           : run.kind === "act_training"

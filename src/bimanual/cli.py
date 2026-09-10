@@ -65,6 +65,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     drawer.add_argument("--no-render", action="store_true")
     drawer.add_argument("--fault", choices=["missing-handle", "skip-close"])
+    cup = commands.add_parser("cup", help="Physically carry and release a hollow cup upright")
+    cup.add_argument("--no-render", action="store_true")
+    cup.add_argument("--fault", choices=["missing-object", "skip-close"])
     dataset_export = commands.add_parser(
         "dataset-export", help="Export verified recordings to local LeRobot v3"
     )
@@ -172,6 +175,20 @@ def main(argv: list[str] | None = None) -> int:
                     destination_xy=tuple(args.destination)
                     if args.destination is not None
                     else None,
+                ),
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
+        elif args.command == "cup":
+            from bimanual.cup import CupConfig, run_cup
+
+            result = run_cup(
+                CupConfig(
+                    render=not args.no_render,
+                    missing_object=args.fault == "missing-object",
+                    skip_close=args.fault == "skip-close",
                 ),
                 store=store,
                 project_root=root,
