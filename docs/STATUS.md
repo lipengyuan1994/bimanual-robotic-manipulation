@@ -42,6 +42,8 @@ Current local validation: **45 tests pass** (43 ordinary checks and two renderin
 checks), Ruff, documentation links, README synchronization, TypeScript and
 portal production build pass. Contact-grasp tests cover physical completion,
 failure cases, collision guards, IK and truth separation.
+The implementation also passed [GitHub CI](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34515825221)
+on Linux, including offscreen rendering and the portal build.
 Native doctor previously passed an 85-library architecture
 audit and CPU/MPS arithmetic comparison. These are not learned-policy tests.
 
@@ -57,12 +59,17 @@ post-step tracking error 0.000605 rad. Three-camera rendering measured about
 No learned manipulation dataset/checkpoint exists. Earlier exploratory runs have dirty
 source digests; only the named clean checkpoint has a false dirty flag.
 
-Current grasp run: `20260910T183508-1d6a886231b4`, a dirty-source engineering run.
+Current grasp run: `20260910T184050-a80163092a64`, from clean implementation
+commit `a145917795e603c8246ebc2f96c93f0695cc4f07`; manifest integrity verified.
 The block lifted 54.4 mm, passed 400/400 airborne bilateral hold samples and
 400/400 released settling samples, with zero forbidden contacts and maximum
-contact overlap 1.93 mm. The 20-second simulation took 16.39 seconds including
+contact overlap 1.93 mm. The 20-second simulation took 15.79 seconds including
 10 Hz three-camera replay and encoding. This is one nominal scripted skill, not
 full-task or generalization evidence. See the [complete attempt register](experiments/2026-09-10-contact-grasp.md).
+Clean-checkpoint fault runs were also verified: missing object
+`20260910T184104-7afa5e68dac4` stopped at time zero; skip-close
+`20260910T184104-84bed25f39cd` stopped at 11.5 simulated seconds with a failed
+hold and retained replay. Both returned nonzero exit codes as expected.
 
 ## External dependencies
 

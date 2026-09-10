@@ -26,6 +26,9 @@ noted, these exploratory runs are dirty descendants of `ff8048f`.
 | `20260910T183321-045dc3308942` | Smaller box held and settled, but max overlap 4.35 mm prompted a stricter physics gate. Historical manifest predates that gate and must not be counted as a current pass |
 | `20260910T183356-1b8cf927cbf4` | Release above support surface reduced maximum overlap to 1.93 mm; hold and release passed |
 | `20260910T183508-1d6a886231b4` | Rendered run with explicit 2.5 mm overlap guard passed. 20 simulated seconds took 16.39 wall seconds, including replay encoding but excluding source hashing and sealing |
+| `20260910T184050-a80163092a64` | Clean commit `a145917795e603c8246ebc2f96c93f0695cc4f07`, verified manifest. Same physical results; 20 simulated seconds, 15.79 wall seconds including replay encoding |
+| `20260910T184104-7afa5e68dac4` | Same clean commit. Deliberate missing object: failed before movement, no success claim, verified manifest |
+| `20260910T184104-84bed25f39cd` | Same clean commit. Deliberate skip-close: failed hold, stopped at 11.5 simulated seconds, retained rendered replay, verified manifest |
 
 Scratch probes and raw outputs are retained under `.artifacts/grasp-exploration`.
 They are engineering diagnostics, not sealed evaluation episodes. No bad seed was
@@ -45,7 +48,12 @@ and release scoring, missing object and deliberately unclosed gripper. Negative
 scoring controls reject a single-jaw hold, table-supported hold, forbidden contact,
 excess overlap and incomplete settling. See [the walkthrough](../CONTACT_GRASP.md).
 
-The formal source checkpoint and final validation are recorded in [STATUS](../STATUS.md).
+Local validation passed: 45 tests, Ruff, 165 documentation links, README
+synchronization, native TypeScript check and production portal build. The portal
+shows the correct skill, success/failure and contact-evidence link.
+The same implementation passed [GitHub Linux and portal CI](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34515825221),
+including offscreen rendering. Linux CI is not an Intel Core Ultra hardware test.
+The formal source checkpoint is recorded in [STATUS](../STATUS.md).
 
 ## Next experiment
 
