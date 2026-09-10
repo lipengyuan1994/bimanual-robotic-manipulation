@@ -280,3 +280,156 @@ The next controlled experiment changes the ACT prediction horizon from ten to
 may improve the sequence the model learns, but it does not by itself guarantee
 escape from a leading idle segment when every short replan restarts that segment.
 The result must be measured; phase/time labels and teacher targets remain excluded.
+## Controlled 100-step prediction-horizon experiment
+
+Training run `20260910T215215-21d288d2ea95` completed a fresh 2,000 MPS updates
+with a 100-step horizon. The dataset, sampling seed/order, batch size, small
+architecture profile, optimizer and normalization matched the preceding 2,000-step
+experiment; the positional-query table grew with the horizon (11,919,980 versus
+11,908,460 parameters). Native ARM64 and MPS were verified, CPU fallback was
+disabled, and saved checkpoint/processor reloads passed. The run took 1,201.87
+seconds, with median/p95 update times of 0.583/0.674 seconds. Its final sampled
+loss was 0.4861; the last 50 updates averaged total loss 0.6591 and L1 0.2575.
+These are observed development-machine timings, not isolated hardware benchmarks.
+
+Exactly one physical rollout, `20260910T221237-b592ded438b5`, used a ten-action
+execution prefix and the unchanged two-second freshness limit. All 23 complete
+100-target forecasts passed the guards; 230 targets were executed. The run
+**failed** its airborne hold at 11.5 simulated seconds: 0/400 hold samples, no
+object lift and zero forbidden contact samples. It took 25.66 wall-clock seconds;
+warm inference median/p95 was 44.2/50.4 ms. The failed replay and every raw
+forecast are retained. No target clipping, teacher assistance or relaxed scoring
+was used.
+
+Diagnostic `20260910T221312-f2b4ee5ef961` compared the same 16 teacher observations
+on CPU, scoring only the first ten forecast targets for a matched comparison.
+Preprocessing matched exactly and no weights changed. Mean left-joint MAE
+**regressed from 0.04882 to 0.18713 rad**. Initial-frame error was 0.2342 rad;
+closing-start frame 100 was 0.2612 rad. Prior/posterior-mean errors were again
+almost equal (0.187127/0.187128), so this evidence does not implicate inference
+latent sampling as the principal cause.
+
+The longer forecast did not learn the initial motion sequence: its first
+100-target shoulder-pan range was only 0.0203 rad, versus 0.6839 rad in the
+teacher targets. Its first target jumped to +0.548 rad rather than remaining at
+home, and the physical trajectory subsequently oscillated between approach-like
+poses and gripper openings. Six selected teacher observations (indices 100,
+120, 130, 160, 190 and 230) also produced out-of-range gripper targets in offline
+forecasts. Those observations were not reached by the physical run; these are
+additional offline model defects, not unrecorded physical attempts.
+
+This controlled horizon increase did not improve the baseline. Retain horizon ten
+for further development, while keeping the independently tested execution-prefix
+interface. The next proposed data experiment is an approach-only bounded skill:
+collect collision-checked teacher corrections from a small declared set of
+perturbed starting joint positions, train from images and joints, and test whether
+it reaches the pregrasp pose from those states before adding closure and transport.
+This directly targets the observed closed-loop drift and follows the planned
+skill supervisor architecture. It requires explicit dataset/skill lineage and
+separate success checks; it has not been implemented by this experiment. Do not
+repeat or enlarge training simply because loss falls, and do not add time, phase,
+object truth or teacher targets to deployed policy inputs.
+## Bounded approach-skill experiment
+
+The next experiment separates open-hand approach from grasping and transport.
+This is an experimental local prototype, not a replacement for the dinner-table
+workflow. The future supervisor would permit descent and closure only after a
+verified pregrasp outcome; a timeout or unsafe hand condition must stop that
+transition. No such learned multi-skill supervisor was deployed in this experiment.
+
+Collection protocol `20260910T221849-29cbd0279045` declares six training start-joint
+offsets and two separate validation offsets. Only the first five left-arm joints
+are changed at simulation reset, before time advances; object poses are unchanged.
+Case numbers identify the listed offsets, rather than implying random sampling.
+The local collector is `.artifacts/approach-correction-prototype.py`.
+
+| Cases | Split | Left-arm offsets from home, radians |
+|---|---|---|
+| 1000 | Training | `[0, 0, 0, 0, 0]` |
+| 1001 | Training | `[0.08, 0, 0, 0, -0.04]` |
+| 1002 | Training | `[-0.08, 0, 0, 0, 0.04]` |
+| 1003 | Training | `[0, 0.05, -0.04, 0.03, 0]` |
+| 1004 | Training | `[0, -0.05, 0.04, -0.03, 0]` |
+| 1005 | Training | `[-0.15, 0.10, 0, 0.09, 0.06]` |
+| 2000 | Validation | `[0.04, 0.03, -0.02, 0.02, -0.03]` |
+| 2001 | Validation | `[-0.10, 0.06, 0.02, 0.05, 0.02]` |
+
+Each teacher recording has three seconds of bounded, collision-checked motion
+followed by one second of settling: 80 confirmed 20 Hz transitions and a terminal
+observation, with all three cameras. Success requires 800 contiguous 200 Hz
+samples, no robot contacts, no measured joint-limit violation, an open gripper
+throughout, and the last 100 samples simultaneously within 2 mm of the pregrasp
+point `[-0.15, -0.08, 0.46]` metres, downward-axis error at most 0.02, gripper error
+at most 0.03 rad and maximum joint speed at most 0.05 rad/s. The stationary
+block's workbench support contact is permitted.
+
+All eight teacher attempts passed. The first collection completed its physics and
+recording but hit a NumPy-integer metrics serialization error. Its original trace,
+script and recording were retained, rescored and sealed with an explicit recovery
+record; it was not physically repeated. Dataset-validation evidence
+`20260910T222142-56fe43edcba9` records all eight source run identities. Predicate
+negative controls reject duplicated/missing samples, a missed target, closed hand,
+moving terminal state and robot contact.
+
+The actual LeRobot dataset `.artifacts/datasets/approach-corrections-v0` contains
+only the six training episodes: 480 transitions. The two validation episodes
+(160 transitions) were checked for split leakage but excluded from export.
+Export-manifest SHA-256:
+`f419f580bc986beaff354fdc8e59b511752d61c6b067faa84c6d03d6ce3ef802`.
+The dataset seal/read-back and all source evidence were verified.
+
+Training run `20260910T222228-e72392685e90` completed a fresh 2,000 updates with the
+small ACT profile, chunk ten, batch one, seed zero, learning rate `1e-5` and the
+existing normalization floor. Native MPS ran with fallback disabled. Training
+took 421.87 seconds; last-50 mean total loss was 0.5893 and L1 0.1420. Checkpoint
+and processor reloads passed. The first launcher stopped on an incorrect function
+import before creating a training run; the corrected launcher is retained locally.
+
+Validation protocol `20260910T222439-7d1f591c7b40` froze exactly three physical
+attempts before training finished. The local adapter
+`.artifacts/approach-policy-validation.py` reuses the existing full-forecast guard
+queue, saved ACT processors, two-second freshness limit and explicit inactive-arm
+ownership. Images and measured joints are the only policy inputs. IK, teacher
+targets, object truth, time and phase labels never enter its inference loop.
+The existing full-placement command and its success definition are unchanged.
+
+| Case | Physical run | Final position error | Outcome |
+|---|---|---:|---|
+| 1000, training start | `20260910T222947-caa04d2ce60e` | 119.32 mm | Failed, 0/100 stable pregrasp samples |
+| 2000, validation start | `20260910T222958-f3a92ce97b8d` | 119.32 mm | Failed, 0/100 stable pregrasp samples |
+| 2001, validation start | `20260910T223006-e1ce834df9c8` | 3.77 mm | Failed, 0/100 stable pregrasp samples |
+
+All three executed 80 guarded targets over four simulated seconds. No forbidden
+contacts, measured limit violations or closed-hand samples occurred. Every run,
+proposal, observation and replay is retained. This is **zero learned successes
+in three attempts**, including zero in the two validation cases; it is not a
+reliability estimate for the complete task. The 2 mm and stability limits were
+not relaxed when one case approached the target.
+
+Offline diagnostic `20260910T223207-d0e15ade206d` evaluated ten selected teacher
+frames from each of the eight recordings on CPU without changing weights.
+Selected training/validation left-joint chunk MAE was 0.02275/0.02262 rad.
+Scratch forward kinematics shows that every settled teacher observation predicts
+a first target about 3.52 mm from pregrasp, already outside the 2 mm predicate.
+At the nominal initial teacher frame, predicted pan is −0.0327 rad versus the
+teacher's +0.0006 rad; predicted-versus-teacher tool-target error is 7.83 mm.
+Initial target errors across the eight cases range from 5.72 to 31.69 mm.
+These are errors on teacher observations, before off-trajectory observations can
+be blamed.
+
+The recorded execution then compounds this error. Cases 1000 and 2000 repeatedly
+return to a small backward offset near home, approximately 119 mm from pregrasp.
+Case 2001 advances toward the goal but remains inaccurate and unsettled. Its final
+half-second maximum joint speed is 0.558 rad/s; the other two cases reach about
+1.67 rad/s during repeated within-chunk target variations. Initial measured joints
+and all three image hashes match the corresponding teacher recording exactly
+for all three cases.
+
+Both imperfect supervised fitting and accumulated control error therefore matter.
+The next useful change must address measured start/endpoint errors and target
+variation, with explicit evaluation of those regions, before expanding the task
+or increasing a training budget. No further training is authorized by these
+results themselves. Fixed object placement, one scene and eight chosen robot
+starts do not establish visual localization or generalization to dinner objects.
+Prototype scripts and data remain local artifacts pending reviewed integration;
+this experiment is not a reproducible production release.

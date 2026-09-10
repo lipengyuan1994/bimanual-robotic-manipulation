@@ -3,7 +3,7 @@
   "updated_at": "2026-09-10",
   "title": "Bimanual manipulation lab",
   "phase": "physical_foundation",
-  "phase_label": "Local utensil retrieval, tableware and ACT experiments",
+  "phase_label": "Contact skills, ACT and visual-planner experiments",
   "manipulation_available": false,
   "intel_validated": false,
   "compute_budget_usd": 0,
@@ -25,7 +25,7 @@
       "id": "M2",
       "title": "Learned workflow",
       "state": "in_progress",
-      "detail": "Actual ACT training and guarded rollouts execute on CPU/MPS. Better training predictions still fail physical grasp; full learned workflow, visual planning and recovery remain."
+      "detail": "ACT training and guarded rollouts execute but learned grasps still fail. Local Qwen proposals and tested supervisor core exist; live integration and recovery remain."
     },
     {
       "id": "M3",

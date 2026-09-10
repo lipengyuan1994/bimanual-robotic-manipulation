@@ -12,9 +12,10 @@ the event's explicit online kickoff instructions; see [decision 0003](decisions/
 Earlier preparation remains identified in Git history. No organizer ruling on
 pre-existing-code reuse is claimed.
 
-There is no complete dinner-task execution, successful learned manipulation policy, visual
-planner, recovery supervisor, or Intel deployment yet. The full product and M1's
-manipulation exit checks remain incomplete.
+There is no complete dinner-task execution, successful learned manipulation policy,
+integrated live visual planning/recovery, or Intel deployment yet. A local Qwen
+proposal adapter and deterministic supervisor core now exist separately. The full
+product and M1's manipulation exit checks remain incomplete.
 
 ## Implemented
 
@@ -70,6 +71,14 @@ manipulation exit checks remain incomplete.
   saved preprocessing, whole-chunk action validation and explicit right-arm
   ownership. No teacher targets control the left arm. The first real rollout
   failed its airborne-hold check; [diagnostic and evidence](POLICY_ROLLOUT.md).
+- A [task supervisor core](SUPERVISOR.md) checks explicit capabilities,
+  prerequisites, arm/workspace ownership, deadlines and at most two retries.
+  Cancellation/task changes clear actions; every step change requires a fresh
+  observation. Its 26 lifecycle tests do not establish integrated physical recovery.
+- [Local Qwen proposals](PLANNER.md) now consume verified recorded camera images
+  and measured joints. Actual CPU/MPS inference executes; malformed output,
+  contradictory decisions and nominal visibility false negatives are retained.
+  No live actions are dispatched.
 - Existing native bootstrap/doctor, generic pendulum lab, evidence store/SQLite
   index, read-only portal, seven lessons, GitHub Pages and README synchronization.
 - [Zero-cost Intel access request](INTEL_ACCESS.md) submitted for
@@ -78,18 +87,21 @@ manipulation exit checks remain incomplete.
 
 ## Verification and checkpoint
 
-Current changes passed **271 ordinary tests and seven actual rendering tests**,
-Ruff, documentation-link checks, README synchronization and the TypeScript/portal
-production build. Optional real LeRobot/ACT tests run separately in the isolated
-training environment: 30 checks passed together and the explicit real LeRobot
-export check passed separately. Skips in the base environment are not counted as passes.
-The reviewer reproduced and fixed failed-outcome vocabulary mismatches in held-out
-dataset checks and duplicate-timestamp false positives in physical grasp scoring.
-Regression tests now cover both. The complete required `scripts/check.sh --render`
-passed with 271 ordinary tests, three explicit optional-training skips, and seven
-actual rendering tests. Ruff, format, documentation links and README checks passed.
-The TypeScript check and portal build also passed. The complete local log is
-`.artifacts/checks-tableware-integration.log`; learned-rollout evidence is below.
+The latest `scripts/check.sh` passed **337 ordinary tests**, with three explicit
+optional-training skips, Ruff, formatting, documentation links and README checks.
+The same turn's `--render` run passed **seven actual rendering tests** before the
+subsequent planner/sampler changes; physical/rendering code did not change. Native
+ARM64 TypeScript checks and the portal production build also pass. The portal now
+links directly to recorded planner decisions from run history.
+
+An actual one-step CPU ACT update, checkpoint reload and sampler RNG continuation
+check passed in the isolated training environment after the sampler changes.
+Earlier optional LeRobot/ACT checks passed 30 together and the real dataset export
+check separately. Skips are not counted as passes. Logs for the latest work are
+`.artifacts/checks-planner-v2-final.log`,
+`.artifacts/checks-planner-supervisor.log`, and
+`.artifacts/checks-sampler-real-training.log`. Earlier physical integration logs
+remain in `.artifacts/checks-tableware-integration.log`.
 
 Previous committed checkpoint validation: **45 tests pass** (43 ordinary checks and two rendering
 checks), Ruff, documentation links, README synchronization, TypeScript and
@@ -168,6 +180,22 @@ checkpoint as a working manipulation policy.
 
 ## Latest physical integration and learning evidence
 
+- Supervisor/planner integration checks: the full `scripts/check.sh --render`
+  passed 317 ordinary tests, three explicit optional-training skips, and seven
+  rendering tests in `.artifacts/checks-planner-supervisor.log`. Subsequent planner
+  provenance/path/output regressions passed with all 29 planner tests and all 26
+  supervisor tests. After temporal-sampler integration, the complete ordinary
+  check passed 334 tests with three optional skips; an actual CPU ACT optimizer /
+  checkpoint / sampler reload check also passed separately. Version-2 visibility
+  guards subsequently passed all 32 planner tests. See
+  `.artifacts/checks-planner-supervisor-final.log` and
+  `.artifacts/checks-sampler-real-training.log`.
+- Clean committed checkpoint `70fec2bcf6c8e7795eb5c0a7d9f20254d8ec1051`:
+  rendered cup `20260910T221241-17c01a9d7b28`, plate
+  `20260910T221253-4b21be6b045f`, and continuous drawer-to-table utensils
+  `20260910T221313-83f9236a633b` all passed their skill checks. Each source
+  manifest reports `git_dirty=false`; seals were verified. These are separate
+  authored-scene skill runs, not one complete dinner-table episode.
 - Cup right-arm rendered run `20260910T215542-576bc5a35e98`: 69.37 mm travel,
   upright release, all timed gates passed. See [CUP](CUP.md).
 - Plate CLI run `20260910T215918-56c30c949063` and rendered run
@@ -183,18 +211,41 @@ checkpoint as a working manipulation policy.
   [DINNER_SCENE](DINNER_SCENE.md).
 - ACT run `20260910T213909-88c7e1c3a78b`: 2,000 MPS updates in 424.72 seconds;
   matched training-frame error improved from 0.1841 to 0.04882 rad. Its physical
-  rollout `20260910T214631-6fd7bfd78a0c` still failed the grasp. A separate
-  100-step prediction-horizon experiment is running with a ten-action execution
-  prefix; every forecasted action, including its unused tail, must pass bounds.
+  rollout `20260910T214631-6fd7bfd78a0c` still failed the grasp. The separate
+  100-step prediction-horizon experiment also completed and failed: rollout
+  `20260910T221237-b592ded438b5` passed 0/400 hold samples. Matched training-frame
+  error regressed to 0.18713 rad. See [the controlled comparison](POLICY_ROLLOUT.md).
+  Every forecasted action, including its unused tail, must pass bounds.
+- Approach collection: all six training and two validation teacher cases passed;
+  only the six training cases enter the 480-transition dataset. The 2,000-update
+  approach ACT still failed all three predeclared physical tests. Offline diagnosis
+  found endpoint prediction error even on teacher observations, plus compounding
+  starting-motion drift. See [the full experiment](POLICY_ROLLOUT.md).
+- Qwen MPS probe `20260910T223047-5e5897fcb203` executed but returned a schema
+  instead of a decision; parsing correctly failed. A compact decision-format prompt
+  produced valid `pick / left / practice_block` in
+  `20260910T223500-0dd265bcb84b`: 25.77 seconds inference, float16, 929 input and
+  141 output tokens. This is one nominal recorded-scene proposal, not verified
+  reachability, visual grounding quality or full-task success. CPU run
+  `20260910T223705-2f35cd2e4c13` returned the same nominal proposal in 220.85 seconds
+  at float32. The missing-object run `20260910T224238-f170359764b9` recognized absent
+  pixels in its explanation but still requested pick: a semantic failure despite
+  valid version-1 JSON. Version-2 proposals now require explicit visibility and
+  reject manipulation of an unconfirmed target. Paired follow-up
+  `20260910T224604-d53894e8e957` / `20260910T224701-352de484c373` returns clarification
+  for both missing and present scenes: safe abstention, but a nominal visibility
+  false negative. The planner is not ready for live dinner-task execution.
 - Independent review reproduced false-success paths from malformed scoring truth.
   All-row finite/shape/object-presence checks and final-placement checks now reject
   them. Successful physical recordings still pass; no trajectories or old evidence
   were altered to obtain that result.
 
 The cup checkpoint `3a6818f` passed [GitHub CI](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34534143440).
-The subsequent plate/utensil, explicit-physics, scoring and action-prefix integration
-passed the complete local checks above. Remote CI for that new checkpoint must be
-checked separately; the older green run does not establish its remote result.
+The subsequent plate/utensil, explicit-physics, scoring and action-prefix checkpoint
+`70fec2b` also passed [GitHub CI](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34536292665).
+[Draft PR #1](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/pull/1)
+tracks the development branch; no merge or production release is claimed. New
+planner/supervisor/sampling changes require their own committed CI result.
 
 ## External dependencies
 
@@ -216,10 +267,14 @@ Run `.venv/bin/bimanual utensils` and inspect the uninterrupted drawer-to-table
 replay. Run `.venv/bin/bimanual plate` and `.venv/bin/bimanual cup --arm right`
 for the other tableware skills. Next implement the [shared-scene sequence](DINNER_SCENE.md)
 with continuous physics and final checks of every placement.
-In parallel, the 100-step prediction-horizon ACT experiment is bounded to 2,000
-updates, executing only ten validated actions before taking fresh observations.
-The prior 2,000-update ten-step policy still failed its grasp; better offline
-predictions did not establish learned task success.
+In parallel, validate explicit temporal sampling against the frozen approach
+dataset and collection protocol before one controlled ACT comparison. The first
+approach policy and both full-placement experiments failed; neither longer
+forecasts nor lower training error established learned task success. Continue
+camera-resolution diagnosis for the planner's nominal false negative; CPU and
+MPS inference both execute, but useful visual planning remains unproven. Integrate
+the supervisor only with real, registered skill executors and preserve the live
+observation freshness rules.
 M1 is complete only after the [roadmap](ROADMAP.md) exit checks pass.
 
 In parallel, await Intel review notification, advertised within three days. The

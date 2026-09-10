@@ -159,3 +159,98 @@ The longer run reduced left-joint MAE on 16 selected training observations from
 [trajectory diagnosis](POLICY_ROLLOUT.md) for why closer training predictions did
 not establish a working grasp. These measurements support local compute planning;
 they do not establish learned task quality, generalization or Intel compliance.
+
+## Longer prediction horizon: measured regression
+
+The controlled fresh 2,000-update MPS run
+`20260910T215215-21d288d2ea95` increased the horizon from ten to 100. It kept the
+same 460-transition dataset, sampling seed/order, batch size 1, small architecture
+profile, learning rate and normalization; the larger positional-query table added
+11,520 parameters. Native ARM64, actual MPS with fallback disabled, and saved
+checkpoint/processor reloads were verified. Total training time was 1,201.87
+seconds, median/p95 step time 0.583/0.674 seconds, and last-50 mean loss 0.6591.
+
+The single rollout `20260910T221237-b592ded438b5` executed only ten targets per
+fresh forecast while validating all 100, retaining the two-second expiry. It
+failed at 11.5 simulated seconds with no lift and 0/400 airborne hold samples.
+The same 16-frame diagnostic `20260910T221312-f2b4ee5ef961` used a matched first-ten
+action comparison: mean left-joint MAE worsened from 0.04882 to 0.18713 rad.
+Preprocessing was exact and weights stayed unchanged. All three evidence seals
+were verified. The [rollout analysis](POLICY_ROLLOUT.md) records the nearly constant
+initial forecast, additional offline bound failures, timings and proposed bounded
+approach-skill dataset experiment. No further training increase is justified by
+these results alone; neither checkpoint has demonstrated learned manipulation.
+
+## Approach-only dataset and failed learned validation
+
+The next bounded experiment used six physically verified teacher approach
+recordings (480 transitions) and two excluded validation recordings. Dataset
+`.artifacts/datasets/approach-corrections-v0` and validation summary
+`20260910T222142-56fe43edcba9` preserve the source identities and split checks.
+The teacher moves an open hand to pregrasp; no grasp or full-task label is assigned.
+
+MPS training `20260910T222228-e72392685e90` completed 2,000 updates in 421.87 seconds
+with chunk ten and the same small ACT/optimizer settings. Reload checks passed;
+last-50 mean loss was 0.5893. The three predeclared physical attempts all failed
+the unchanged 2 mm/100-sample pregrasp predicate. They retained safe open hands
+and had no forbidden contacts or limit violations, but two stayed roughly 119 mm
+from target and the third finished 3.77 mm away without settling.
+
+Offline teacher-frame diagnostic `20260910T223207-d0e15ade206d` found mean selected
+training/validation joint errors of 0.02275/0.02262 rad. Even settled teacher
+observations predict a tool target 3.52 mm from pregrasp, outside the threshold;
+closed-loop starting errors then compound. These results identify a fitting and
+control problem, rather than proving that more varied data alone resolves it.
+The [complete approach record](POLICY_ROLLOUT.md) lists every physical run,
+protocol, predicate, dataset digest, launch/finalization recovery and limitation.
+No further training or replacement validation attempts were made.
+
+## Explicit temporal sampling experiment
+
+Uniform sampling remains the default and preserves the original `torch.randint`
+call and CPU-generator sequence exactly. A separate, opt-in
+`ACTTrainingConfig.sampling_profile="approach_regions_v1"` changes only which
+training frames are drawn. It does not add time, phase or task truth to the policy.
+
+The new profile requires `sampling_protocol_run` to name the sealed approach
+collection protocol. For the existing dataset, use
+`.artifacts/runs/20260910T221849-29cbd0279045`. The loader verifies its seal, kind,
+configuration and declared motion/settle counts, then matches each copied
+training episode's skill, protocol identity, case, target and length. An unrelated
+protocol, wrong task, missing/empty region or inconsistent episode is rejected.
+The dataset and protocol must therefore travel together for remote reproduction.
+
+Each training episode receives equal probability. Within an episode, probability
+is allocated as follows; endpoints are exclusive:
+
+| Region | Source frame indices in the current 80-transition episode | Probability within episode |
+|---|---|---:|
+| Start | `[0,10)` | 1/3 |
+| Middle motion | `[10,60)` | 1/3 |
+| Settled endpoint | `[60,80)` | 1/3 |
+
+The first ten frames are fixed by the named profile; the motion boundary and
+settling length come from the verified collection configuration. Frames within
+each region have equal probability, and every training frame remains eligible.
+For six episodes, each episode/region has total probability 1/18. Individual
+start/middle/settled-frame probabilities are 1/180, 1/900 and 1/360 respectively,
+versus the uniform baseline's 1/480. Draws use replacement and a seeded CPU
+`torch.multinomial` with float64 probabilities. Validation outcomes, evaluator
+truth and held-out frame labels do not influence these probabilities.
+
+`sampling-plan.json` records every global dataset index, episode identity,
+original source-frame index, source episode hash, region and probability, plus
+the sealed collection protocol. The same plan is copied into the checkpoint as
+`training_sampling.json`; its digest and the sampler RNG state are preserved in
+`trainer_state.pt`. Each update records the selected source-frame identities.
+After saving, training reloads that state and verifies the next batch matches,
+without advancing the persisted RNG state. This is RNG continuation evidence;
+a general interrupted-training resume command is not implemented.
+
+Focused tests verify exact default sampling compatibility, per-episode/region
+probability mass, complete source-index coverage, deterministic RNG restoration,
+and incompatible or corrupted protocol rejection. The real ACT reload test also
+checks sampler/checkpoint lineage when explicitly enabled. The planned controlled
+comparison keeps the approach dataset, model, seed and 2,000-update count fixed;
+per-region teacher-frame errors must be assessed before deciding on further
+physical attempts. The new profile has not yet demonstrated an improvement.

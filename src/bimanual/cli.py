@@ -101,6 +101,10 @@ def main(argv: list[str] | None = None) -> int:
     train.add_argument("--batch-size", type=int, default=1)
     train.add_argument("--chunk-size", type=int, default=10)
     train.add_argument("--seed", type=int, default=0)
+    train.add_argument(
+        "--sampling-profile", choices=["uniform", "approach_regions_v1"], default="uniform"
+    )
+    train.add_argument("--sampling-protocol-run", type=Path)
     rollout = commands.add_parser(
         "policy-rollout", help="Evaluate an ACT checkpoint in its declared placement scene"
     )
@@ -111,6 +115,15 @@ def main(argv: list[str] | None = None) -> int:
     rollout.add_argument(
         "--no-replay", action="store_true", help="Keep policy cameras; omit display GIF"
     )
+    planner = commands.add_parser(
+        "planner-probe", help="Propose a skill from recorded cameras using local Qwen; no actions"
+    )
+    planner.add_argument("--model-root", type=Path, required=True)
+    planner.add_argument("--recording", type=Path, required=True)
+    planner.add_argument("--frame", type=int, default=0)
+    planner.add_argument("--instruction", required=True)
+    planner.add_argument("--device", choices=["cpu", "mps"], default="cpu")
+    planner.add_argument("--max-tokens", type=int, default=384)
     commands.add_parser("docs-check", help="Validate local documentation links and rubric weights")
     evidence = commands.add_parser("evidence", help="List or verify sealed preparation runs")
     evidence.add_argument("operation", choices=["list", "verify"])
@@ -291,6 +304,8 @@ def main(argv: list[str] | None = None) -> int:
                     batch_size=args.batch_size,
                     chunk_size=args.chunk_size,
                     seed=args.seed,
+                    sampling_profile=args.sampling_profile,
+                    sampling_protocol_run=args.sampling_protocol_run,
                 ),
                 store=store,
                 project_root=root,
@@ -327,6 +342,22 @@ def main(argv: list[str] | None = None) -> int:
             emit({"destination": str(result), "manifest": str(result / "export_manifest.json")})
         elif args.command == "status":
             emit(json.loads((root / "docs/project.json").read_text()))
+        elif args.command == "planner-probe":
+            from bimanual.planner import run_planner_probe
+
+            result = invoke_with_diagnostics(
+                run_planner_probe,
+                model_root=args.model_root,
+                recording=args.recording,
+                frame=args.frame,
+                instruction=args.instruction,
+                device=args.device,
+                max_tokens=args.max_tokens,
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
         elif args.command == "docs-check":
             from bimanual.docs import check_docs
 

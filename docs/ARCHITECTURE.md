@@ -10,8 +10,8 @@ manifests are the authoritative run records.
 
 The [dual-arm foundation](DUAL_ARM_FOUNDATION.md) now implements the simulator,
 synchronous joint-target validation, and three-camera observations. `bimanual sim`
-records its free-space demonstration; task planning and learned execution below
-remain unimplemented.
+records its free-space demonstration. Physical skills and the guarded ACT executor
+are implemented separately; a complete learned dinner workflow remains unfinished.
 
 `bimanual grasp` adds a privileged IK teacher and contact-only block experiment.
 Scratch-state IK never edits the live object's state. Per-step collision guards
@@ -34,6 +34,14 @@ policy quality requires a separate rollout. See [interfaces](INTERFACES.md),
 
 ## Target manipulation system (partially implemented)
 
+The [supervisor core](SUPERVISOR.md) now validates a serial plan against explicitly
+registered capabilities, tracks attempts and deadlines, controls arm/shared-space
+ownership, and clears actions on cancellation or task changes. It is not yet wired
+to composable dinner-skill executors. The [local Qwen adapter](PLANNER.md) proposes
+typed skills from images and joints; its CLI is an offline recorded-camera probe
+that cannot dispatch actions. The [ACT rollout](POLICY_ROLLOUT.md) executes actual
+model predictions through a guarded action queue, but has not passed a grasp.
+
 ```mermaid
 flowchart TD
   I[Instruction + raw cameras + joint observations] --> V[Qwen visual planner]
@@ -54,9 +62,10 @@ semantics. This distinction must remain visible in technical claims.
 ## Interface specification for M1/M2
 
 Implemented data and action contracts live in `src/bimanual/contracts.py`.
-The table retains the complete target; the end-to-end supervisor/run-result
-contract is still pending. Simulator actions currently use synchronous identity
-and limit checks; the action-chunk contract is not yet a queued policy executor.
+The table retains the complete target. A deterministic supervisor and immutable
+execution snapshots now exist, but the integrated full-task run-result contract
+and independent dinner evaluator remain pending. The actual ACT action queue
+checks source identity, expiry and the complete forecast before accepting a prefix.
 
 | Interface | Required contract |
 |---|---|

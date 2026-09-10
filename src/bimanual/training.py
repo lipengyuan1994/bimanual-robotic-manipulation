@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Literal
 
 import numpy as np
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from bimanual.contracts import Artifact, DemonstrationEpisode, validate_split_seeds
 from bimanual.dataset_export import CAMERA_FEATURES, LEROBOT_VERSION
@@ -36,6 +36,127 @@ class ACTTrainingConfig(BaseModel):
     cpu_threads: int = Field(default=4, ge=1, le=32)
     learning_rate: float = Field(default=1e-5, gt=0, le=0.1)
     normalization_std_floor: float = Field(default=1e-4, gt=0, le=1)
+    sampling_profile: Literal["uniform", "approach_regions_v1"] = "uniform"
+    sampling_protocol_run: Path | None = None
+
+    @model_validator(mode="after")
+    def sampling_configuration(self):
+        if (self.sampling_profile == "uniform") != (self.sampling_protocol_run is None):
+            raise ValueError("Only approach_regions_v1 requires a sampling protocol run")
+        return self
+
+
+def build_sampling_plan(
+    dataset_root: Path, manifest: dict, config: ACTTrainingConfig, *, project_root: Path
+) -> dict:
+    """Build probabilities from verified training boundaries, never evaluation outcomes.
+
+    The caller must first run verify_training_dataset. Weighted compatibility is
+    checked against the sealed collection schedule and copied source configs.
+    """
+    protocol = None
+    if config.sampling_profile == "approach_regions_v1":
+        path = config.sampling_protocol_run
+        if not path.is_absolute():
+            path = project_root / path
+        path = path.resolve(strict=True)
+        protocol = EvidenceStore(path.parent.parent).verify(path.name)
+        if protocol.kind != "approach_collection_protocol" or protocol.outcome != "completed":
+            raise ValueError("Sampling requires a completed approach collection protocol")
+        schedule = json.loads((path / "protocol.json").read_text())
+        if schedule != protocol.config or schedule.get("skill") != "left_open_hand_pregrasp":
+            raise ValueError("Sampling protocol/config mismatch")
+        motion, settle = schedule.get("motion_steps"), schedule.get("settle_steps")
+        if (
+            type(motion) is not int
+            or type(settle) is not int
+            or motion <= 10
+            or settle < 1
+            or schedule.get("control_hz") != 20
+        ):
+            raise ValueError("Sampling requires nonempty declared start/middle/settled regions")
+    frame_sources, episode_plans = [], []
+    count = len(manifest["episodes"])
+    for source in manifest["episodes"]:
+        raw = dataset_root / source["raw_root"]
+        reference = Artifact(path="demonstration/episode.json", sha256=source["episode_sha256"])
+        episode = DemonstrationEpisode.model_validate_json(reference.verify(raw).read_bytes())
+        require_successful_training_episode(episode)
+        length = len(episode.frames) - 1
+        if config.sampling_profile == "uniform":
+            regions = [("all", 0, length, 1.0)]
+            episode_probability = length / manifest["frames"]
+        else:
+            source_config = json.loads(episode.lineage.config.verify(raw).read_text())
+            case = [
+                episode.lineage.seed,
+                "train",
+                source_config.get("left_joint_offset_rad"),
+            ]
+            if (
+                source_config.get("skill") != schedule["skill"]
+                or source_config.get("protocol_run") != protocol.run_id
+                or source_config.get("case_seed") != episode.lineage.seed
+                or source_config.get("split") != "train"
+                or source_config.get("target_m") != schedule.get("target_m")
+                or case not in schedule.get("cases", [])
+                or length != motion + settle
+            ):
+                raise ValueError("Approach episode/config does not match the sampling protocol")
+            regions = [
+                ("start", 0, 10, 1 / 3),
+                ("middle", 10, motion, 1 / 3),
+                ("settled", motion, motion + settle, 1 / 3),
+            ]
+            episode_probability = 1 / count
+        episode_plans.append(
+            dict(
+                episode_id=episode.episode_id,
+                episode_index=source["episode_index"],
+                probability=episode_probability,
+                regions=[
+                    dict(name=name, start=start, end=end, conditional_probability=probability)
+                    for name, start, end, probability in regions
+                ],
+            )
+        )
+        for name, start, end, probability in regions:
+            for index in range(start, end):
+                frame_sources.append(
+                    dict(
+                        dataset_index=len(frame_sources),
+                        episode_id=episode.episode_id,
+                        episode_index=source["episode_index"],
+                        source_frame_index=episode.frames[index].observation.sequence,
+                        source_episode_sha256=source["episode_sha256"],
+                        region=name,
+                        probability=episode_probability * probability / (end - start),
+                    )
+                )
+    probabilities = np.array([frame["probability"] for frame in frame_sources])
+    if len(frame_sources) != manifest["frames"] or not np.isclose(probabilities.sum(), 1):
+        raise ValueError("Sampling plan does not cover the verified dataset")
+    return dict(
+        schema_version=1,
+        profile=config.sampling_profile,
+        algorithm="torch.randint" if protocol is None else "torch.multinomial_float64",
+        replacement=True,
+        episodes=episode_plans,
+        frames=frame_sources,
+        collection_protocol=protocol.model_dump(mode="json") if protocol else None,
+    )
+
+
+def sample_training_indices(torch, generator, plan: dict, batch_size: int) -> list[int]:
+    """Uniform preserves the original RNG call; weighted draws use the same CPU RNG."""
+    if plan["profile"] == "uniform":
+        return torch.randint(len(plan["frames"]), (batch_size,), generator=generator).tolist()
+    probabilities = torch.tensor(
+        [frame["probability"] for frame in plan["frames"]], dtype=torch.float64, device="cpu"
+    )
+    return torch.multinomial(
+        probabilities, batch_size, replacement=True, generator=generator
+    ).tolist()
 
 
 def verify_training_dataset(root: Path) -> dict:
@@ -123,6 +244,13 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
             (dataset_root / "export_manifest.json").read_bytes()
         )
         (directory / "training_config.json").write_text(config.model_dump_json(indent=2) + "\n")
+        sampling_plan = build_sampling_plan(
+            dataset_root, dataset_manifest, config, project_root=project_root
+        )
+        (directory / "sampling-plan.json").write_bytes(canonical(sampling_plan))
+        sampling_digest = digest_file(directory / "sampling-plan.json")
+        metrics["sampling_profile"] = config.sampling_profile
+        metrics["sampling_plan_sha256"] = sampling_digest
         if platform.system() == "Darwin" and platform.machine() != "arm64":
             raise RuntimeError("Local training requires native Apple Silicon Python")
         if config.device == "mps" and os.environ.get("PYTORCH_ENABLE_MPS_FALLBACK", "0") != "0":
@@ -235,7 +363,7 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
 
         for step in range(config.steps):
             step_start = time.perf_counter()
-            indices = torch.randint(len(dataset), (config.batch_size,), generator=sampler).tolist()
+            indices = sample_training_indices(torch, sampler, sampling_plan, config.batch_size)
             allowed = set(input_features) | {"action", "action_is_pad"}
             items = [
                 {key: value for key, value in dataset[index].items() if key in allowed}
@@ -266,6 +394,7 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
             item = dict(
                 step=step + 1,
                 indices=indices,
+                sampled_frames=[sampling_plan["frames"][index] for index in indices],
                 loss=float(loss.detach().cpu()),
                 loss_parts=parts,
                 gradient_norm=norm,
@@ -279,6 +408,7 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
             raise RuntimeError("Optimizer did not change model parameters")
         checkpoint = directory / "checkpoint"
         policy.save_pretrained(checkpoint)
+        (checkpoint / "training_sampling.json").write_bytes(canonical(sampling_plan))
         preprocessor.save_pretrained(checkpoint, config_filename="policy_preprocessor.json")
         postprocessor.save_pretrained(checkpoint, config_filename="policy_postprocessor.json")
         (directory / "normalization.json").write_text(
@@ -305,6 +435,8 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
                 "step": config.steps,
                 "optimizer": optimizer.state_dict(),
                 "sampler_rng_state": sampler.get_state(),
+                "sampling_plan": sampling_plan,
+                "sampling_plan_sha256": sampling_digest,
                 "torch_rng_state": torch.get_rng_state(),
                 "mps_rng_state": torch.mps.get_rng_state() if config.device == "mps" else None,
                 "python_rng_state": random.getstate(),
@@ -319,6 +451,26 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
             },
             directory / "trainer_state.pt",
         )
+        restored_state = torch.load(
+            directory / "trainer_state.pt", map_location="cpu", weights_only=True
+        )
+        if (
+            restored_state["sampling_plan"] != sampling_plan
+            or restored_state["sampling_plan_sha256"] != sampling_digest
+        ):
+            raise RuntimeError("Saved sampling plan differs from the training plan")
+        restored_sampler = torch.Generator(device="cpu")
+        restored_sampler.set_state(restored_state["sampler_rng_state"])
+        saved_sampler_state = sampler.get_state()
+        expected_next = sample_training_indices(torch, sampler, sampling_plan, config.batch_size)
+        restored_next = sample_training_indices(
+            torch, restored_sampler, restored_state["sampling_plan"], config.batch_size
+        )
+        sampler.set_state(saved_sampler_state)
+        if expected_next != restored_next:
+            raise RuntimeError("Saved sampler RNG did not reproduce the next batch")
+        metrics["sampler_reload_verified"] = True
+        del restored_state
         policy.eval()
         with torch.inference_mode():
             observation = {key: batch[key] for key in input_features}

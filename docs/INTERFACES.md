@@ -4,8 +4,10 @@ The version-1 contracts live in `src/bimanual/contracts.py`. They establish a
 validated interchange format for upcoming policy and dataset adapters. The
 [existing simulator](DUAL_ARM_FOUNDATION.md) still returns its original in-memory
 observation dictionaries. `src/bimanual/demonstrations.py` supplies a recording
-adapter for those dictionaries; no trained policy, LeRobot export or deployed
-action consumer is claimed. M2 still requires M1 and actual task data.
+adapter for those dictionaries. Actual LeRobot export, ACT training and guarded
+policy rollouts now consume these contracts; successful learned manipulation and
+the complete M2 workflow remain unproven. See [datasets](DATASETS.md),
+[rollout evidence](POLICY_ROLLOUT.md) and [supervisor](SUPERVISOR.md).
 
 ## Common rules
 
@@ -61,11 +63,13 @@ time and expiry. `validate_for(...)` checks the whole chunk before enqueueing:
   the caller's explicit maximum age.
 - Every target is finite and inside supplied joint/actuator limits.
 
-This validator is atomic because it does not mutate the simulator. It does not
-implement a queue or cancellation. The future executor must clear its queue on
-stop, reset or instruction change; recheck expiry/active identity before every
-consumed action; and continue per-physics-step collision checks. It must never
-replace validation failure with clipping or silently execute a different policy.
+This validator is atomic because it does not mutate the simulator. The
+`GuardedActionQueue` in `policy_rollout.py` validates the complete forecast and
+queues only the configured prefix, then rechecks identity and expiry before every
+consumed action. Rejection and cancellation clear pending actions. The supervisor
+accepts an injected queue-clearing callback for stop and task changes; an integrated
+worker must connect that callback and continue per-physics-step collision checks.
+Validation failure never permits clipping or silently selecting a different policy.
 An instruction change requires a new revision and fresh observation; changing
 instruction text in the middle of a demonstration requires a new episode record.
 
@@ -78,9 +82,11 @@ an explicit receiving gripper. Stop/clarify cannot carry manipulation arguments.
 Targets are drawer, spoon, fork, plate, cup and the practice block; destinations
 are table, drawer, or the receiving gripper where the skill permits it.
 
-These names describe the planned interface, **not currently implemented skills**.
-The future supervisor must additionally check available skills, actual scene
-presence/reachability, prerequisites, ownership, instruction revision, and outcome.
+These names describe semantic requests, **not a guarantee of a registered executor**.
+The supervisor checks explicit capabilities, prerequisites, ownership and task
+identity; it does not infer that an isolated teacher command can execute a step in
+an arbitrary scene. Scene presence, reachability and physical outcome still require
+the integrated perception/execution/scoring components.
 The `explanation` field is display text, never an executable instruction.
 
 ## Demonstration episodes and lineage

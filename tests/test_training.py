@@ -1,7 +1,9 @@
+import copy
 import hashlib
 import importlib.metadata
 import json
 import os
+import shutil
 from pathlib import Path
 
 import numpy as np
@@ -13,7 +15,9 @@ from bimanual.dual_arm import CAMERAS, JOINT_ORDER
 from bimanual.evidence import EvidenceStore, canonical, digest_file
 from bimanual.training import (
     ACTTrainingConfig,
+    build_sampling_plan,
     run_train,
+    sample_training_indices,
     stable_numeric_stats,
     verify_training_dataset,
 )
@@ -192,12 +196,16 @@ def test_real_one_step_training_and_reload(tmp_path):
     verified = store.verify(manifest.run_id)
     assert verified.metrics["training_completed"] is True
     assert verified.metrics["checkpoint_reload_verified"] is True
+    assert verified.metrics["sampler_reload_verified"] is True
     assert len(verified.metrics["steps"]) == 1
     assert verified.metrics["initial_state_sha256"] != verified.metrics["updated_state_sha256"]
     assert verified.metrics["manipulation_success"] is None
     assert "checkpoint/model.safetensors" in verified.files
     assert "checkpoint/policy_preprocessor.json" in verified.files
     assert "checkpoint/policy_postprocessor.json" in verified.files
+    assert "checkpoint/training_sampling.json" in verified.files
+    assert verified.metrics["sampling_profile"] == "uniform"
+    assert len(verified.metrics["steps"][0]["sampled_frames"]) == 1
     assert "trainer_state.pt" in verified.files
 
 
@@ -222,3 +230,181 @@ def test_keyboard_interrupt_seals_failure(manifest_dataset, tmp_path, monkeypatc
     (result,) = store.list_runs()
     assert result["outcome"] == "failed" and result["metrics"]["interrupted"] is True
     assert "metrics.json" in result["files"]
+
+
+@pytest.fixture
+def approach_sampling_dataset(manifest_dataset, tmp_path):
+    root = manifest_dataset
+    store = EvidenceStore(tmp_path / "protocol-evidence")
+    directory = store.new_run()
+    protocol = dict(
+        skill="left_open_hand_pregrasp",
+        motion_steps=60,
+        settle_steps=20,
+        control_hz=20,
+        target_m=[-0.15, -0.08, 0.46],
+        cases=[[3, "train", [0] * 5], [4, "train", [0.1] * 5]],
+    )
+    (directory / "protocol.json").write_text(json.dumps(protocol))
+    store.seal(
+        directory,
+        kind="approach_collection_protocol",
+        outcome="completed",
+        config=protocol,
+        metrics={},
+        source={},
+        claims=[],
+    )
+    template = json.loads((root / "raw_sources/000000/demonstration/episode.json").read_text())
+    shutil.copytree(root / "raw_sources/000000", root / "raw_sources/000001")
+    sources = []
+    for index in range(2):
+        raw = root / "raw_sources" / f"{index:06d}"
+        cfg = dict(
+            skill=protocol["skill"],
+            protocol_run=directory.name,
+            case_seed=3 + index,
+            split="train",
+            target_m=protocol["target_m"],
+            left_joint_offset_rad=protocol["cases"][index][2],
+        )
+        (raw / "config.json").write_text(json.dumps(cfg))
+        episode = copy.deepcopy(template)
+        episode["episode_id"] = f"approach-{index}"
+        episode["lineage"]["seed"] = 3 + index
+        episode["lineage"]["config"] = dict(
+            path="config.json", sha256=digest_file(raw / "config.json")
+        )
+        episode["frames"] = []
+        for sequence in range(81):
+            frame = copy.deepcopy(template["frames"][0])
+            frame["action_rad"] = [0.1] * 12 if sequence < 80 else None
+            capture = dict(
+                sequence=sequence,
+                simulation_seconds=sequence / 20,
+                observed_monotonic_ns=100 + sequence * 50_000_000,
+            )
+            frame["observation"].update(capture, episode_id=episode["episode_id"])
+            for camera in frame["observation"]["frames"]:
+                camera.update(capture)
+            episode["frames"].append(frame)
+        (raw / "demonstration/episode.json").write_text(json.dumps(episode))
+        sources.append(
+            dict(
+                split="train",
+                episode_index=index,
+                raw_root=raw.relative_to(root).as_posix(),
+                episode_sha256=digest_file(raw / "demonstration/episode.json"),
+                episode_id=episode["episode_id"],
+                seed=3 + index,
+                exported_transitions=80,
+            )
+        )
+    payload = json.loads((root / "export_manifest.json").read_text())
+    payload.update(frames=160, episodes=sources)
+    payload["files"] = {
+        path.relative_to(root).as_posix(): digest_file(path)
+        for path in root.rglob("*")
+        if path.is_file() and path.name != "export_manifest.json"
+    }
+    write_manifest(root, payload)
+    return root, directory
+
+
+def sampling_plan_fixture(dataset, profile="approach_regions_v1"):
+    root, protocol = dataset
+    config = ACTTrainingConfig(
+        dataset_path=root,
+        sampling_profile=profile,
+        sampling_protocol_run=protocol if profile != "uniform" else None,
+    )
+    return build_sampling_plan(root, verify_training_dataset(root), config, project_root=root)
+
+
+def test_approach_sampling_balances_episodes_and_regions(approach_sampling_dataset):
+    plan = sampling_plan_fixture(approach_sampling_dataset)
+    assert len(plan["frames"]) == 160
+    for episode_index in range(2):
+        rows = [r for r in plan["frames"] if r["episode_index"] == episode_index]
+        assert sum(r["probability"] for r in rows) == pytest.approx(0.5)
+        for name, expected_indices in (
+            ("start", range(10)),
+            ("middle", range(10, 60)),
+            ("settled", range(60, 80)),
+        ):
+            region = [r for r in rows if r["region"] == name]
+            assert [r["source_frame_index"] for r in region] == list(expected_indices)
+            assert sum(r["probability"] for r in region) == pytest.approx(1 / 6)
+    assert [r["dataset_index"] for r in plan["frames"]] == list(range(160))
+    assert all(r["probability"] > 0 and r["source_episode_sha256"] for r in plan["frames"])
+
+
+@pytest.mark.parametrize("profile", ["uniform", "approach_regions_v1"])
+def test_sampler_rng_save_restore_and_uniform_compatibility(approach_sampling_dataset, profile):
+    torch = pytest.importorskip("torch")
+    plan = sampling_plan_fixture(approach_sampling_dataset, profile)
+    sampler = torch.Generator(device="cpu").manual_seed(24)
+    original = torch.Generator(device="cpu").manual_seed(24)
+    for _ in range(5):
+        actual = sample_training_indices(torch, sampler, plan, 8)
+        if profile == "uniform":
+            assert actual == torch.randint(160, (8,), generator=original).tolist()
+    state = sampler.get_state()
+    expected = [sample_training_indices(torch, sampler, plan, 8) for _ in range(3)]
+    restored = torch.Generator(device="cpu")
+    restored.set_state(state)
+    assert [sample_training_indices(torch, restored, plan, 8) for _ in range(3)] == expected
+
+
+def test_profile_requires_explicit_compatible_protocol(manifest_dataset, tmp_path):
+    with pytest.raises(ValueError, match="sampling protocol"):
+        ACTTrainingConfig(dataset_path=manifest_dataset, sampling_profile="approach_regions_v1")
+    with pytest.raises(ValueError, match="sampling protocol"):
+        ACTTrainingConfig(dataset_path=manifest_dataset, sampling_protocol_run=tmp_path)
+
+
+def test_profile_rejects_changed_protocol(approach_sampling_dataset):
+    _, protocol = approach_sampling_dataset
+    (protocol / "protocol.json").write_text("{}")
+    with pytest.raises(ValueError, match="digest|mismatch"):
+        sampling_plan_fixture(approach_sampling_dataset)
+
+
+@pytest.mark.parametrize("field,value", [("motion_steps", 10), ("settle_steps", 0)])
+def test_profile_rejects_empty_regions(approach_sampling_dataset, tmp_path, field, value):
+    root, original = approach_sampling_dataset
+    body = json.loads((original / "protocol.json").read_text())
+    body[field] = value
+    store = EvidenceStore(tmp_path / "alternative")
+    directory = store.new_run()
+    (directory / "protocol.json").write_text(json.dumps(body))
+    store.seal(
+        directory,
+        kind="approach_collection_protocol",
+        outcome="completed",
+        config=body,
+        metrics={},
+        source={},
+        claims=[],
+    )
+    with pytest.raises(ValueError, match="nonempty"):
+        sampling_plan_fixture((root, directory))
+
+
+def test_profile_rejects_unrelated_protocol_identity(approach_sampling_dataset, tmp_path):
+    root, original = approach_sampling_dataset
+    body = json.loads((original / "protocol.json").read_text())
+    store = EvidenceStore(tmp_path / "alternative")
+    directory = store.new_run()
+    (directory / "protocol.json").write_text(json.dumps(body))
+    store.seal(
+        directory,
+        kind="approach_collection_protocol",
+        outcome="completed",
+        config=body,
+        metrics={"held_out_success": True},
+        source={},
+        claims=[],
+    )
+    with pytest.raises(ValueError, match="episode/config"):
+        sampling_plan_fixture((root, directory))
