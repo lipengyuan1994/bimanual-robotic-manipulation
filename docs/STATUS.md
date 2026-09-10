@@ -41,12 +41,13 @@ See [M1 foundation evidence](experiments/2026-09-10-dual-arm-foundation.md) for
 run history, source lineage, timing and limitations; historical preparation
 results remain in [the M0 record](experiments/2026-09-05-preparation.md).
 
-Current four-second rendered run: `20260910T180630-c30b34a38bec`.
+Current four-second rendered run: `20260910T181537-0ad4964dab31`, from clean
+implementation commit `5332ac3e0105a2173fbdb505028a103ad65364c2`.
 It has 81 observations, zero contacts across checked physics steps, and maximum
-post-step tracking error 0.000605 rad. Three-camera rendering runs at about 0.88×
-real time on this Mac for this short motion; the no-render loop is much faster.
-No manipulation dataset/checkpoint exists. Source digests identify uncommitted
-implementation in these local runs; do not mislabel them as a clean commit.
+post-step tracking error 0.000605 rad. Three-camera rendering measured about
+0.81–0.88× real time in two short runs; the no-render loop is much faster.
+No manipulation dataset/checkpoint exists. Earlier exploratory runs have dirty
+source digests; only the named clean checkpoint has a false dirty flag.
 
 ## External dependencies
 
@@ -68,6 +69,6 @@ portal. Next implementation slice: add a reachable object and constrained IK
 teacher, then validate a genuine contact grasp/release before drawer and hand-off.
 M1 is complete only after the [roadmap](ROADMAP.md) exit checks pass.
 
-In parallel, the user needs to complete eligible Intel account access or authorize
-an organizer request. The Intel portal currently renders only its header without
+In parallel, the user confirmed access to an eligible registration email and needs
+to complete Intel account access. The portal currently renders only its header without
 catalog controls; allocation and permissions have not been verified.

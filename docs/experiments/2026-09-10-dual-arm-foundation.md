@@ -25,6 +25,7 @@ RGB 480×270, overhead/left wrist/right wrist, 200 Hz physics / 20 Hz control.
 | 20260910T180630-c30b34a38bec | Wrist-flexed pose, table visible in both wrists, zero contacts, 81 observations | Accepted foundation demonstration, no task success claim |
 | 20260910T181127-bdfc3e6301b9 | Final reset/sweep without rendering, four seconds, zero contacts | CPU physics baseline only |
 | 20260910T181102-d2715c618f45 | Doctor: 85 extensions native, CPU/MPS arithmetic passed | Runtime evidence only |
+| 20260910T181537-0ad4964dab31 | Four-second rendered run from clean commit 5332ac3e0105a2173fbdb505028a103ad65364c2, zero contacts, 81 observations | Verified release checkpoint; dirty flag false |
 
 All runs live under ignored `.artifacts/runs/`; use `bimanual evidence verify` to
 validate a record. Test-induced failures live in pytest temporary stores.
@@ -35,6 +36,7 @@ validate a record. Test-induced failures live in pytest temporary stores.
 |---|---:|---:|---:|---:|
 | Three cameras | 4.5373 | 0.1477 | 6.4305 | 0.8816 |
 | No render | 0.0275 | 0.2231 | 0.2522 | 145.34 |
+| Clean-commit three cameras | 4.9272 | 0.2755 | 6.9365 | 0.8118 |
 
 Loop includes rendering when enabled; total excludes provenance hashing before
 timer start and final sealing. Maximum post-step joint tracking error: 0.000604723
@@ -50,6 +52,12 @@ deprecation warnings remain. Robot-specific tests cover upstream dynamics, all 1
 channels, invalid values/bounds, the wrist joint/control-range mismatch, stale
 episodes/sequences, stop/reset, deterministic stepping, independent RGB frames,
 self-contained scene reload and sealed failure records.
+
+The local portal on port 8768 was checked in the browser: correct dual-arm title,
+overhead/wrist replay, current M1 status, and run labels. The clean-commit run's
+manifest verifies; documentation-only changes after that commit do not alter it.
+GitHub Actions passed Python/rendering and portal checks for implementation commit
+5332ac3: [CI run](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34513203168).
 
 ## Limits and next experiment
 

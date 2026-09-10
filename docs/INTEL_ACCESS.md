@@ -21,6 +21,9 @@ Select only an explicitly free allocation; decline any paid alternative.
 The in-app browser currently opens the Cloud Services header without catalog
 controls. User assistance is needed to complete account access and inspect actual
 availability. Do not put passwords or access tokens in this repository.
+The user confirmed they can register with an eligible email; registration and
+terms acceptance must be completed by the user. The alternate prerelease entry
+redirected to the same portal without exposing catalog controls.
 
 Suggested instance name: `bimanual-sim-intel`.
 
