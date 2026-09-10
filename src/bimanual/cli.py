@@ -29,6 +29,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     foundation.add_argument("--seconds", type=int, default=4)
     foundation.add_argument("--no-render", action="store_true")
+    grasp = commands.add_parser("grasp", help="Contact-only teacher experiment, not learned policy")
+    grasp.add_argument("--no-render", action="store_true")
+    grasp.add_argument("--fault", choices=["missing-object", "skip-close"])
     commands.add_parser("status", help="Read the maintained project status")
     commands.add_parser("docs-check", help="Validate local documentation links and rubric weights")
     evidence = commands.add_parser("evidence", help="List or verify sealed preparation runs")
@@ -88,6 +91,20 @@ def main(argv: list[str] | None = None) -> int:
                 project_root=root,
             )
             emit(result.model_dump(exclude={"provenance"}))
+        elif args.command == "grasp":
+            from bimanual.grasp import GraspConfig, run_grasp
+
+            result = run_grasp(
+                GraspConfig(
+                    render=not args.no_render,
+                    missing_object=args.fault == "missing-object",
+                    skip_close=args.fault == "skip-close",
+                ),
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
         elif args.command == "status":
             emit(json.loads((root / "docs/project.json").read_text()))
         elif args.command == "docs-check":

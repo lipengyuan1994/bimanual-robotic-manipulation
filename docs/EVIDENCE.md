@@ -19,7 +19,11 @@ so a stale index cannot hide an existing sealed run. A process killed before
 sealing leaves an unsealed directory for inspection; it is not a completed run.
 Ordinary lab exceptions seal failed attempts with an error record.
 
-Lab evidence measures actual physics/rendering, not manipulation. Doctor's MPS
+Pendulum and foundation evidence measure physics/rendering, not manipulation.
+`contact_grasp_teacher` separately scores an isolated block grasp, hold and
+release with privileged simulator truth. See its [acceptance envelope](CONTACT_GRASP.md).
+It reports `grasp_success`; this does not establish dinner-task completion.
+Doctor's MPS
 probe verifies one matrix multiplication against CPU. It proves neither VLA
 compatibility nor training speed. `manipulation_success` remains null.
 

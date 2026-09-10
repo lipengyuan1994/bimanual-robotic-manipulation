@@ -13,6 +13,12 @@ synchronous joint-target validation, and three-camera observations. `bimanual si
 records its free-space demonstration; task planning and learned execution below
 remain unimplemented.
 
+`bimanual grasp` adds a privileged IK teacher and contact-only block experiment.
+Scratch-state IK never edits the live object's state. Per-step collision guards
+and force/pose scoring run at 200 Hz; truth is stored separately from the joint
+observation/action trace. This first teacher records replay, not a training dataset.
+See [the contact experiment contract](CONTACT_GRASP.md).
+
 ## Target manipulation system (partially implemented)
 
 ```mermaid

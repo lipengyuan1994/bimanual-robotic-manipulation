@@ -5,7 +5,7 @@ arms. The long-term product is an inspectable workstation application with learn
 manipulation, recovery, reproducible evaluation, and Intel OpenVINO deployment.
 
 <!-- README-STATUS:START -->
-**Current release: Dual-arm foundation.**
+**Current release: Local contact-grasp teacher.**
 
 - Challenge manipulation: not available
 - Intel target: not validated
@@ -16,14 +16,15 @@ The complete evidence and handoff record is in [docs/STATUS.md](docs/STATUS.md).
 <!-- README-STATUS:END -->
 
 Event-window implementation is authorized in [decision 0003](docs/decisions/0003-event-window-implementation.md).
-The first M1 slice loads two SO-101 arms with bounded control and three cameras.
-Drawer use, grasping, hand-off and learned execution remain pending. [Accepted plan](docs/PLAN.md)
+Two SO-101 arms run locally with bounded control and three cameras. A scripted
+teacher now grasps, lifts and releases a block using physics contacts.
+Drawer use, hand-off and learned execution remain pending. [Accepted plan](docs/PLAN.md)
 
 ## Start here
 
 1. Follow the [native setup guide](docs/SETUP.md).
 2. Run `.venv/bin/bimanual doctor --require-device mps --record`.
-3. Run `.venv/bin/bimanual sim --seconds 4` for the two-arm foundation.
+3. Run `.venv/bin/bimanual grasp` for the local contact-grasp experiment.
 4. Build the portal in `web` with `npm ci` and `npm run build` using native Node.
 5. Run `.venv/bin/bimanual serve` and open <http://127.0.0.1:8767>.
 
@@ -32,8 +33,13 @@ versions, source digests, and an integrity manifest under ignored `.artifacts/`.
 Failures are retained. These foundation results do not establish task success.
 Follow the [two-arm walkthrough](docs/DUAL_ARM_FOUNDATION.md) to inspect mappings
 and camera views; the original pendulum remains available with `bimanual lab`.
+Follow the [contact-grasp walkthrough](docs/CONTACT_GRASP.md) to understand the
+teacher, inspect physical evidence and try a deliberate failed grasp.
 
 ## Learn while we build
+
+New running-code exercise: [reach, grasp, hold and release](docs/CONTACT_GRASP.md),
+connected to Lesson 03. Reading a lesson and demonstrating understanding are tracked separately.
 
 <!-- README-LEARNING:START -->
 - [Public learning site](https://lipengyuan1994.github.io/bimanual-robotic-manipulation/)

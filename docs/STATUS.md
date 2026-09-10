@@ -4,13 +4,13 @@ Updated: 2026-09-10. Branch: `codex/preparation-foundation`.
 
 ## Current boundary
 
-M0 is complete. M1 is in progress: the first dual-arm simulation slice runs and
-has local verification. The user authorized event-window implementation following
+M0 is complete. M1 is in progress: the dual-arm foundation and a contact-only
+grasp/hold/release teacher run locally. The user authorized event-window implementation following
 the event's explicit online kickoff instructions; see [decision 0003](decisions/0003-event-window-implementation.md).
 Earlier preparation remains identified in Git history. No organizer ruling on
 pre-existing-code reuse is claimed.
 
-There is no dinner-task scene, grasp/hand-off teacher, learned policy, visual
+There is no complete dinner-task scene, hand-off teacher, learned policy, visual
 planner, recovery supervisor, or Intel deployment yet. The full product and M1's
 manipulation exit checks remain incomplete.
 
@@ -26,6 +26,10 @@ manipulation exit checks remain incomplete.
   are adjusted in the builder; upstream files are unchanged.
 - New `bimanual sim` CLI and portal replay support. Read the
   [foundation walkthrough](DUAL_ARM_FOUNDATION.md), including a short exercise.
+- New `bimanual grasp`: bounded downward IK, sampled trajectory checking,
+  per-physics-step contact guards and independently scored block grasp/release.
+  [Walkthrough and exercise](CONTACT_GRASP.md); right arm stays parked.
+  Failed replays are now selectable as well as successes. No learned control yet.
 - Existing native bootstrap/doctor, generic pendulum lab, evidence store/SQLite
   index, read-only portal, seven lessons, GitHub Pages and README synchronization.
 - [Zero-cost Intel access request](INTEL_ACCESS.md) submitted for
@@ -34,8 +38,11 @@ manipulation exit checks remain incomplete.
 
 ## Verification and checkpoint
 
-Local validation: 39 Python tests including two rendering checks, Ruff, TypeScript
-and portal production build pass. Native doctor passes an 85-library architecture
+Current local validation: **45 tests pass** (43 ordinary checks and two rendering
+checks), Ruff, documentation links, README synchronization, TypeScript and
+portal production build pass. Contact-grasp tests cover physical completion,
+failure cases, collision guards, IK and truth separation.
+Native doctor previously passed an 85-library architecture
 audit and CPU/MPS arithmetic comparison. These are not learned-policy tests.
 
 See [M1 foundation evidence](experiments/2026-09-10-dual-arm-foundation.md) for
@@ -47,8 +54,15 @@ implementation commit `5332ac3e0105a2173fbdb505028a103ad65364c2`.
 It has 81 observations, zero contacts across checked physics steps, and maximum
 post-step tracking error 0.000605 rad. Three-camera rendering measured about
 0.81–0.88× real time in two short runs; the no-render loop is much faster.
-No manipulation dataset/checkpoint exists. Earlier exploratory runs have dirty
+No learned manipulation dataset/checkpoint exists. Earlier exploratory runs have dirty
 source digests; only the named clean checkpoint has a false dirty flag.
+
+Current grasp run: `20260910T183508-1d6a886231b4`, a dirty-source engineering run.
+The block lifted 54.4 mm, passed 400/400 airborne bilateral hold samples and
+400/400 released settling samples, with zero forbidden contacts and maximum
+contact overlap 1.93 mm. The 20-second simulation took 16.39 seconds including
+10 Hz three-camera replay and encoding. This is one nominal scripted skill, not
+full-task or generalization evidence. See the [complete attempt register](experiments/2026-09-10-contact-grasp.md).
 
 ## External dependencies
 
@@ -66,9 +80,10 @@ hackathon submission has been sent.
 
 ## Next executable step
 
-Run `.venv/bin/bimanual sim --seconds 4` and inspect the replay/mapping in the
-portal. Next implementation slice: add a reachable object and constrained IK
-teacher, then validate a genuine contact grasp/release before drawer and hand-off.
+Run `.venv/bin/bimanual grasp` and inspect the replay and contact evidence in the
+portal. Use `--fault skip-close --no-render` to see a failed grasp rejected.
+Next implementation slice: transport to a distinct placement zone and add a
+right-arm counterpart, then coordinate shared workspace before hand-off/drawer.
 M1 is complete only after the [roadmap](ROADMAP.md) exit checks pass.
 
 In parallel, await Intel review notification, advertised within three days. The

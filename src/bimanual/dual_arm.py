@@ -103,8 +103,8 @@ class FoundationConfig(BaseModel):
 class DualArm:
     """One owner per instance; synchronous observations and one-step joint targets."""
 
-    def __init__(self):
-        self.xml = scene_xml()
+    def __init__(self, *, xml: str | None = None):
+        self.xml = scene_xml() if xml is None else xml
         assets = {p.name: p.read_bytes() for p in (MODEL_DIR / "assets").glob("*.stl")}
         self.model = mujoco.MjModel.from_xml_string(self.xml, assets)
         self.data = mujoco.MjData(self.model)
@@ -165,6 +165,7 @@ class DualArm:
         self.data.ctrl[self.actuator_ids] = values
         for _ in range(PHYSICS_HZ // CONTROL_HZ):
             mujoco.mj_step(self.model, self.data)
+            self.after_physics_step()
             self.max_contacts = max(self.max_contacts, int(self.data.ncon))
             if (
                 not np.isfinite(self.data.qpos).all()
@@ -174,6 +175,9 @@ class DualArm:
                 self.active = False
                 raise RuntimeError("Non-finite state or MuJoCo warning; episode stopped")
         self.sequence += 1
+
+    def after_physics_step(self) -> None:
+        """Extension point for per-step experiment scoring and collision guards."""
 
     def stop(self) -> None:
         # No asynchronous action queue exists; advancing physics is now prohibited.

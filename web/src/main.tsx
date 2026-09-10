@@ -99,12 +99,12 @@ function App() {
   }, [revision]);
   const labs = runs.filter(
     (run) =>
-      (run.kind === "preparation_pendulum" || run.kind === "dual_arm_foundation") &&
-      run.integrity === "verified" &&
-      run.outcome === "completed",
+      ["preparation_pendulum", "dual_arm_foundation", "contact_grasp_teacher"].includes(run.kind ?? "") &&
+      run.integrity === "verified",
   );
   const selected = labs.find((run) => run.run_id === selectedId) ?? labs.find((run) => run.files?.["replay.gif"]) ?? labs[0];
-  const isDual = selected?.kind === "dual_arm_foundation";
+  const isGrasp = selected?.kind === "contact_grasp_teacher";
+  const isDual = selected?.kind === "dual_arm_foundation" || isGrasp;
   const doctor = runs.find(
     (run) => run.kind === "preparation_runtime" && run.integrity === "verified",
   );
@@ -219,9 +219,9 @@ function App() {
             <div className="card-heading">
               <div>
                 <span className="small-label">MUJOCO LEARNING LAB</span>
-                <h2>{isDual ? "Two arms. Three camera views." : "One joint. A complete loop."}</h2>
+                <h2>{isGrasp ? "Reach. Grasp. Release." : isDual ? "Two arms. Three camera views." : "One joint. A complete loop."}</h2>
               </div>
-              <span className="tag">Recorded simulation</span>
+              <span className="tag">Recorded simulation · {selected?.outcome ?? "no run"}</span>
             </div>
             <div className="replay">
               {replay ? (
@@ -250,6 +250,13 @@ function App() {
               </span>
               <span>{isDual ? "Dual SO-101 · no learned policy" : "Generic pendulum · no learned policy"}</span>
             </div>
+            {isGrasp && selected && (
+              <p className="scope-note">
+                Contact test: <strong>{selected.metrics?.grasp_success === true ? "passed" : "failed"}</strong>.
+                {" "}Scripted teacher with simulator truth; full dinner task remains untested.
+                {" "}<a href={`/api/runs/${selected.run_id}/files/scoring-truth.jsonl`}>Inspect contact evidence →</a>
+              </p>
+            )}
           </div>
           <div className="next-card">
             <span className="small-label">MAKE IT CONCRETE</span>
@@ -259,17 +266,17 @@ function App() {
               Change one thing.
             </h2>
             <p>
-              Inspect both arms, their joint targets, and synchronized camera views.
+              Watch the left arm lift a block, hold it, and release it using physical contacts.
             </p>
-            <code>.venv/bin/bimanual sim --seconds 4</code>
-            <a className="text-link" href="/read/docs/DUAL_ARM_FOUNDATION.md">
-              Open foundation walkthrough <span>→</span>
+            <code>.venv/bin/bimanual grasp</code>
+            <a className="text-link" href="/read/docs/CONTACT_GRASP.md">
+              Open contact-grasp walkthrough <span>→</span>
             </a>
             <div className="scope-note">
               <strong>What this establishes</strong>
               <p>
-                Simulation and rendering work. Grasping, task reasoning, and
-                Intel deployment each need their own evidence.
+                This is one bounded contact skill. Drawer use, hand-offs, learned
+                control, task reasoning, and Intel deployment remain to be built and tested.
               </p>
             </div>
           </div>
@@ -340,6 +347,8 @@ function App() {
                           ? "Pendulum lab"
                           : run.kind === "dual_arm_foundation"
                             ? "Dual-arm foundation"
+                          : run.kind === "contact_grasp_teacher"
+                            ? "Contact grasp teacher"
                           : run.kind === "preparation_runtime"
                             ? "Runtime probe"
                             : "Unreadable run"}
@@ -370,8 +379,8 @@ function App() {
             </table>
           </div>
           <p className="table-note">
-            These runs validate runtime and simulation foundations. They are not manipulation
-            trials or judging scores.{" "}
+            These development runs cover runtime checks and an isolated contact skill.
+            They are not full dinner-task evaluations or judging scores.{" "}
             <a href="/read/docs/EVIDENCE.md">Evidence protocol ↗</a>
           </p>
         </section>

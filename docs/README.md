@@ -14,6 +14,7 @@ Read [STATUS](STATUS.md) first when resuming work.
 | Future Intel deployment | [Deployment](DEPLOYMENT.md) |
 | Free Intel hardware access | [Access routes and request drafts](INTEL_ACCESS.md) |
 | First dual-arm implementation | [Foundation walkthrough](DUAL_ARM_FOUNDATION.md) |
+| First local contact manipulation | [Grasp walkthrough](CONTACT_GRASP.md), [attempt register](experiments/2026-09-10-contact-grasp.md) |
 | Problems and exact next checks | [Troubleshooting](TROUBLESHOOTING.md) |
 | Optional indexed project context | [OpenViking retrieval and indexing](OPENVIKING.md) |
 | Eligibility and external access | [Organizer questions](ORGANIZER_QUESTIONS.md) |
