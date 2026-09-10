@@ -6,6 +6,7 @@ import json
 import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from typing import Literal
 
 import mujoco
 import numpy as np
@@ -14,7 +15,7 @@ from pydantic import BaseModel, ConfigDict
 
 from bimanual.dual_arm import CAMERAS, MODEL_DIR, DualArm, verify_assets
 from bimanual.evidence import EvidenceStore, Manifest, provenance
-from bimanual.grasp import GraspConfig, grasp_xml, score_grasp
+from bimanual.grasp import GraspConfig, grasp_xml, invalid_contact_trace_row, score_grasp
 from bimanual.teacher import check_carried_path, check_joint_path, solve_downward
 
 INITIAL = np.array([-0.136, -0.110, 0.378])
@@ -26,6 +27,7 @@ class CupConfig(BaseModel):
     render: bool = True
     missing_object: bool = False
     skip_close: bool = False
+    arm: Literal["left", "right"] = "left"
 
 
 def cup_xml(config: CupConfig) -> str:
@@ -33,7 +35,13 @@ def cup_xml(config: CupConfig) -> str:
     root.set("model", "dual_so101_contact_cup")
     if config.missing_object:
         return ET.tostring(root, encoding="unicode")
-    cup = ET.SubElement(root.find("worldbody"), "body", name="cup", pos="-.136 -.110 .378")
+    cup = ET.SubElement(
+        root.find("worldbody"),
+        "body",
+        name="cup",
+        pos=".136 .110 .378" if config.arm == "right" else "-.136 -.110 .378",
+        euler=f"0 0 {np.pi if config.arm == 'right' else 0}",
+    )
     ET.SubElement(cup, "freejoint", name="cup/free")
 
     def geom(name, **attributes):
@@ -77,12 +85,13 @@ class CupEnvironment(DualArm):
         self.stage = "settle"
         self.contact_trace: list[dict] = []
         self.has_object = not config.missing_object
+        self.arm = config.arm
         super().__init__(xml=cup_xml(config))
         self.fingers = tuple(
             {
                 self.model.geom(i).name
                 for i in range(self.model.ngeom)
-                if self.model.body(int(self.model.geom_bodyid[i])).name == f"left/{body}"
+                if self.model.body(int(self.model.geom_bodyid[i])).name == f"{self.arm}/{body}"
             }
             for body in ("gripper", "moving_jaw_so101_v1")
         )
@@ -94,8 +103,11 @@ class CupEnvironment(DualArm):
 
     def step(self, targets, *, episode_id, sequence):
         values = np.asarray(targets, float)
-        if values.shape == (12,) and not np.allclose(values[6:], self.home[6:], rtol=0, atol=1e-12):
-            raise ValueError("Cup teacher does not own the right arm")
+        other = slice(6, 12) if self.arm == "left" else slice(0, 6)
+        if values.shape == (12,) and not np.allclose(
+            values[other], self.home[other], rtol=0, atol=1e-12
+        ):
+            raise ValueError("Cup teacher does not own the other arm")
         super().step(values, episode_id=episode_id, sequence=sequence)
 
     def allowed(self, pair):
@@ -148,15 +160,24 @@ class CupEnvironment(DualArm):
             )
 
 
-def score_cup(trace: list[dict]) -> dict:
-    metrics = score_grasp(trace, INITIAL, DESTINATION)
+def score_cup(trace: list[dict], *, arm: str = "left") -> dict:
+    if arm not in {"left", "right"}:
+        raise ValueError("Unknown cup arm")
+    invalid = invalid_contact_trace_row(trace, required_scalars=("upright_cosine",))
+    if invalid is not None:
+        metrics = score_cup([], arm=arm)
+        metrics.update(trace_valid=False, invalid_trace_row=invalid)
+        return metrics
+    mirror = np.array([1.0, 1.0, 1.0]) if arm == "left" else np.array([-1.0, -1.0, 1.0])
+    initial, destination = INITIAL * mirror, DESTINATION * mirror
+    metrics = score_grasp(trace, initial, destination)
     settled = [r for r in trace if r["stage"] == "settled"]
     upright = len(settled) == 400 and all(
         r["upright_cosine"] is not None and r["upright_cosine"] >= np.cos(np.deg2rad(10))
         for r in settled
     )
     displacement = (
-        float(np.linalg.norm(np.array(trace[-1]["object_position_m"][:2]) - INITIAL[:2]))
+        float(np.linalg.norm(np.array(trace[-1]["object_position_m"][:2]) - initial[:2]))
         if trace and trace[-1]["object_position_m"] is not None
         else 0.0
     )
@@ -219,7 +240,7 @@ def run_cup(config: CupConfig, *, store: EvidenceStore, project_root: Path) -> M
             start = env.data.ctrl[env.actuator_ids].copy()
             if stage in {"transport", "lower"}:
                 check_carried_path(
-                    env, start, goal, env.allowed, body_name="cup", site_name="left/pinch"
+                    env, start, goal, env.allowed, body_name="cup", site_name=f"{config.arm}/pinch"
                 )
             else:
                 check_joint_path(env, start, goal, env.allowed)
@@ -234,33 +255,37 @@ def run_cup(config: CupConfig, *, store: EvidenceStore, project_root: Path) -> M
             return env.data.ctrl[env.actuator_ids].copy()
 
         q = env.home.copy()
-        q[5] = 1.2
-        above = np.array([-0.15, -0.08, 0.47])
-        target = np.array([-0.15, -0.08, 0.405])
+        grip = 5 if config.arm == "left" else 11
+        mirror = np.array([1.0, 1.0, 1.0]) if config.arm == "left" else np.array([-1.0, -1.0, 1.0])
+        q[grip] = 1.2
+        above = np.array([-0.15, -0.08, 0.47]) * mirror
+        target = np.array([-0.15, -0.08, 0.405]) * mirror
         execute("settle", q, 20)
-        q = solve_downward(env, above, q)
+        q = solve_downward(env, above, q, arm=config.arm)
         execute("approach", q, 40)
-        q = solve_downward(env, target, q)
+        q = solve_downward(env, target, q, arm=config.arm)
         execute("descend", q, 40)
-        q[5] = 1.2 if config.skip_close else 0.7
+        q[grip] = 1.2 if config.skip_close else 0.7
         execute("close", q, 30)
-        q = solve_downward(env, above, q)
+        q = solve_downward(env, above, q, arm=config.arm)
         execute("lift", q, 60)
         execute("hold", q, 40)
-        if not score_cup(env.contact_trace)["hold_passed"]:
+        if not score_cup(env.contact_trace, arm=config.arm)["hold_passed"]:
             raise RuntimeError("Cup failed the two-second airborne bilateral hold")
-        above[:2] += [0.07, -0.043]
-        q = solve_downward(env, above, q)
+        above[:2] += np.array([0.07, -0.043]) * mirror[:2]
+        q = solve_downward(env, above, q, arm=config.arm)
         execute("transport", q, 60)
-        q = solve_downward(env, target + [0.07, -0.043, 0.009], q)
+        q = solve_downward(
+            env, target + np.array([0.07, -0.043, 0.009]) * mirror, q, arm=config.arm
+        )
         q = execute("lower", q, 60)
-        q[5] = 1.2
+        q[grip] = 1.2
         execute("release", q, 30)
-        q = solve_downward(env, above, q)
+        q = solve_downward(env, above, q, arm=config.arm)
         execute("retreat", q, 40)
         execute("settled", q, 40)
         record(None)
-        if not score_cup(env.contact_trace)["cup_success"]:
+        if not score_cup(env.contact_trace, arm=config.arm)["cup_success"]:
             raise RuntimeError("Cup failed released upright placement acceptance")
         outcome = "completed"
     except (Exception, KeyboardInterrupt) as exc:
@@ -268,7 +293,7 @@ def run_cup(config: CupConfig, *, store: EvidenceStore, project_root: Path) -> M
         outcome = "interrupted" if isinstance(exc, KeyboardInterrupt) else "failed"
         (directory / "error.txt").write_text(error + "\n")
     finally:
-        metrics = score_cup(env.contact_trace if env else [])
+        metrics = score_cup(env.contact_trace if env else [], arm=config.arm)
         if env is not None:
             metrics.update(
                 simulation_seconds=float(env.data.time), mujoco_version=mujoco.__version__

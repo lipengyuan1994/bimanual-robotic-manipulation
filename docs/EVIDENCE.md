@@ -1,6 +1,6 @@
 # Evidence and evaluation protocol
 
-## Preparation artifacts
+## Run artifacts
 
 An ignored `.artifacts/runs/<run_id>` directory contains a manifest and its files.
 Each manifest records evidence kind, outcome, configuration, metrics, environment,
@@ -27,7 +27,25 @@ Doctor's MPS
 probe verifies one matrix multiplication against CPU. It proves neither VLA
 compatibility nor training speed. `manipulation_success` remains null.
 
-## Future training/evaluation records
+Current contact skills also produce placement, hand-off, drawer, cup, plate and
+utensil manifests. Each outcome is limited to its named authored scene and
+independent acceptance checks; none sets full-task `manipulation_success` true.
+The [walkthroughs](README.md) link their envelopes and all retained attempts.
+Scorers reject malformed/non-finite truth records rather than letting reductions
+hide invalid samples. A verified hash establishes integrity, not physical quality.
+
+## Training records and release evaluation
+
+Implemented [demonstration/export records](DATASETS.md) preserve synchronized
+camera/joint/action transitions and source lineage. Actual [ACT training](TRAINING.md)
+records dataset identity, configuration, device, steps and saved policy/processors;
+reload checks verify reproducibility of model outputs. The
+[learned rollouts](POLICY_ROLLOUT.md) preserve raw/accepted proposals and real
+physics outcomes, including failed attempts. Existing trials use the training
+scene and must not be reported as held-out success or robustness.
+
+The following release evaluation requirements remain ahead of the current pilots.
+
 
 Keep train, validation, and final test episode IDs, randomization configs, and
 seeds disjoint. Prevalidate physical feasibility before freezing test scenes;

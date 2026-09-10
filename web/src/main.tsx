@@ -99,16 +99,18 @@ function App() {
   }, [revision]);
   const labs = runs.filter(
     (run) =>
-      ["preparation_pendulum", "dual_arm_foundation", "contact_grasp_teacher", "contact_placement_teacher", "contact_handoff_teacher", "contact_drawer_teacher", "contact_cup_teacher", "act_policy_rollout"].includes(run.kind ?? "") &&
+      ["preparation_pendulum", "dual_arm_foundation", "contact_grasp_teacher", "contact_placement_teacher", "contact_handoff_teacher", "contact_drawer_teacher", "contact_cup_teacher", "contact_plate_teacher", "contact_utensils_teacher", "act_policy_rollout"].includes(run.kind ?? "") &&
       run.integrity === "verified",
   );
   const selected = labs.find((run) => run.run_id === selectedId) ?? labs.find((run) => run.files?.["replay.gif"]) ?? labs[0];
   const isHandoff = selected?.kind === "contact_handoff_teacher";
   const isLearned = selected?.kind === "act_policy_rollout";
+  const isPlate = selected?.kind === "contact_plate_teacher";
+  const isUtensils = selected?.kind === "contact_utensils_teacher";
   const isCup = selected?.kind === "contact_cup_teacher";
   const isDrawer = selected?.kind === "contact_drawer_teacher";
   const isPlacement = selected?.kind === "contact_placement_teacher";
-  const isGrasp = selected?.kind === "contact_grasp_teacher" || isPlacement || isHandoff || isDrawer || isCup || isLearned;
+  const isGrasp = selected?.kind === "contact_grasp_teacher" || isPlacement || isHandoff || isDrawer || isCup || isPlate || isUtensils || isLearned;
   const isDual = selected?.kind === "dual_arm_foundation" || isGrasp;
   const doctor = runs.find(
     (run) => run.kind === "preparation_runtime" && run.integrity === "verified",
@@ -225,7 +227,7 @@ function App() {
             <div className="card-heading">
               <div>
                 <span className="small-label">MUJOCO LEARNING LAB</span>
-                <h2>{isLearned ? "What did the policy learn?" : isCup ? "Carry the cup. Set it upright." : isDrawer ? "Grasp the handle. Open the drawer." : isHandoff ? "Grasp. Share. Hand over." : isPlacement ? "Pick up. Carry. Place." : isGrasp ? "Reach. Grasp. Release." : isDual ? "Two arms. Three camera views." : "One joint. A complete loop."}</h2>
+                <h2>{isLearned ? "What did the policy learn?" : isUtensils ? "Open the drawer. Set out the utensils." : isPlate ? "Lift the plate. Set it down." : isCup ? "Carry the cup. Set it upright." : isDrawer ? "Grasp the handle. Open the drawer." : isHandoff ? "Grasp. Share. Hand over." : isPlacement ? "Pick up. Carry. Place." : isGrasp ? "Reach. Grasp. Release." : isDual ? "Two arms. Three camera views." : "One joint. A complete loop."}</h2>
               </div>
               <span className="tag">Recorded simulation · {selected?.outcome ?? "no run"}</span>
             </div>
@@ -249,7 +251,7 @@ function App() {
             </div>
             <div className="sim-footer">
               <span>
-                <b>200 Hz</b> physics
+                <b>{Number(selected?.metrics?.physics_hz ?? 200)} Hz</b> physics
               </span>
               <span>
                 <b>20 Hz</b> control
@@ -258,7 +260,7 @@ function App() {
             </div>
             {isGrasp && selected && (
               <p className="scope-note">
-                {isCup ? "Cup placement" : isDrawer ? "Drawer" : isHandoff ? "Hand-off" : isPlacement ? "Placement" : "Grasp"} test: <strong>{selected.metrics?.[isCup ? "cup_success" : isDrawer ? "drawer_success" : isHandoff ? "handoff_success" : "grasp_success"] === true ? "passed" : "failed"}</strong>.
+                {isUtensils ? "Utensil retrieval" : isPlate ? "Plate placement" : isCup ? "Cup placement" : isDrawer ? "Drawer" : isHandoff ? "Hand-off" : isPlacement ? "Placement" : "Grasp"} test: <strong>{selected.metrics?.[isUtensils ? "utensils_success" : isPlate ? "plate_success" : isCup ? "cup_success" : isDrawer ? "drawer_success" : isHandoff ? "handoff_success" : "grasp_success"] === true ? "passed" : "failed"}</strong>.
                 {" "}{isLearned ? "Learned left-arm actions from images and joints; right arm held by supervisor. This is a training-scene test." : "Scripted teacher with simulator truth; full dinner task remains untested."}
                 {" "}<a href={`/api/runs/${selected.run_id}/files/scoring-truth.jsonl`}>Inspect contact evidence →</a>
               </p>
@@ -281,8 +283,8 @@ function App() {
             <div className="scope-note">
               <strong>What this establishes</strong>
               <p>
-                These are bounded contact skills. Utensil retrieval, plate and cup placement, learned
-                control, task reasoning, and Intel deployment remain to be built and tested.
+                These are individual contact skills and recorded learning experiments. A complete dinner-table
+                workflow, reliable learned control, task reasoning, and Intel deployment remain unfinished.
               </p>
             </div>
           </div>
@@ -363,6 +365,10 @@ function App() {
                             ? "Contact drawer teacher"
                           : run.kind === "contact_cup_teacher"
                             ? "Contact cup teacher"
+                          : run.kind === "contact_plate_teacher"
+                            ? "Contact plate teacher"
+                          : run.kind === "contact_utensils_teacher"
+                            ? "Contact utensils teacher"
                           : run.kind === "act_runtime_probe"
                             ? "ACT runtime probe"
                           : run.kind === "act_training"
@@ -371,7 +377,7 @@ function App() {
                             ? "ACT learned rollout"
                           : run.kind === "preparation_runtime"
                             ? "Runtime probe"
-                            : "Unreadable run"}
+                            : run.kind ? run.kind.replaceAll("_", " ") : "Unreadable run"}
                       </td>
                       <td>
                         <span

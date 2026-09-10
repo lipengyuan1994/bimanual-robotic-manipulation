@@ -138,3 +138,24 @@ clipping threshold 10). Their results are not silently pooled together.
 
 No real-data learning, grasp outcome, generalization, OpenVINO export or Intel
 hardware compliance is claimed by these runs.
+
+## Real-data duration measurements
+
+The single-episode placement experiments use 460 confirmed training transitions,
+three 270×480 RGB views, the small ACT model, batch size 1, chunk size 10 and MPS
+with CPU fallback disabled. They start fresh from the same seed and use the same
+optimizer and preprocessing.
+
+| Training run | Updates | Total time | Median / p95 update time | Physical follow-up |
+|---|---:|---:|---:|---|
+| `20260910T212647-8c539d28090b` | 500 | 110.93 s | 0.200 / 0.226 s | Failed airborne hold |
+| `20260910T213909-88c7e1c3a78b` | 2,000 | 424.72 s | 0.204 / 0.234 s | Failed airborne hold |
+
+The first 500 sampled indices and losses matched exactly across these two runs;
+this is observed reproducibility for this configuration, not a guarantee across
+hardware or library versions. Both checkpoint/processor reload checks passed.
+The longer run reduced left-joint MAE on 16 selected training observations from
+0.1841 to 0.04882 radians, but its one physical rollout still failed. Read the
+[trajectory diagnosis](POLICY_ROLLOUT.md) for why closer training predictions did
+not establish a working grasp. These measurements support local compute planning;
+they do not establish learned task quality, generalization or Intel compliance.

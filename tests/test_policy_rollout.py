@@ -188,3 +188,44 @@ def test_terminal_capture_does_not_overwrite_pre_action_images(tmp_path):
     for record in (before, after):
         for frame in record.frames:
             frame.artifact.verify(tmp_path)
+
+
+def test_long_forecast_executes_only_prefix_then_requires_replanning(queue):
+    targets = np.linspace(0.1, 0.9, 100)[:, None] * np.ones((1, 12))
+    report = queue.offer(targets, observation(), now_ns=1_001_000_000)
+    assert report["prediction_horizon_steps"] == 100
+    assert report["execution_prefix_steps"] == 10
+    assert report["discarded_forecast_steps"] == 90
+    assert len(report["accepted_chunk"]["targets_rad"]) == 100
+    for index in range(10):
+        value = queue.take(observation(index), now_ns=1_001_000_000 + index * 50_000_000)
+        np.testing.assert_array_equal(value[:6], targets[index, :6])
+    assert not queue.pending
+    with pytest.raises(ValueError, match="No accepted action"):
+        queue.take(observation(10), now_ns=1_501_000_000)
+    assert queue.chunk is None
+    new_report = queue.offer(np.full((100, 12), 0.3), observation(10), now_ns=1_501_000_000)
+    assert new_report["accepted_chunk"]["observation_sequence"] == 10
+    np.testing.assert_array_equal(queue.take(observation(10), now_ns=1_502_000_000)[:6], [0.3] * 6)
+
+
+@pytest.mark.parametrize("column", [0, 11])
+def test_invalid_unexecuted_forecast_tail_rejects_whole_offer(queue, column):
+    targets = np.full((100, 12), 0.2)
+    targets[99, column] = 2.0
+    with pytest.raises(ValueError, match="bounds"):
+        queue.offer(targets, observation(), now_ns=1_001_000_000)
+    assert not queue.pending and queue.chunk is None
+
+
+def test_prefix_does_not_extend_source_observation_expiry(queue):
+    queue.offer(np.full((100, 12), 0.2), observation(), now_ns=1_001_000_000)
+    with pytest.raises(ValueError, match="Expired"):
+        queue.take(observation(), now_ns=1_500_000_000)
+    assert not queue.pending
+
+
+@pytest.mark.parametrize("value", [0, 101, True, 2.5])
+def test_invalid_prefix_rejected(value, tmp_path):
+    with pytest.raises(ValueError):
+        PolicyRolloutConfig(training_run=tmp_path, execute_chunk_steps=value)

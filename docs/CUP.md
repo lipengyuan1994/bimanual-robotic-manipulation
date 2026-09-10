@@ -6,6 +6,7 @@ natural-language instruction or execute the full dinner-table task.
 
 ```sh
 .venv/bin/bimanual cup
+.venv/bin/bimanual cup --arm right
 .venv/bin/bimanual cup --fault missing-object --no-render
 .venv/bin/bimanual cup --fault skip-close --no-render
 ```
@@ -24,8 +25,10 @@ handle. The handle increases the overall width. There is no fluid in the cup.
 
 The cup starts at world `(-0.136, -0.110, 0.378)` metres. Its target is
 `(-0.066, -0.153, 0.378)`. These coordinates refer to the cup body's base frame,
-not its centre of mass. The left arm acts and the right arm remains at its reset
-joint targets. The original SO-101 joint limits, gains and collision assets
+not its centre of mass. By default the left arm acts and the right arm remains at reset. With
+`--arm right`, world X/Y coordinates and cup yaw are rotated by 180 degrees,
+and the left arm stays at reset. This mirrored scene keeps the cup away from
+the drawer region when composing the future dinner scene. The original SO-101 joint limits, gains and collision assets
 remain unchanged. Physics runs at 200 Hz and control at 20 Hz.
 
 Cup friction is `1, 0.005, 0.0001`; its contact parameters are
@@ -71,6 +74,7 @@ phases:
 | Integrated run | Result |
 |---|---|
 | `20260910T214209-e2fd6aaa7727` | No-render nominal pass; 21.95 simulated seconds |
+| `20260910T214956-40fa1c16d088` | Mirrored right-arm no-render pass; original left-arm controls remained at reset |
 | `20260910T214357-4255abc01ac6` | Rendered nominal pass; 21.95 simulated / 9.98 wall seconds; verified artifact seal |
 
 The rendered run lifted 52.24 mm, displaced 69.37 mm horizontally, and finished
@@ -80,7 +84,7 @@ runs based on commit `224b87d`, not held-out release evaluations. Their local
 bundles include the scene/assets, joint observations, independent contact trace,
 source hashes and three-camera replay.
 
-Thirteen non-render tests cover actual placement, corrupted success evidence,
+The non-render tests cover actual placement, corrupted success evidence,
 missing cup, failed grasp, unowned-arm commands, contact violations, scratch/live
 state isolation and interruption. A separate render test checks all three views
 and a multi-frame replay. Full-task success remains unset.

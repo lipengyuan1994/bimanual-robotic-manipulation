@@ -4,15 +4,15 @@ Updated: 2026-09-10. Branch: `codex/preparation-foundation`.
 
 ## Current boundary
 
-M0 is complete. M1 is in progress: either arm can physically grasp and place a
-practice block, the arms can transfer a practice bar through contact, and a
-contact-driven drawer opens and remains open after release. A small hollow cup
-can also be carried and released upright in its nominal scene. The user authorized event-window implementation following
+M0 is complete. M1 is in progress: block placement, bar hand-off, drawer-to-table
+spoon/fork retrieval, hollow cup placement with either arm, and plate placement
+onto the bare table pass their authored-scene teacher checks. A full continuous
+dinner-scene workflow is not yet established. The user authorized event-window implementation following
 the event's explicit online kickoff instructions; see [decision 0003](decisions/0003-event-window-implementation.md).
 Earlier preparation remains identified in Git history. No organizer ruling on
 pre-existing-code reuse is claimed.
 
-There is no complete dinner-task scene, task-trained deployed policy, visual
+There is no complete dinner-task execution, successful learned manipulation policy, visual
 planner, recovery supervisor, or Intel deployment yet. The full product and M1's
 manipulation exit checks remain incomplete.
 
@@ -22,7 +22,9 @@ manipulation exit checks remain incomplete.
   license and per-file SHA-256 provenance, above a simple workbench.
 - Twelve mapped channels, original joint/actuator dynamics, intersected limits,
   finite-value and episode/sequence checks, synchronous stop/reset, and 200 Hz
-  physics with a 20 Hz control interface.
+  default physics with a 20 Hz control interface. An explicit 1 kHz profile
+  checks every finer physics step without changing the action rate; see
+  [decision 0004](decisions/0004-explicit-physics-profiles.md).
 - Overhead and two wrist cameras, reproducible reset pose, actual joint traces,
   replay GIF, mapping/config and self-contained scene bundles. Wrist optical axes
   are adjusted in the builder; upstream files are unchanged.
@@ -31,16 +33,25 @@ manipulation exit checks remain incomplete.
 - New `bimanual grasp`: bounded downward IK, sampled trajectory checking,
   per-physics-step contact guards and independently scored block grasp/placement.
   [Walkthrough and exercise](CONTACT_GRASP.md); either arm acts while the other remains parked.
-  Failed replays are now selectable as well as successes. No learned control yet.
+  Failed replays are selectable as well as successes. This command uses a scripted teacher.
 - New `bimanual handoff`: a contact-only practice-bar transfer with independently
   checked donor-only, shared and receiver-only airborne ownership. See
   [HANDOFF](HANDOFF.md), including contact-model assumptions and retained failures.
 - New `bimanual drawer`: opens a passive slide-joint drawer by its handle, releases
   it, and checks that the drawer stays open with spoon/fork proxies retained.
-  [Drawer walkthrough](DRAWER.md); utensil retrieval remains unimplemented.
+  [Drawer walkthrough](DRAWER.md). This drawer-only scene retains the original
+  thin-shaft proxies; retrieval uses the explicit variant below.
 - New `bimanual cup`: physical transport and upright release of a hollow 60 g cup.
   [Cup walkthrough](CUP.md) records the declared geometry, contact forces,
   carried-object path prediction, acceptance checks and rendered evidence.
+- New `bimanual plate`: a physical source-rack grasp, carry and edge-first release
+  onto the bare table. [Plate walkthrough](PLATE.md); its 18.74 mm nominal position
+  error is close to the 20 mm limit and is not robustness evidence.
+- New `bimanual utensils`: opens the drawer and retrieves/places both spoon and
+  fork in one uninterrupted 94.4-second simulation. [Utensil walkthrough](UTENSILS.md)
+  discloses the ergonomic handles, flush roof and 1 kHz contact profile.
+- An initial [combined dinner layout](DINNER_SCENE.md) loads and settles all objects;
+  executing the skills together without resets or disturbing placements remains next.
 - `grasp --record-demo` records raw three-camera RGB observations and confirmed
   actions at 20 Hz, with terminal observations, failure outcomes and source lineage.
   [Versioned interfaces](INTERFACES.md) reject malformed/stale action chunks and
@@ -67,17 +78,18 @@ manipulation exit checks remain incomplete.
 
 ## Verification and checkpoint
 
-Current changes passed **189 ordinary tests and six actual rendering tests**,
+Current changes passed **271 ordinary tests and seven actual rendering tests**,
 Ruff, documentation-link checks, README synchronization and the TypeScript/portal
 production build. Optional real LeRobot/ACT tests run separately in the isolated
 training environment: 30 checks passed together and the explicit real LeRobot
 export check passed separately. Skips in the base environment are not counted as passes.
 The reviewer reproduced and fixed failed-outcome vocabulary mismatches in held-out
 dataset checks and duplicate-timestamp false positives in physical grasp scoring.
-Regression tests now cover both. Learned-rollout checks are recorded below. The cup addition passed 13 ordinary
-checks and its separate three-camera rendering check; the full ordinary suite
-passed in `.artifacts/checks-cup.log`. The earlier five rendering checks remain
-recorded in `.artifacts/render-checks-placement-handoff.log`.
+Regression tests now cover both. The complete required `scripts/check.sh --render`
+passed with 271 ordinary tests, three explicit optional-training skips, and seven
+actual rendering tests. Ruff, format, documentation links and README checks passed.
+The TypeScript check and portal build also passed. The complete local log is
+`.artifacts/checks-tableware-integration.log`; learned-rollout evidence is below.
 
 Previous committed checkpoint validation: **45 tests pass** (43 ordinary checks and two rendering
 checks), Ruff, documentation links, README synchronization, TypeScript and
@@ -154,6 +166,36 @@ Training loss decreased without a successful grasp. Diagnosis of prediction
 error and approach/closure timing is the next learning step; do not promote either
 checkpoint as a working manipulation policy.
 
+## Latest physical integration and learning evidence
+
+- Cup right-arm rendered run `20260910T215542-576bc5a35e98`: 69.37 mm travel,
+  upright release, all timed gates passed. See [CUP](CUP.md).
+- Plate CLI run `20260910T215918-56c30c949063` and rendered run
+  `20260910T215707-0266b4a5e7fb`: 140.12 mm travel, released flat on the bare table;
+  18.74 mm final error against a 20 mm limit. See [PLATE](PLATE.md).
+- Canonical portal utensil run `20260910T220228-82cffdf64f0b`: 94.4 simulated /
+  65.96 wall seconds with replay, 94,400 audited samples, both utensils released,
+  zero forbidden contacts and 1.380 mm maximum overlap. Its seal and strengthened
+  scorer were verified. See [UTENSILS](UTENSILS.md). Earlier agent-generated
+  utensil runs live in the explicitly documented nested store; none were moved.
+- Shared-layout probe `20260910T220035-a5c40c643f17`: all objects load and settle
+  together, but no integrated manipulation sequence has passed. See
+  [DINNER_SCENE](DINNER_SCENE.md).
+- ACT run `20260910T213909-88c7e1c3a78b`: 2,000 MPS updates in 424.72 seconds;
+  matched training-frame error improved from 0.1841 to 0.04882 rad. Its physical
+  rollout `20260910T214631-6fd7bfd78a0c` still failed the grasp. A separate
+  100-step prediction-horizon experiment is running with a ten-action execution
+  prefix; every forecasted action, including its unused tail, must pass bounds.
+- Independent review reproduced false-success paths from malformed scoring truth.
+  All-row finite/shape/object-presence checks and final-placement checks now reject
+  them. Successful physical recordings still pass; no trajectories or old evidence
+  were altered to obtain that result.
+
+The cup checkpoint `3a6818f` passed [GitHub CI](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34534143440).
+The subsequent plate/utensil, explicit-physics, scoring and action-prefix integration
+passed the complete local checks above. Remote CI for that new checkpoint must be
+checked separately; the older green run does not establish its remote result.
+
 ## External dependencies
 
 | ID | Needed | Consequence |
@@ -170,12 +212,14 @@ hackathon submission has been sent.
 
 ## Next executable step
 
-Run `.venv/bin/bimanual handoff` and inspect the replay and contact evidence in the
-portal. Use `--fault skip-receiver-close --no-render` to verify that the donor
-keeps ownership when the receiver fails to establish its grasp.
-Next implementation slice: retrieve the stored utensils, finish plate handling, integrate cup handling,
-and combine skills in one dinner scene. In parallel, run the early ACT checkpoint
-through the same physics and action checks; retain any failed learned rollout.
+Run `.venv/bin/bimanual utensils` and inspect the uninterrupted drawer-to-table
+replay. Run `.venv/bin/bimanual plate` and `.venv/bin/bimanual cup --arm right`
+for the other tableware skills. Next implement the [shared-scene sequence](DINNER_SCENE.md)
+with continuous physics and final checks of every placement.
+In parallel, the 100-step prediction-horizon ACT experiment is bounded to 2,000
+updates, executing only ten validated actions before taking fresh observations.
+The prior 2,000-update ten-step policy still failed its grasp; better offline
+predictions did not establish learned task success.
 M1 is complete only after the [roadmap](ROADMAP.md) exit checks pass.
 
 In parallel, await Intel review notification, advertised within three days. The

@@ -147,6 +147,34 @@ def test_contact_only_episode_and_scoring_negative_controls(tmp_path):
             altered.pop()
         assert not score_grasp(altered, initial)["grasp_success"]
 
+    # Nonfinite evidence in an otherwise unscored phase must not disappear in max().
+    for mutation in [
+        "nan_overlap",
+        "negative_force",
+        "pose_shape",
+        "velocity_shape",
+        "nonfinite_velocity",
+        "invalid_support",
+    ]:
+        altered = list(truth)
+        row = copy.deepcopy(altered[1])
+        altered[1] = row
+        if mutation == "nan_overlap":
+            row["max_penetration_m"] = float("nan")
+        elif mutation == "negative_force":
+            row["fixed_jaw_normal_force_n"] = -1
+        elif mutation == "pose_shape":
+            row["object_position_m"].pop()
+        elif mutation == "velocity_shape":
+            row["object_velocity"].pop()
+        elif mutation == "nonfinite_velocity":
+            row["object_velocity"][0] = float("inf")
+        else:
+            row["table_contact"] = "false"
+        scored = score_grasp(altered, initial)
+        assert not scored["grasp_success"] and not scored["trace_valid"]
+        assert scored["invalid_trace_row"] == 1
+
 
 @pytest.mark.parametrize("fault", ["missing_object", "skip_close"])
 def test_faults_are_failed_and_sealed(tmp_path, fault):

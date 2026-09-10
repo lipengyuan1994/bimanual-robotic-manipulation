@@ -62,6 +62,7 @@ class PolicyRolloutConfig(BaseModel):
     max_observation_age_seconds: float = Field(default=2, gt=0, le=10)
     replay: bool = True
     cpu_threads: int = Field(default=4, ge=1, le=32)
+    execute_chunk_steps: int = Field(default=10, ge=1, le=100, strict=True)
 
 
 def policy_inputs(raw: dict) -> dict[str, np.ndarray]:
@@ -117,7 +118,18 @@ def save_observation(raw: dict, directory: Path, *, prefix: str = "observations"
 class GuardedActionQueue:
     """All proposal bounds checked before enqueue; right arm explicitly owned by supervisor."""
 
-    def __init__(self, limits: JointLimits, home: np.ndarray, policy_sha256: str, max_age_ns: int):
+    def __init__(
+        self,
+        limits: JointLimits,
+        home: np.ndarray,
+        policy_sha256: str,
+        max_age_ns: int,
+        *,
+        execute_chunk_steps: int = 10,
+    ):
+        if type(execute_chunk_steps) is not int or not 1 <= execute_chunk_steps <= 100:
+            raise ValueError("Execution prefix must contain between one and 100 steps")
+        self.execute_chunk_steps = execute_chunk_steps
         self.limits, self.home = limits, home.copy()
         self.policy_sha256, self.max_age_ns = policy_sha256, max_age_ns
         self.clear()
@@ -160,11 +172,15 @@ class GuardedActionQueue:
             expected_policy_sha256=self.policy_sha256,
         )
         self.chunk, self.anchor = chunk, observation
-        self.pending.extend(chunk.targets_rad)
+        prefix_length = min(self.execute_chunk_steps, len(chunk.targets_rad))
+        self.pending.extend(chunk.targets_rad[:prefix_length])
         return {
             "raw_chunk": raw.model_dump(mode="json"),
             "accepted_chunk": chunk.model_dump(mode="json"),
             "ownership_mask": "right six joints held at reset; left six unchanged",
+            "prediction_horizon_steps": len(chunk.targets_rad),
+            "execution_prefix_steps": prefix_length,
+            "discarded_forecast_steps": len(chunk.targets_rad) - prefix_length,
         }
 
     def take(self, current: Observation, *, now_ns: int, cancelled: bool = False) -> np.ndarray:
@@ -317,6 +333,8 @@ def run_policy_rollout(
         torch.set_num_threads(config.cpu_threads)
         metrics["actual_device"] = config.device
         metrics["cpu_threads"] = config.cpu_threads
+        metrics["prediction_horizon_steps"] = policy.config.chunk_size
+        metrics["execution_prefix_limit"] = config.execute_chunk_steps
         metrics["precision"] = "float32"
         metrics["torch_version"] = torch.__version__
         env = GraspEnvironment(GraspConfig(destination_xy=(-0.15, 0.08)))
@@ -368,6 +386,7 @@ def run_policy_rollout(
             env.home,
             checkpoint_digest,
             int(config.max_observation_age_seconds * 1e9),
+            execute_chunk_steps=config.execute_chunk_steps,
         )
         maximum_steps = min(460, int(config.max_seconds * 20))
         for step in range(maximum_steps):

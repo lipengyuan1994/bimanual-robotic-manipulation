@@ -6,6 +6,7 @@ This teacher uses simulator truth. It is not ACT, VLA reasoning, or dinner-task 
 from __future__ import annotations
 
 import json
+import math
 import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -176,10 +177,69 @@ class GraspEnvironment(DualArm):
             raise RuntimeError("Contact penetration exceeds the 2.5 mm experiment limit")
 
 
+def invalid_contact_trace_row(
+    trace: list[dict], *, required_scalars=(), required_bools=()
+) -> int | None:
+    """Find malformed scoring evidence before reductions can hide NaN or missing fields."""
+
+    def scalar(value, *, nonnegative=False):
+        return (
+            type(value) in (int, float) and math.isfinite(value) and (not nonnegative or value >= 0)
+        )
+
+    def vector(value, size):
+        return (
+            isinstance(value, (list, tuple))
+            and len(value) == size
+            and all(scalar(v) for v in value)
+        )
+
+    for index, row in enumerate(trace):
+        try:
+            valid = (
+                isinstance(row, dict)
+                and isinstance(row["stage"], str)
+                and scalar(row["simulation_seconds"])
+                and vector(row["object_position_m"], 3)
+                and vector(row["object_velocity"], 6)
+                and all(
+                    scalar(row[key], nonnegative=True)
+                    for key in (
+                        "fixed_jaw_normal_force_n",
+                        "moving_jaw_normal_force_n",
+                        "max_penetration_m",
+                    )
+                )
+                and all(type(row[key]) is bool for key in ("table_contact", *required_bools))
+                and all(scalar(row[key]) for key in required_scalars)
+            )
+            for key in ("contact_pairs", "forbidden_pairs"):
+                valid = (
+                    valid
+                    and isinstance(row[key], list)
+                    and all(
+                        isinstance(pair, (list, tuple))
+                        and len(pair) == 2
+                        and all(isinstance(name, str) for name in pair)
+                        for pair in row[key]
+                    )
+                )
+        except (KeyError, TypeError, AttributeError):
+            valid = False
+        if not valid:
+            return index
+    return None
+
+
 def score_grasp(
     trace: list[dict], initial: np.ndarray, destination: np.ndarray | None = None
 ) -> dict:
     """Require a complete 2s airborne hold and 2s released settling, not a height spike."""
+    invalid = invalid_contact_trace_row(trace)
+    if invalid is not None:
+        metrics = score_grasp([], initial, destination)
+        metrics.update(trace_valid=False, invalid_trace_row=invalid)
+        return metrics
     final_position = initial if destination is None else destination
     transport = [r for r in trace if r["stage"] == "transport"]
     hold = [r for r in trace if r["stage"] == "hold"]
@@ -242,6 +302,7 @@ def score_grasp(
     collisions = sum(bool(r["forbidden_pairs"]) for r in trace)
     penetration = max((r["max_penetration_m"] for r in trace), default=0)
     return dict(
+        trace_valid=bool(trace),
         grasp_success=bool(
             hold_ok
             and release_ok

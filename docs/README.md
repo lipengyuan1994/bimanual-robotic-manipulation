@@ -19,6 +19,9 @@ Read [STATUS](STATUS.md) first when resuming work.
 | Physical transfer between arms | [Hand-off walkthrough](HANDOFF.md), [feasibility attempts](experiments/2026-09-10-handoff-feasibility.md) |
 | Contact-driven drawer opening | [Drawer walkthrough](DRAWER.md), [attempt register](experiments/2026-09-10-drawer-feasibility.md) |
 | Hollow cup placement | [Cup walkthrough and evidence](CUP.md) |
+| Plate placement on the table | [Plate walkthrough](PLATE.md), [all tableware attempts](experiments/2026-09-10-tableware-feasibility.md) |
+| Drawer-to-table utensil retrieval | [Utensil walkthrough](UTENSILS.md), [all retrieval attempts](experiments/2026-09-10-utensil-feasibility.md) |
+| Combine all dinner skills | [Shared-scene integration](DINNER_SCENE.md) |
 | Training datasets | [LeRobot export](DATASETS.md) |
 | Native ACT execution | [Training runtime probe](TRAINING.md) |
 | Learned actions in the simulator | [Policy rollout and failure evidence](POLICY_ROLLOUT.md) |
@@ -26,7 +29,7 @@ Read [STATUS](STATUS.md) first when resuming work.
 | Optional indexed project context | [OpenViking retrieval and indexing](OPENVIKING.md) |
 | Eligibility and external access | [Organizer questions](ORGANIZER_QUESTIONS.md) |
 | Scope and event-window authorization | [Historical preparation decision](decisions/0001-preparation-boundary.md), [Decision 0003](decisions/0003-event-window-implementation.md) |
-| Runtime/model choices | [Decision 0002](decisions/0002-runtime-and-policy-design.md) |
+| Runtime/model choices | [Decision 0002](decisions/0002-runtime-and-policy-design.md), [explicit physics profiles](decisions/0004-explicit-physics-profiles.md) |
 | Repeatable experiment notes | [Experiment template](experiments/TEMPLATE.md) |
 | Current validation results | [Preparation validation](experiments/2026-09-05-preparation.md) |
 | Evidence sources | [Source register](sources/README.md) |

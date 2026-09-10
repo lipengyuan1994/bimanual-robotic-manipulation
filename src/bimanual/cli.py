@@ -67,7 +67,15 @@ def main(argv: list[str] | None = None) -> int:
     drawer.add_argument("--fault", choices=["missing-handle", "skip-close"])
     cup = commands.add_parser("cup", help="Physically carry and release a hollow cup upright")
     cup.add_argument("--no-render", action="store_true")
+    cup.add_argument("--arm", choices=["left", "right"], default="left")
     cup.add_argument("--fault", choices=["missing-object", "skip-close"])
+    plate = commands.add_parser("plate", help="Carry a plate from its rack onto the bare table")
+    plate.add_argument("--no-render", action="store_true")
+    plate.add_argument("--fault", choices=["missing-object", "skip-close"])
+    utensils = commands.add_parser("utensils", help="Open the drawer and place both utensils")
+    utensils.add_argument("--no-render", action="store_true")
+    utensils.add_argument("--missing-object", choices=["spoon", "fork"])
+    utensils.add_argument("--skip-close", choices=["spoon", "fork"])
     dataset_export = commands.add_parser(
         "dataset-export", help="Export verified recordings to local LeRobot v3"
     )
@@ -99,6 +107,7 @@ def main(argv: list[str] | None = None) -> int:
     rollout.add_argument("training_run", type=Path)
     rollout.add_argument("--device", choices=["cpu", "mps"], default="cpu")
     rollout.add_argument("--max-seconds", type=float, default=23)
+    rollout.add_argument("--execute-chunk-steps", type=int, default=10)
     rollout.add_argument(
         "--no-replay", action="store_true", help="Keep policy cameras; omit display GIF"
     )
@@ -181,11 +190,40 @@ def main(argv: list[str] | None = None) -> int:
             )
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1
+        elif args.command == "plate":
+            from bimanual.plate import PlateConfig, run_plate
+
+            result = run_plate(
+                PlateConfig(
+                    render=not args.no_render,
+                    missing_object=args.fault == "missing-object",
+                    skip_close=args.fault == "skip-close",
+                ),
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
+        elif args.command == "utensils":
+            from bimanual.utensils import UtensilConfig, run_utensils
+
+            result = run_utensils(
+                UtensilConfig(
+                    render=not args.no_render,
+                    missing_object=args.missing_object,
+                    skip_close=args.skip_close,
+                ),
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
         elif args.command == "cup":
             from bimanual.cup import CupConfig, run_cup
 
             result = run_cup(
                 CupConfig(
+                    arm=args.arm,
                     render=not args.no_render,
                     missing_object=args.fault == "missing-object",
                     skip_close=args.fault == "skip-close",
@@ -232,6 +270,7 @@ def main(argv: list[str] | None = None) -> int:
                     training_run=args.training_run,
                     device=args.device,
                     max_seconds=args.max_seconds,
+                    execute_chunk_steps=args.execute_chunk_steps,
                     replay=not args.no_replay,
                 ),
                 store=store,

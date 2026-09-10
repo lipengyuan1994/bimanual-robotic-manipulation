@@ -103,10 +103,15 @@ class FoundationConfig(BaseModel):
 class DualArm:
     """One owner per instance; synchronous observations and one-step joint targets."""
 
-    def __init__(self, *, xml: str | None = None):
+    def __init__(self, *, xml: str | None = None, physics_hz: int = PHYSICS_HZ):
+        if type(physics_hz) is not int or physics_hz not in (200, 1000):
+            raise ValueError("Supported physics profiles are 200 Hz and 1000 Hz")
+        self.physics_hz = physics_hz
         self.xml = scene_xml() if xml is None else xml
         assets = {p.name: p.read_bytes() for p in (MODEL_DIR / "assets").glob("*.stl")}
         self.model = mujoco.MjModel.from_xml_string(self.xml, assets)
+        if not np.isclose(self.model.opt.timestep, 1 / physics_hz, rtol=0, atol=1e-12):
+            raise ValueError("Scene timestep does not match the declared physics profile")
         self.data = mujoco.MjData(self.model)
         self.joint_ids = np.array([self.model.joint(n).id for n in JOINT_ORDER])
         self.actuator_ids = np.array([self.model.actuator(n).id for n in JOINT_ORDER])
@@ -157,13 +162,16 @@ class DualArm:
             raise ValueError("Episode stopped; reset required")
         if episode_id != self.episode_id or sequence != self.sequence:
             raise ValueError("Stale action episode or observation sequence")
+        if not np.isclose(self.model.opt.timestep, 1 / self.physics_hz, rtol=0, atol=1e-12):
+            self.stop()
+            raise RuntimeError("Scene timestep changed during the episode; reset model required")
         values = np.asarray(targets, dtype=float)
         if values.shape != (12,) or not np.isfinite(values).all():
             raise ValueError("Expected 12 finite joint targets in radians")
         if np.any(values < self.lower) or np.any(values > self.upper):
             raise ValueError("Action outside joint/actuator bounds")
         self.data.ctrl[self.actuator_ids] = values
-        for _ in range(PHYSICS_HZ // CONTROL_HZ):
+        for _ in range(self.physics_hz // CONTROL_HZ):
             mujoco.mj_step(self.model, self.data)
             self.after_physics_step()
             self.max_contacts = max(self.max_contacts, int(self.data.ncon))
@@ -200,7 +208,7 @@ class DualArm:
             velocity_addresses=self.vadr.tolist(),
             lower_rad=self.lower.tolist(),
             upper_rad=self.upper.tolist(),
-            physics_hz=PHYSICS_HZ,
+            physics_hz=self.physics_hz,
             control_hz=CONTROL_HZ,
             normalization="none_radians",
         )
