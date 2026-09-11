@@ -127,9 +127,11 @@ and portal are committed at `bdcd4e4`. Use `git rev-parse HEAD` for the latest
 handoff commit; subsequent sampler changes do not alter the sealed teacher run. [Draft PR #1](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/pull/1)
 is open and unmerged.
 
-Latest `scripts/check.sh`: **510 passed, thirteen explicit optional-training skips,
+Latest `scripts/check.sh`: **553 passed, thirteen explicit optional-training skips,
 eight rendering tests deselected**, with Ruff, formatting, docs and README checks.
-Log: `.artifacts/checks-skill-training.log`; the preceding dinner-only
+Log: `.artifacts/checks-supervised-control-final.log`; two subsequently added
+auxiliary-arm integration cases also pass in the 29-test bridge suite
+(`.artifacts/supervised-control-final-focused.log`). The preceding dinner-only
 checkpoint had 403 passing tests. The preceding seven actual
 rendering tests and the additional sensor integration rendering test passed
 separately; do not count deselections/skips as passes. Four actual sensor bundles
@@ -347,3 +349,32 @@ real 940-transition bar-placement view and checkpoint/processor/sampler reload.
 This proves the selected data path, not learned skill success. Full checks pass: 510 tests, thirteen optional skips and eight render
 deselections. Handle 13759 is terminal; log `.artifacts/checks-skill-training.log`. Export/view
 creation/CPU-test handles 99921, 78500, 40623 and 56003 are terminal.
+
+
+Explicit owned queues and a supervisor control bridge are implemented in the
+working tree. Fixed left/right/both permissions come from the canonical active
+attempt, never model outputs. Invalid operations fail that attempt and cannot
+silently rebind/retry; lifecycle changes clear temporal history. Focused tests:
+The final bridge-focused suite passes 29 tests, including both auxiliary-arm
+directions. Native temporal suite: all 35 passed. The preceding full check
+(541 passes) under handle 61834 is terminal; the final regression check is under
+handle 83108 is terminal: **553 passed, thirteen optional skips, eight render
+deselections**, 207.65 seconds, 340 documentation links and README synchronization
+passed (`.artifacts/checks-supervised-control-final.log`). Two subsequently added
+auxiliary integration cases pass in the 29-test focused suite; they were not
+collected by that already-running full check.
+No new learned physical execution is claimed.
+
+Plan audit `20260911T025456-e018c8864c19` identifies both-arm entry parking in
+the plate/drawer composite views. The registry now supports explicit auxiliary-arm ownership without changing
+planner request permissions. Plate/drawer need auxiliary right; bar placement
+also needs auxiliary left. This grants joint control for the entire attempt,
+not a restriction to parking. Verified skill/checkpoint registration and actual
+continuous learned execution remain next; the bridge never infers permissions.
+
+Review fixes reject deadline crossing during authorization, replacement of pending
+forecasts, and repeated or skipped observations at forecast boundaries. Invalid
+operations close the attempt, preserving the supervisor timeout/retry record.
+`docs/project.json` reflects this integration; README synchronization passes.
+The fixed MPS run is still active under 61071; 9,551 updates were observed this
+turn. Its final checkpoint and frozen quality gates remain pending.

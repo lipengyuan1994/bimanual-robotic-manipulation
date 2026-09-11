@@ -245,3 +245,43 @@ def test_temporal_ensemble_requires_per_step_replanning(tmp_path):
                 temporal_ensemble_coefficient=coefficient,
                 execute_chunk_steps=1,
             )
+
+
+@pytest.mark.parametrize("arms", [("left",), ("right",), ("left", "right")])
+def test_attempt_arm_ownership_holds_only_unowned_joints(arms):
+    hold = np.linspace(-0.2, 0.2, 12)
+    control = GuardedActionQueue(
+        JointLimits(lower_rad=[-1.0] * 12, upper_rad=[1.0] * 12),
+        hold,
+        "a" * 64,
+        500_000_000,
+        controlled_arms=arms,
+    )
+    original = hold.copy()
+    hold[:] = 0.9
+    control.home[:] = -0.9  # Public snapshots cannot change active hold setpoints.
+    with pytest.raises(AttributeError):
+        control.controlled_arms = ("right",)
+    report = control.offer(np.full((3, 12), 0.4), observation(), now_ns=1_010_000_000)
+    accepted = control.take(observation(), now_ns=1_020_000_000)
+    for index, arm in enumerate(("left", "right")):
+        expected = np.full(6, 0.4) if arm in arms else original[index * 6 : (index + 1) * 6]
+        np.testing.assert_array_equal(accepted[index * 6 : (index + 1) * 6], expected)
+    assert report["ownership_mask"]["controlled_arms"] == list(arms)
+    invalid = np.full((3, 12), 0.4)
+    invalid[-1, 0] = 2.0
+    with pytest.raises(ValueError):
+        control.offer(invalid, observation(), now_ns=1_010_000_000)
+    assert not control.pending
+
+
+@pytest.mark.parametrize("arms", [(), ["left"], ("both",), ("left", "left"), ("right", "left")])
+def test_queue_rejects_ambiguous_arm_ownership(arms):
+    with pytest.raises(ValueError, match="Controlled arms"):
+        GuardedActionQueue(
+            JointLimits(lower_rad=[-1.0] * 12, upper_rad=[1.0] * 12),
+            np.zeros(12),
+            "a" * 64,
+            500_000_000,
+            controlled_arms=arms,
+        )

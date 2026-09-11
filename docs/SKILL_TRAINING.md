@@ -77,3 +77,22 @@ three passing tests. This is a runtime test, not a trained skill quality result.
 Full local checks pass: 510 tests, thirteen optional skips and eight rendering
 deselections (`.artifacts/checks-skill-training.log`). The real CPU integration
 test is recorded separately; skips are not counted as passes.
+
+## Ownership required by the current composite views
+
+Inspection of the actual frozen joint targets shows both arms move in
+`handoff_transfer` and `bar_place_and_return`; only the right moves in
+`cup_pick_place`; only the left moves in the spoon/fork views. The plate and
+drawer views also move the right arm during entry parking (`plate/transition_home`,
+`plate/settle`, and `utensils/transition_home`). They therefore cannot be executed
+correctly under a left-only ownership mask.
+
+The registry now supports explicit `Capability.auxiliary_arms`. Plate and drawer
+need primary left plus auxiliary right; bar placement needs primary right plus
+auxiliary left. The grant controls both arms for the whole attempt; it does not
+restrict the auxiliary arm to parking. Planner requests retain their primary arm.
+Before execution, the dinner integration must bind these registered capabilities
+to their verified skill views and checkpoints, or create separately validated
+parking/manipulation skill boundaries. Do not infer extra permissions from predicted actions or silently
+ignore the other arm's demonstrated movements. The generic owned queue and
+supervised bridge preserve the canonical attempt permissions.

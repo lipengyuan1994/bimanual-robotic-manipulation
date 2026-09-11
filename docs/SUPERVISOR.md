@@ -9,7 +9,11 @@ run in its current environment.
 ## Inputs and authority
 
 - `Capability` fixes a supported skill, symbolic target/destination, arm selection
-  and whether that executor needs the shared workspace. Its arguments must satisfy
+  and whether that executor needs the shared workspace. Optional `auxiliary_arms`
+  grants the other arm to a composite executor and requires shared-workspace
+  ownership. The planner still names only the primary arm and cannot request
+  auxiliary permissions. This grants joint control for the entire attempt, not
+  a restriction to parking movements. Its arguments must satisfy
   the existing `SkillRequest` contract. Registry IDs are unique and records immutable.
 - `StepSpec` names one capability, prerequisite step IDs, a positive timeout in
   monotonic nanoseconds and a retry limit from zero through two.
@@ -149,3 +153,33 @@ unreachable objects, malformed executor results, clock regression and queue-clea
 failure. These lifecycle checks run without model downloads or physics success
 claims. Full-scene physical execution, automatic recovery quality and independent
 release evaluations remain separate work.
+
+## Guarded policy-control bridge
+
+`SupervisedPolicyControl` owns the supervisor and one bound action queue for a
+serialized simulation worker. It registers no capabilities automatically and
+performs no inference or physical stepping. `bind(attempt_id, ...)` resolves the
+canonical active attempt rather than accepting caller-provided ownership. The
+binding fixes checkpoint identity, action horizon, controlled arms and hold targets.
+
+`offer` and `take` authorize the same attempt, arms, shared workspace and current
+observation before accessing the queue. Normal and temporal queues both retain
+whole-forecast validation and freshness checks. A second bind cannot replace the
+controller within the same attempt. Pending forecasts cannot be replaced, and
+after draining, a new forecast requires the next observation sequence with
+advancing capture and simulation times. The deadline is checked again at the
+actual queue timestamp, so expiry during authorization cannot return an action. Lifecycle callbacks discard queue and temporal
+history on cancellation, task replacement, timeout and finish.
+
+Rejected operations fail the matching active attempt through the supervisor;
+already closed timeout/context failures remain intact. They cannot clear a queue
+and silently retry under the same attempt ID. A retry requires the supervisor's
+fresh-observation checks and remaining retry budget. Merely clearing state is not
+a successful step or a new attempt.
+
+Regression tests cover deadline crossing, repeated forecasts, pending replacement,
+fresh continuation and lifecycle clearing. The temporal suite separately passes
+all 35 tests in the native LeRobot environment. See [status](STATUS.md) for the
+current full-suite result. These validate the control contract, not a
+learned dinner policy. The worker must serialize these calls with physical
+stepping; this bridge is not a thread-safe physical actor by itself.

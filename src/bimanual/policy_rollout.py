@@ -123,7 +123,7 @@ def save_observation(raw: dict, directory: Path, *, prefix: str = "observations"
 
 
 class GuardedActionQueue:
-    """All proposal bounds checked before enqueue; right arm explicitly owned by supervisor."""
+    """Validate all targets before applying fixed attempt-owned arm permissions."""
 
     def __init__(
         self,
@@ -133,13 +133,34 @@ class GuardedActionQueue:
         max_age_ns: int,
         *,
         execute_chunk_steps: int = 10,
+        controlled_arms: tuple[str, ...] = ("left",),
     ):
         if type(execute_chunk_steps) is not int or not 1 <= execute_chunk_steps <= 100:
             raise ValueError("Execution prefix must contain between one and 100 steps")
         self.execute_chunk_steps = execute_chunk_steps
-        self.limits, self.home = limits, home.copy()
+        if type(controlled_arms) is not tuple or controlled_arms not in (
+            ("left",),
+            ("right",),
+            ("left", "right"),
+        ):
+            raise ValueError("Controlled arms must be left, right, or ordered left/right")
+        hold = np.asarray(home, dtype=float)
+        if hold.shape != (12,) or not np.isfinite(hold).all():
+            raise ValueError("Hold targets must contain twelve finite joints")
+        limits.validate_targets(tuple(hold))
+        self._controlled_arms = controlled_arms
+        self.limits, self._hold_targets = limits, hold.copy()
         self.policy_sha256, self.max_age_ns = policy_sha256, max_age_ns
         self.clear()
+
+    @property
+    def controlled_arms(self) -> tuple[str, ...]:
+        return self._controlled_arms
+
+    @property
+    def home(self) -> np.ndarray:
+        """Compatibility snapshot; changing it cannot change this attempt's hold targets."""
+        return self._hold_targets.copy()
 
     def clear(self):
         self.pending = deque()
@@ -169,7 +190,11 @@ class GuardedActionQueue:
             expected_policy_sha256=self.policy_sha256,
         )
         accepted = values.copy()
-        accepted[:, 6:] = self.home[6:]
+        for index, arm in enumerate(("left", "right")):
+            if arm not in self.controlled_arms:
+                accepted[:, index * 6 : (index + 1) * 6] = self._hold_targets[
+                    index * 6 : (index + 1) * 6
+                ]
         chunk = ActionChunk.model_validate(raw.model_dump() | {"targets_rad": accepted.tolist()})
         chunk.validate_for(
             observation,
@@ -184,7 +209,13 @@ class GuardedActionQueue:
         return {
             "raw_chunk": raw.model_dump(mode="json"),
             "accepted_chunk": chunk.model_dump(mode="json"),
-            "ownership_mask": "right six joints held at reset; left six unchanged",
+            "ownership_mask": {
+                "schema_version": 1,
+                "controlled_arms": list(self.controlled_arms),
+                "held_arms": [arm for arm in ("left", "right") if arm not in self.controlled_arms],
+                "hold_targets_rad": self.home.tolist(),
+                "hold_target_scope": "queue_lifetime",
+            },
             "prediction_horizon_steps": len(chunk.targets_rad),
             "execution_prefix_steps": prefix_length,
             "discarded_forecast_steps": len(chunk.targets_rad) - prefix_length,

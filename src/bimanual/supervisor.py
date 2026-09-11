@@ -38,11 +38,22 @@ class Capability(Contract):
     target: Literal["drawer", "spoon", "fork", "plate", "cup", "practice_block"]
     destination: Literal["table", "drawer", "left_gripper", "right_gripper"] | None = None
     shared_workspace: bool = True
+    auxiliary_arms: tuple[Literal["left", "right"], ...] = Field(default=(), max_length=1)
 
     @model_validator(mode="after")
     def supported_arguments(self):
         self.request("capability-validation", 0, 0)
+        primary = ("left", "right") if self.arm == "both" else (self.arm,)
+        if any(arm in primary for arm in self.auxiliary_arms):
+            raise ValueError("Auxiliary ownership cannot repeat a primary arm")
+        if self.auxiliary_arms and not self.shared_workspace:
+            raise ValueError("Auxiliary arm control requires shared workspace ownership")
         return self
+
+    @property
+    def execution_arms(self) -> tuple[Literal["left", "right"], ...]:
+        primary = ("left", "right") if self.arm == "both" else (self.arm,)
+        return tuple(arm for arm in ("left", "right") if arm in primary + self.auxiliary_arms)
 
     def request(self, episode_id: str, revision: int, sequence: int) -> SkillRequest:
         return SkillRequest(
@@ -339,7 +350,7 @@ class TaskSupervisor:
             observation=observation,
             started_ns=now,
             deadline_ns=now + step.timeout_ns,
-            arms=("left", "right") if capability.arm == "both" else (capability.arm,),
+            arms=capability.execution_arms,
             shared_workspace=capability.shared_workspace,
         )
         self._last_observation, self._state = observation, "running"

@@ -597,3 +597,21 @@ Thirty base tests and all 33 native training-environment tests pass, including
 float32 CPU parity with official ACTTemporalEnsembler for coefficients 0, 0.01
 and 1 across overlapping forecasts and reset. These verify runtime behavior,
 not manipulation quality. No new physical rollout is claimed by these tests.
+
+### Explicit arm ownership
+
+The shared action queues now accept fixed `controlled_arms` permissions: left,
+right, or ordered left/right. The standalone placement command still uses its
+existing left-only mode. Permissions do not come from the action model.
+
+All twelve predicted joints are checked before masking, including unowned joints
+and later forecast targets. Unowned joints then retain the caller's fixed hold
+setpoints for the queue lifetime. Public hold snapshots cannot alter the stored
+setpoints. Ownership changes require a new queue, with old action/ensemble history
+cleared. Temporal averaging uses the same permissions before final application.
+
+Ownership evidence is now a versioned object containing controlled/held arms,
+fixed hold targets and their scope. Historical records with the earlier textual
+mask description remain unchanged. ActionChunk schema and target/freshness guards
+are unchanged. Thirty-five temporal tests pass in the native LeRobot environment,
+including actual official averaging parity; `.artifacts/owned-temporal-real-tests.log`.

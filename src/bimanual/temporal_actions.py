@@ -48,7 +48,7 @@ def _make_ensembler(chunk_size: int, coefficient: float):
 class GuardedTemporalActionQueue:
     """Validate raw forecasts, average with official ACT, validate again, execute one.
 
-    The right arm remains held by the underlying ownership mask. Ensembling sees
+    Unowned arms remain held by the underlying ownership mask. Ensembling sees
     the original *validated* twelve-joint forecast, before that mask is applied.
     Every next forecast must follow consumption of the prior queued action and
     advance exactly one sequence. A task identity change starts a fresh history.
@@ -66,6 +66,7 @@ class GuardedTemporalActionQueue:
         *,
         chunk_size: int,
         coefficient: float,
+        controlled_arms: tuple[str, ...] = ("left",),
     ):
         if type(chunk_size) is not int or not 1 <= chunk_size <= 100:
             raise ValueError("Temporal horizon must contain between one and 100 steps")
@@ -83,14 +84,28 @@ class GuardedTemporalActionQueue:
         limits.validate_targets(tuple(values))
         self.chunk_size, self.coefficient = chunk_size, float(coefficient)
         self._raw_guard = GuardedActionQueue(
-            limits, values, policy_sha256, max_age_ns, execute_chunk_steps=1
+            limits,
+            values,
+            policy_sha256,
+            max_age_ns,
+            execute_chunk_steps=1,
+            controlled_arms=controlled_arms,
         )
         self._action_guard = GuardedActionQueue(
-            limits, values, policy_sha256, max_age_ns, execute_chunk_steps=1
+            limits,
+            values,
+            policy_sha256,
+            max_age_ns,
+            execute_chunk_steps=1,
+            controlled_arms=controlled_arms,
         )
         self._ensembler = None
         self._last_observation = None
         self._forecast_count = 0
+
+    @property
+    def controlled_arms(self) -> tuple[str, ...]:
+        return self._action_guard.controlled_arms
 
     @property
     def pending(self) -> tuple:
@@ -141,7 +156,7 @@ class GuardedTemporalActionQueue:
             averaged = self._ensembler.update(values.copy())
             if np.asarray(averaged).shape != (1, 12):
                 raise ValueError("Temporal ensemble did not return one twelve-joint target")
-            # Includes raw averaged right-arm bounds before the final ownership mask.
+            # Check every averaged joint before applying the final ownership mask.
             accepted = self._action_guard.offer(averaged, current, now_ns=now_ns)
             self._last_observation = current
             self._forecast_count += 1

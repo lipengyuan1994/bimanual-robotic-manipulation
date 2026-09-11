@@ -233,3 +233,36 @@ def test_real_installed_lerobot_parity_and_reset(coefficient):
     np.testing.assert_array_equal(
         report["averaged_raw_chunk"]["targets_rad"], values[:1].astype(np.float32)
     )
+
+
+@pytest.mark.parametrize("arms", [("right",), ("left", "right")])
+def test_temporal_queue_preserves_explicit_arm_ownership(backend, arms):
+    control = GuardedTemporalActionQueue(
+        JointLimits(lower_rad=[-1.0] * 12, upper_rad=[1.0] * 12),
+        np.zeros(12),
+        "a" * 64,
+        500_000_000,
+        chunk_size=3,
+        coefficient=0.01,
+        controlled_arms=arms,
+    )
+    report = control.offer(np.full((3, 12), 0.2), observation(), now_ns=now(observation()))
+    actual = control.take(observation(), now_ns=now(observation()))
+    np.testing.assert_allclose(actual[6:], 0.2)
+    np.testing.assert_allclose(actual[:6], 0.2 if "left" in arms else 0.0)
+    assert control.controlled_arms == arms
+    assert report["ownership_mask"]["controlled_arms"] == list(arms)
+    invalid = np.zeros((3, 12))
+    invalid[-1, 0] = 2.0
+    with pytest.raises(ValueError):
+        control.offer(
+            invalid,
+            changed(
+                observation(),
+                sequence=1,
+                simulation_seconds=0.05,
+                observed_monotonic_ns=1_050_000_000,
+            ),
+            now_ns=1_060_000_000,
+        )
+    assert not control.pending and control._ensembler is None

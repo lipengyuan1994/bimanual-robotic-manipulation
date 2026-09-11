@@ -486,3 +486,56 @@ def test_malformed_executor_result_closes_attempt(core):
         )
     state = supervisor.snapshot()
     assert state.active is None and state.attempts[-1].outcome == "failed"
+
+
+def test_registry_auxiliary_ownership_does_not_change_planner_request():
+    capability = Capability(
+        capability_id="drawer-left",
+        skill="open_drawer",
+        arm="left",
+        target="drawer",
+        auxiliary_arms=("right",),
+    )
+    supervisor = TaskSupervisor([capability], clear_actions=lambda: None, clock_ns=Clock())
+    supervisor.load_task(task())
+    proposal = capability.request("episode", 0, 0)
+    assert proposal.arm == "left" and "auxiliary_arms" not in proposal.model_dump()
+    attempt = supervisor.dispatch(observation(), proposal=proposal)
+    assert attempt.arms == ("left", "right")
+    assert (
+        supervisor.authorize(attempt.attempt_id, observation(), arm="right", shared_workspace=True)
+        == attempt
+    )
+    assert Capability(
+        capability_id="plain", skill="open_drawer", arm="left", target="drawer"
+    ).execution_arms == ("left",)
+    with pytest.raises(ValidationError):
+        SkillRequest.model_validate(proposal.model_dump() | {"auxiliary_arms": ["right"]})
+    with pytest.raises(ValidationError):
+        SkillRequest.model_validate(proposal.model_dump() | {"arm": "both"})
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {"auxiliary_arms": ("left",)},
+        {"auxiliary_arms": ("right", "right")},
+        {"auxiliary_arms": ("right",), "shared_workspace": False},
+        {"auxiliary_arms": ("both",)},
+    ],
+)
+def test_invalid_auxiliary_permissions_rejected(fields):
+    with pytest.raises(ValidationError):
+        Capability(capability_id="bad", skill="open_drawer", arm="left", target="drawer", **fields)
+
+
+def test_auxiliary_arm_order_is_canonical():
+    capability = Capability(
+        capability_id="bar",
+        skill="place",
+        arm="right",
+        target="practice_block",
+        destination="table",
+        auxiliary_arms=("left",),
+    )
+    assert capability.execution_arms == ("left", "right")
