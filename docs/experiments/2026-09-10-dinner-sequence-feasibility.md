@@ -260,3 +260,64 @@ placements passed. `terminal_all_placed_samples` remains zero. Preserve
 `attempt22/full-audit.json` and `attempt22-audit.log`; this is not full-task success.
 Next adjust the physical plate release trajectory with unchanged destination and
 20 mm acceptance, then rerun the whole workflow and audit.
+
+## Release compensation after attempt 22
+
+`release22-diagnosis.json` reconstructs tool poses from the recorded joints and
+compares them with recorded plate poses; it sends no actions. Plate center is
+(0.137156, -0.015905, 0.397170) m at the first supported lower endpoint, then
+settles to (0.117282, -0.021320, 0.377997) m during withdrawal. Most of the error
+comes from the tilted plate settling into flat contact, rather than the airborne
+transport endpoint.
+
+V13 freezes tool XY compensation (+0.022718, +0.006320) m before **attempt 23**.
+Scene SHA-256, plate destination and 20 mm acceptance remain unchanged. Attempt 23
+is rejected at the end of the clearance phase because its compensated high carry
+would intersect `right/collision_or_visual_7` with `plate/rim4`; the rejected
+segment is not executed.
+
+V14 applies that same correction only to lowering/withdrawal/retreat, retaining
+the previously passing high transport. **Attempt 24** reaches the lower phase but
+stops at 131.766 simulated seconds on contact between the right shoulder geometry
+and `plate/rim5`; overlap is 0.652 mm. The failure is preserved. An offline
+reconstruction of that collision clears the plate/right-arm contact when the
+right shoulder pan is +1.8 rad instead of -1.8 rad. Snapshot clearance alone
+cannot establish trajectory clearance.
+
+V15 changes only the empty right arm's parking angle to +1.8 rad. **Attempt 25 is
+active and unscored** with full continuous physics, the same lower compensation,
+geometry, destinations and acceptance rules. All new drivers, manifests, traces,
+results and the snapshot probe remain in `.artifacts/dinner-scene-exploration/`.
+
+Attempt 25 is terminal and failed. Parking at +1.8 rad clears the corrected
+lower/release, but `left/camera_box2` contacts the placed cup at 134.979 simulated
+seconds during withdrawal (0.0553 mm overlap). **V16 / attempt 26** shifts the
+withdrawal and retreat 60 mm south; it clears the cup but the settling plate
+contacts `cabinet_right` at 137.664 seconds, also 0.0553 mm overlap. No contact
+allowlist, object shape, destination or tolerance was relaxed. Both traces and
+failures are retained; neither is full-workflow success.
+
+The next release experiment should evaluate candidate withdrawal paths against
+both the cup/camera clearance and the plate/cabinet clearance, preferably from a
+faithfully replayed pre-withdrawal simulation snapshot for economical diagnosis.
+A successful snapshot diagnostic would still require a fresh full continuous
+workflow and independent final audit before integration.
+
+**V17 / attempt 27:** the 20 mm southward withdrawal finishes the plate motions,
+but the plate remains tilted (upright cosine 0.6342), at z=0.4272 m and with
+0.269 N fixed-jaw contact. The return trajectory is rejected on that retained
+contact. Finishing the scripted phases is not placement success.
+
+**V18 / attempt 28:** withdraw 120 mm west and 20 mm south at the measured release
+tool height before lifting. The complete sequence then passes `audit_full.py`:
+240,950 continuous samples, zero forbidden contacts, all required intervals,
+zero prior-placement disturbances and all 2,000 final all-placed samples.
+Plate XY error is 13.555 mm; the cup is 18.071 mm, both within unchanged 20 mm
+limits. Run is unrendered: 240.95 simulated / 124.26 wall seconds.
+
+Sealed self-contained evidence: `20260911T011032-a9fda4aee41f`. Scene load and
+manifest integrity verify. It preserves exact runtime source, original input
+teacher trajectory/manifests, actual action/physics traces, licenses, scene assets
+and audit source/results. This is the first passing authored-scene teacher
+feasibility run, not a learned workflow or held-out release evaluation. Next
+package and reproduce it from the supported repository command with cameras.

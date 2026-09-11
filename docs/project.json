@@ -3,7 +3,7 @@
   "updated_at": "2026-09-10",
   "title": "Bimanual manipulation lab",
   "phase": "physical_foundation",
-  "phase_label": "Contact skills, ACT and visual-planner experiments",
+  "phase_label": "Continuous teacher baseline; learned-skill development",
   "manipulation_available": false,
   "intel_validated": false,
   "compute_budget_usd": 0,
@@ -19,13 +19,13 @@
       "id": "M1",
       "title": "Physical foundation",
       "state": "in_progress",
-      "detail": "Drawer-to-table spoon/fork retrieval, plate/cup placement and bar hand-off pass in authored scenes. Continuous full-scene execution remains."
+      "detail": "One continuous teacher dinner setup passes all physical checks in an authored scene. Supported command and clean rendered reproduction remain."
     },
     {
       "id": "M2",
       "title": "Learned workflow",
       "state": "in_progress",
-      "detail": "ACT predictions improved but physical tests still fail. High-resolution Qwen distinguishes two development scenes; live planning, learned workflow and recovery remain."
+      "detail": "Learned open-hand approach passes two validation starts but fails nominal; no learned grasp or full task. High-resolution visual proposals work on a development pair; live integration remains."
     },
     {
       "id": "M3",

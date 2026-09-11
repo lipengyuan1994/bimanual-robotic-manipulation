@@ -18,7 +18,9 @@ implemented with independent ownership checks; see [hand-off](HANDOFF.md).
 A passive [drawer](DRAWER.md) now opens through contact and remains open after
 release with its utensil proxies retained. A hollow [cup](CUP.md) and [plate](PLATE.md) now pass nominal placement.
 The [utensil teacher](UTENSILS.md) opens the drawer and places both utensils in one
-continuous run. These skills still need [integration into the full scene](DINNER_SCENE.md).
+continuous run. A first [continuous teacher episode](DINNER_SCENE.md) now passes in an authored
+scene. The supported command, clean reproduction and camera evidence remain before
+closing M1 integration.
 The steps below still
 require task-level evidence before M1 is complete.
 

@@ -510,3 +510,72 @@ isolates whether the deadline cuts off converging motion or repeated forecast
 changes prevent sustained settling. It must be recorded as a new time-budget
 experiment, not a reinterpretation of these results. No further training is
 indicated before that distinction is measured.
+
+### Fixed eight-second follow-up
+
+Protocol `20260911T005034-081e3e8a71ed` keeps the weighted checkpoint, three
+starts, 20 Hz action cadence, ten-action prefix, full-forecast validation,
+two-second freshness and physical tolerances unchanged. It changes the fixed
+horizon to eight seconds and still requires all final 100 consecutive physics
+samples to satisfy the original predicate. The earlier unexecuted protocol
+`20260911T004954-6c7c20f63818` accidentally retained `max_steps=80` alongside
+`max_control_steps=160`; it was superseded before any rollout. Neither protocol
+changes the outcomes of the four-second experiment.
+
+| Case | Run | Final position error | Passing final samples | Outcome |
+|---|---|---|---|---|
+| 1000 | `20260911T005034-834068f8f4d3` | 1.448 mm | 37/100 | Failed |
+| 2000 | `20260911T005053-4f6648ff4391` | 1.430 mm | 37/100 | Failed |
+| 2001 | `20260911T005108-8843a3403dc6` | 1.484 mm | 37/100 | Failed |
+
+All three seals verify; each applied 160 controls and checked 1,600 contiguous,
+finite physics samples with no contacts, joint-limit violations or hand closure.
+Terminal peak joint speeds were 1.110, 1.110 and 0.974 rad/s against the unchanged
+0.05 rad/s stable-hold threshold. Extra time brings all three starts near the
+target but does not produce stable convergence. The next experiment should test
+replanning cadence and ACT temporal ensembling separately, using unchanged weights
+and preserving whole-forecast checks before averaging. No further training is
+justified by position error alone.
+
+The new records also retain the original four-second prefix score. Its nested
+`teacher_only: true` is an inherited field from the shared teacher scoring helper,
+not evidence of teacher execution; the outer record correctly states
+`teacher_assistance: false`, and the retained raw ACT chunks/actions establish
+learned control. Do not use that inherited field to classify the controller.
+Future reuse of this helper must remove that metadata from both score levels.
+
+### Replanning cadence and official ACT temporal ensembling
+
+Protocol `20260911T005658-6ada62ed651f` fixes six diagnostic runs before execution:
+three original starts with one-action execution prefixes, then the same three
+with LeRobot 0.6.1's `ACTTemporalEnsembler` coefficient 0.01. Both modes infer at
+every 20 Hz simulation observation. Neither changes the weighted checkpoint,
+images/joint inputs, eight-second horizon, final 100-sample predicate or two-second
+freshness. All ten raw forecast actions pass the original guard before any
+averaging; the averaged action is separately validated before application. The
+ensemble resets on termination/cancellation. No simulator target enters inference.
+
+| Mode | Case | Run | Final error | Final peak speed | Result |
+|---|---|---|---|---|---|
+| One-step, no ensemble | 1000 | `20260911T005751-61b95aa61391` | 125.734 mm | 0.00364 rad/s | Failed, stalls away from target |
+| One-step, no ensemble | 2000 | `20260911T005814-fc678568c304` | 1.157 mm | 0.01865 rad/s | 100/100, pregrasp passed |
+| One-step, no ensemble | 2001 | `20260911T005833-83da9f26958d` | 1.142 mm | 0.03586 rad/s | 100/100, pregrasp passed |
+| One-step, ensemble 0.01 | 1000 | `20260911T005851-d67583653934` | 122.860 mm | 0.00020 rad/s | Failed, stalls away from target |
+| One-step, ensemble 0.01 | 2000 | `20260911T005910-1b05f68e6327` | 0.976 mm | 0.00034 rad/s | 100/100, pregrasp passed |
+| One-step, ensemble 0.01 | 2001 | `20260911T005928-f367a4ab5181` | 0.976 mm | 0.00040 rad/s | 100/100, pregrasp passed |
+
+Comparison `20260911T010051-7d76cac619de` verifies all six manifests, identical
+checkpoint hashes, declared starts, 160 applied controls, 1,600 physics samples
+and 160 fully validated ten-action predictions per episode. Both modes pass two
+of three starts; the repeated validation cases are not four independent successful
+scenes. The nominal training start remains a failure, so neither is a reliable
+pregrasp policy. These open-hand movements are not grasps or full dinner tasks.
+
+Per-step replanning resolves the terminal motion on the two validation starts;
+temporal averaging reduces it further. It does not fix the nominal initial-motion
+bias. Next inspect that failed trajectory against training coverage and collect
+teacher corrections from training-only policy-visited states if warranted. Do not
+add the validation starts to training, silently substitute them for nominal, or
+claim release generalization from this development comparison. The runtime change
+remains in the retained experiment driver until the nominal failure is resolved
+and the adapter's cancellation/history tests are implemented.
