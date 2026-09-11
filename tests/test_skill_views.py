@@ -181,6 +181,20 @@ def make_synthetic_export(directory, recipe):
     return root
 
 
+@pytest.mark.parametrize("visual_seed", [0, 7])
+def test_visual_variant_cannot_be_relabelled_nominal(tmp_path, synthetic_export, visual_seed):
+    root = tmp_path / "dataset"
+    shutil.copytree(synthetic_export, root)
+    path = root / "raw_sources/000000/config.json"
+    config = json.loads(path.read_text())
+    write_json(path, config | {"visual_seed": visual_seed})
+    seal_fixture(root)
+    output = tmp_path / "views.json"
+    with pytest.raises(ValueError, match="Visual variants require"):
+        create_skill_views(root, output)
+    assert not output.exists()
+
+
 def test_verified_views_keep_one_parent_and_original_boundaries(tmp_path, synthetic_export):
     path = tmp_path / "views.json"
     result = create_skill_views(synthetic_export, path)

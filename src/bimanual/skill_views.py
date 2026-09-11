@@ -204,6 +204,8 @@ def _verified_inputs(dataset_root: Path) -> dict:
         artifact.verify(raw)
     controller = json.loads(lineage.controller.verify(raw).read_text())
     config = json.loads(lineage.config.verify(raw).read_text())
+    if config.get("visual_seed") is not None:
+        raise ValueError("Visual variants require a separate skill-view profile; not nominal data")
     if (
         controller.get("kind"),
         controller.get("seed"),

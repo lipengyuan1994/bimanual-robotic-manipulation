@@ -183,3 +183,18 @@ RGB images. Its source seal is
 The failed predecessor remains immutable. This proves the supported teacher
 recording in one authored scene; learned execution and successor readiness are
 separate gates.
+
+## Experimental visual variants
+
+`dinner-teacher --recipe v2 --visual-seed 7 --record-demonstration` selects
+reproducible lighting and floor/workbench colors before model initialization.
+The run records separate scene/layout hashes and `teacher-assets/visual-variant.json`.
+Joint targets and physical layouts are unchanged. This path remains experimental
+until full physics, rendering and recording checks pass. Existing nominal skill
+views reject these episodes; they require a separate dataset/view profile before
+training. Visual seeds do not represent varied masses, friction, shapes or placements.
+
+Seed7 full teacher physics check `20260911T141555-ae5762976ce8` now passes both
+scorers over5049actions with zero forbidden contacts. Rendering and demonstration
+recording were disabled, so this does not validate camera variation or learned
+robustness. The existing nominal-view rejection remains intentional.

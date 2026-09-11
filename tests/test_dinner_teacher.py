@@ -99,7 +99,9 @@ def recorder_environment(monkeypatch):
 
     manifest, plan, layout = load_plan()
     short_plan = dict(plan, steps=[dict(phase="handoff/settle", q=[i / 10] * 12) for i in range(3)])
-    monkeypatch.setattr(teacher, "load_plan", lambda: (manifest, short_plan, layout))
+    monkeypatch.setattr(
+        teacher, "load_plan", lambda directory=ASSETS: (manifest, short_plan, layout)
+    )
     monkeypatch.setattr(teacher, "check_joint_path", lambda *args: None)
     options = dict(fail_at=None, score_success=True, observe_failure_at=None, leak_truth=False)
     instances = []

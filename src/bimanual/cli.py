@@ -71,6 +71,9 @@ def main(argv: list[str] | None = None) -> int:
     dinner.add_argument("--no-render", action="store_true")
     dinner.add_argument("--recipe", choices=["v1", "v2"], default="v1")
     dinner.add_argument(
+        "--visual-seed", type=int, help="Vary lighting/colors only; fixed physical layout"
+    )
+    dinner.add_argument(
         "--record-demonstration",
         action="store_true",
         help="Capture full-rate training cameras and actions independently of replay",
@@ -334,6 +337,7 @@ def main(argv: list[str] | None = None) -> int:
                     recipe=args.recipe,
                     render=not args.no_render,
                     record_demonstration=args.record_demonstration,
+                    visual_seed=args.visual_seed,
                 ),
                 store=store,
                 project_root=root,

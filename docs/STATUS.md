@@ -220,3 +220,45 @@ Final parent-loss regression76274 is terminal:984passed,18optional skips,9render
 deselections in494.07s.423documentation links and README synchronization pass.
 Training11662 remains active (latest observed4654/20,000). All three evaluation
 drivers still match frozen protocol134150. No new physical success claim.
+
+Visual-variation preparation: `visual_variants.py` deterministically changes only
+world-light ambient/diffuse and floor/workbench colors before model loading.
+Six tests pass, including exact XML equality after removing those permitted
+visual attributes. Compile check `20260911T141158-79ca53f98ff0` loads seeds0/1/2
+and verifies ten physical model arrays unchanged. No rendering, recorded
+demonstrations or policy evaluation has occurred. These are visual conditions,
+not distinct physical layouts; position/mass/friction/shape variation remains.
+The utility is not yet wired into teacher collection or deployed execution.
+Next integrate a declared variant path and validate camera differences after
+the active model job finishes; do not relabel the existing nominal dataset.
+
+Visual variants are now wired into `dinner-teacher --visual-seed N`. Each new
+run copies the base assets, records variant parameters, binds changed scene/layout
+hashes, and preserves the original controller plan. Existing nominal skill views
+explicitly reject visual variants, including visual seed0; no existing dataset is
+relabelled.61 focused teacher/view/variant tests pass after adapting an old
+zero-argument loader fixture. Full variant physics/render/recording runs remain
+pending; the active batch4 training dataset and drivers are unchanged.
+
+Visual seed7 full physics run is active as78935, run
+`20260911T141555-ae5762976ce8`, log `.artifacts/visual-teacher-seed7-physics.json`.
+Rendering and demonstration recording are disabled; latest progress2795action
+rows is unsealed, not success. Training11662 and regression75006 remain active.
+31 skill-view tests pass, including resealed visual-seed0/7 rejection before
+nominal view publication (`.artifacts/visual-view-rejection-tests.log`). Those
+two added cases postdate full regression collection; report their coverage separately.
+
+Visual seed7 physics run141555 is terminal **completed**; seal
+`a9a052dcb5586b3ea4aeba042ac6cd61ecf8c278aec9c69b2be2f1597fe0f51f` verifies. Both stage and independent
+physical scores pass:5049actions,252450physics samples,zero forbidden contacts.
+Hand-off, drawer and all final placements passed unchanged limits. This used
+the scripted teacher with no rendering or demonstration recording. Camera
+variation, variant training data and learned robustness remain unvalidated.
+Session78935 is terminal; training11662 and regression75006 remain active.
+
+Visual-variant regression75006 completed:992passed,18optional skips,9render
+deselections in515.85s. The two later nominal-view rejection cases also pass
+in the31-test focused view suite.423documentation links and README sync pass.
+The setup guide now includes the exercised locked, offline wheel-install
+procedure and distinguishes base checks from ML/render/Intel validation.
+Training11662 remains active; no other model or rendering job is running.

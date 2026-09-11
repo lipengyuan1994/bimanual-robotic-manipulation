@@ -14,7 +14,7 @@ from typing import Literal
 import mujoco
 import numpy as np
 from PIL import Image, ImageDraw
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from bimanual.contracts import Artifact, EpisodeLineage, JointLimits
 from bimanual.demonstrations import DemonstrationRecorder
@@ -31,6 +31,7 @@ class DinnerTeacherConfig(BaseModel):
     recipe: Literal["v1", "v2"] = "v1"
     render: bool = True
     record_demonstration: bool = False
+    visual_seed: int | None = Field(default=None, strict=True, ge=0, lt=2**32)
 
 
 def load_plan(directory: Path = ASSETS) -> tuple[dict, dict, dict]:
@@ -69,6 +70,26 @@ def load_plan(directory: Path = ASSETS) -> tuple[dict, dict, dict]:
     if layout["scene_sha256"] != manifest["files"]["scene.xml"]:
         raise ValueError("Dinner layout/scene mismatch")
     return manifest, plan, layout
+
+
+def prepare_teacher_assets(base: Path, destination: Path, visual_seed: int | None):
+    """Preserve packaged assets; bind a generated scene only inside the new run."""
+    load_plan(base)
+    shutil.copytree(base, destination)
+    if visual_seed is not None:
+        from bimanual.visual_variants import visual_variant
+
+        scene, report = visual_variant((base / "scene.xml").read_text(), seed=visual_seed)
+        (destination / "scene.xml").write_text(scene)
+        layout = json.loads((destination / "layout.json").read_text())
+        layout["scene_sha256"] = digest_file(destination / "scene.xml")
+        (destination / "layout.json").write_text(json.dumps(layout, indent=2) + "\n")
+        manifest = json.loads((destination / "manifest.json").read_text())
+        for name in ("scene.xml", "layout.json"):
+            manifest["files"][name] = digest_file(destination / name)
+        (destination / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+        (destination / "visual-variant.json").write_text(json.dumps(report, indent=2) + "\n")
+    return load_plan(destination)
 
 
 def phase_permissions(phase: str) -> tuple[dict[str, set[str]], str | None, str]:
@@ -263,7 +284,10 @@ def run_dinner_teacher(
         if plan["schema_version"] != (1 if config.recipe == "v1" else 2):
             raise ValueError("Dinner recipe/schema mismatch")
         verify_assets()
-        shutil.copytree(assets, directory / "teacher-assets")
+        _, plan, layout = prepare_teacher_assets(
+            assets, directory / "teacher-assets", config.visual_seed
+        )
+        assets = directory / "teacher-assets"
         runtime = directory / "runtime-source"
         runtime.mkdir()
         for module in Path(__file__).parent.glob("*.py"):
@@ -288,12 +312,17 @@ def run_dinner_teacher(
                             "plan": "teacher-assets/plan.json.gz",
                             "plan_sha256": digest_file(directory / "teacher-assets/plan.json.gz"),
                             "source": source,
-                            "seed": 0,
+                            "seed": config.visual_seed if config.visual_seed is not None else 0,
                             "split": "train",
                             "seed_semantics": (
-                                "fixed authored scene; no randomization or held-out claim"
+                                "visual conditions only; fixed physical layout; training only"
+                                if config.visual_seed is not None
+                                else "fixed authored scene; no randomization or held-out claim"
                             ),
-                            "scope": "single nominal full-dinner training demonstration",
+                            "scope": "single fixed-layout full-dinner training demonstration",
+                            "visual_variant": "teacher-assets/visual-variant.json"
+                            if config.visual_seed is not None
+                            else None,
                         },
                         indent=2,
                     )
@@ -318,7 +347,7 @@ def run_dinner_teacher(
                         config=artifact("config.json"),
                         controller=artifact("controller.json"),
                         controller_kind="scripted_teacher",
-                        seed=0,
+                        seed=config.visual_seed if config.visual_seed is not None else 0,
                         split="train",
                     ),
                     joint_limits=JointLimits(
@@ -510,9 +539,11 @@ def run_dinner_teacher(
                 demonstration_path=episode_path.relative_to(directory).as_posix(),
                 demonstration_transitions=len(recorder.frames) - 1,
                 demonstration_terminal_boundary=demonstration_boundary,
-                demonstration_seed=0,
+                demonstration_seed=config.visual_seed if config.visual_seed is not None else 0,
                 demonstration_split="train",
-                demonstration_scope="single authored nominal scene; no randomization",
+                demonstration_scope="single authored physical layout; visual-only variant"
+                if config.visual_seed is not None
+                else "single authored nominal scene; no randomization",
             )
         except (Exception, KeyboardInterrupt) as exc:
             metrics["demonstration_error"] = f"{type(exc).__name__}: {exc}"
