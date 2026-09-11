@@ -133,3 +133,39 @@ This does not identify its cause. A separately recorded appearance-description
 comparison with a corresponding missing-object case is next; do not inject object
 coordinates or promote a prompt from a positive case alone. The retained driver,
 model response, all warm-up/original/recaptured images and calibration are sealed.
+
+## Paired appearance-description protocol
+
+Protocol `20260911T060932-fab3e0623c4e` freezes four development cases before
+inference: bar present/absent, each with the existing instruction and with the
+same appended cyan-rectangular-bar description. The added wording explicitly
+says the description is not evidence of presence. No location or scene label is
+passed to the model. The absent fixture removes only the bar body before model
+construction; CPU checks confirm identical remaining body transforms, camera
+transforms and robot joints. No physics is stepped and no action is authorized.
+
+The runner requires the current training run to finish, checks the exact model
+manifest, and must reproduce the previous positive RGB capture byte-for-byte
+before generating. It uses the same HD profile, deterministic local MPS model
+and 384-token budget for every case. Positive success requires a valid visible
+handoff proposal; negative success requires not-visible with stop/clarify.
+Both appearance cases must pass for that pair to pass. One pair is neither full
+visual-planner validation nor permission to promote an instruction change.
+
+Prepared driver: `.artifacts/qwen-dinner-appearance-pair.py`; execute with the
+protocol ID only after GPU training is terminal. Preparation passed CPU checks;
+render replay and all four inference outcomes remain untested.
+
+
+Replay attempts `20260911T110859-4158aa25c243` and `20260911T111049-12b26169fffe`
+both stop before inference: historical overhead pixels differ in 88 channels by
+one intensity level, while wrist pixels match. The second uses the live worker's
+compiled-model framebuffer override. Exact historical replay remains unproved.
+Neither failed attempt is relabeled successful.
+
+Protocol `20260911T111218-c75b807e19fb` instead freezes the last sealed present/absent
+captures as a new matched pair. Both instructions see identical saved pixels for
+each scene. It retains the original four-case decision gates and records the
+historical differences. Driver `.artifacts/qwen-frozen-dinner-pair.py` runs only
+local inference, without rendering or action authority. Job 50272 is active;
+no inference outcome is claimed yet.

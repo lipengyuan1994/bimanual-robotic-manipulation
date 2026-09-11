@@ -2,7 +2,7 @@
 
 Updated: 2026-09-11. Branch: `codex/preparation-foundation`.
 Use `git rev-parse HEAD` for the exact checkpoint; previous pushed checkpoint is
-`4434407`. Current work connects saved workflow traces to independent scoring.
+`852b7fa`. Current work adds process isolation and paired visual diagnosis.
 [Roadmap](ROADMAP.md), [original plan](PLAN.md), [history](STATUS_HISTORY.md).
 
 ## Readiness
@@ -20,27 +20,24 @@ Spend remains zero. Prior-code eligibility remains unconfirmed. Physical robot
 deployment is outside this release. Runtime, fixture and integrity checks do not
 establish model quality or Intel compliance.
 
-## Active training: do not restart
+## Latest ACT training and quality gate
 
-**Handle 61437 is live**, run `20260911T053104-2b24b508ff79`, from clean `1f7c0a0`.
-Log: `.artifacts/approach-first-action-loss.log`. Actual optimizer progress was
-observed beyond update 11,000; the fixed budget is 20,000 updates on native MPS,
-fallback disabled. No quality result or completed checkpoint is claimed yet.
+Training **61437 is terminal**. Run `20260911T053104-2b24b508ff79` completed
+20,000 native MPS updates in 3,667.71s, fallback disabled, from clean `1f7c0a0`.
+Protocol `20260911T052340-2416748543bb` changes temporal L1 weighting only: first
+action 50%, remaining nine share 50%, valid-target normalization. Dataset,
+initialization, sampler, terminal learning-rate schedule and all six gates stayed fixed.
 
-Protocol `20260911T052340-2416748543bb` changes only temporal L1 weighting: first
-action 50%, remaining nine share 50%, with valid-target normalization. Dataset,
-initialization, sampler, terminal learning-rate schedule and all six offline gates
-remain unchanged. Only the final checkpoint may be evaluated.
+Offline run `20260911T110831-7101df3ccdb6` and comparison
+`20260911T110901-a43fc6ef185a` pass **five of six** gates. Launch mean tool-target
+error is 0.344 mm and settled error 0.033 mm, but the first pan command remains
+-0.001956 rad versus teacher +0.000564 rad. No physical rollout or promotion.
+Previous terminal-decay run `20260911T035236-64462d013810` also passed five of six.
+The next ACT step is to diagnose the persistent signed launch error before declaring
+another controlled training experiment. [Training](TRAINING.md), [policy evidence](POLICY_ROLLOUT.md).
 
-Previous terminal-decay training `20260911T035236-64462d013810` completed 20,000
-updates in 3,672.98s. Offline/gate runs `20260911T045418-d8a9a5277bc8` and
-`20260911T045441-86b5ad13622d` passed five of six checks: first pan remains
--0.002800 rad versus teacher +0.000564 rad. No promotion or physical rollout followed.
-CPU diagnosis `20260911T050712-1aacb1d9c003` motivates the new weighting but does
-not establish its effectiveness. [Training](TRAINING.md), [policy evidence](POLICY_ROLLOUT.md).
-
-No other model inference, rendering or benchmark job may share this GPU while
-61437 is running. Poll the existing handle after timeouts; do not launch duplicates.
+**Qwen job 50272 is active**; no other model/render/benchmark should share its GPU.
+Log `.artifacts/qwen-frozen-dinner-pair.log`. Poll the same handle; do not duplicate.
 
 ## Workflow execution and recovery
 
@@ -52,8 +49,10 @@ No other model inference, rendering or benchmark job may share this GPU while
   remain ineligible. No reset, teacher fallback or artificial grasp is inserted.
 - [Local execution command](WORKFLOW_EXECUTION.md) is implemented. It verifies
   sources and loads ACT/Qwen before creating the worker, records final supervisor
-  history and preserves failed outcomes. Its timeout is cooperative; process-level
-  forced termination and the live operator UI remain incomplete.
+  history and preserves failed outcomes. The CLI now defaults to a spawned process
+  with cooperative cancellation, bounded terminate/kill escalation and reaping.
+  `--in-process` retains cooperative debugging. Parent-crash recovery, unmanaged
+  subprocess trees and the live operator UI remain incomplete.
 - Saved workflow traces now retain their verified scene layout for independent
   scoring. The scorer requires exact sealed paths and scene/layout digest binding;
   missing intervention evidence remains a failed condition. No object locations
@@ -67,12 +66,18 @@ The active `.artifacts/training-venv` was not modified.
 
 ## Visual reasoning
 
-Actual HD Qwen run `20260911T045505-ef9d1f373348` uses overhead1920/wrist480 images,
-native MPS and exact fresh recapture. Load/inference: 16.62/85.60s while CPU tests
-also ran. It reports the visible cyan bar missing and requests clarification;
-zero attempts/actions follow. Recognition remains unresolved. Next: a preregistered
-appearance-description comparison with missing-object controls after GPU training
-finishes. [Planner evidence](PLANNER_LIVE_INTEGRATION.md).
+Actual HD Qwen run `20260911T045505-ef9d1f373348` reports the visible cyan bar
+missing and requests clarification; zero actions follow. Recognition is unresolved.
+Two preregistered paired replay attempts, `20260911T110859-4158aa25c243` and
+`20260911T111049-12b26169fffe`, stopped before inference because historical RGB
+was not bit-identical. The overhead differs in 88 channels by one intensity level;
+both wrist images match. Both failed attempts remain preserved.
+
+New protocol `20260911T111218-c75b807e19fb` freezes the last captured positive and
+negative pair. Four cases use identical saved pixels per scene and unchanged
+visual-decision gates; no historical exact replay is claimed. Job **50272** is
+running local MPS inference. No pair outcome or planner promotion is claimed yet.
+[Planner evidence](PLANNER_LIVE_INTEGRATION.md).
 
 ## Physical foundation and plate repair
 
@@ -106,6 +111,10 @@ fails release: 0.369 N final jaw load, 15.0-degree tilt, height +16.7 mm and no
 jaw-free hold samples. Analysis `20260911T060027-65687a2def5a` is retained.
 An earlier static filter wrongly included a visual-only mesh; corrected preflight
 and the original rejection are both retained. No ordering, dataset or gate changed.
+The larger west30/south5/down10 mm trial `20260911T060903-2e2b0e5fc492` also
+completes 2,781 controls/139,050 samples collision-free but fails release. Final
+jaw load is 0.389 N, tilt 10.45 degrees and height +11.74 mm; no hold sample is
+jaw-free. Analysis `20260911T061047-d494cfcfd579` preserves the support migration.
 [All transition evidence](SUCCESSOR_READINESS.md).
 
 ## Verification
@@ -121,7 +130,9 @@ and the original rejection are both retained. No ordering, dataset or gate chang
 - Recovery CI 34565689004 failed because its lifecycle fixture used real time and
   slow work exceeded the unchanged two-second freshness guard. The fixture now
   uses controlled time, with a separate deliberately stale-frame rejection test:
-  **19 pass**, `.artifacts/workflow-logical-clock-check.log`. CI rerun is pending.
+  **19 pass**, `.artifacts/workflow-logical-clock-check.log`. Workflow checkpoint
+  `4434407` CI 34567398213 now passes, including rendering. Scoring checkpoint
+  `852b7fa` CI 34568561533 and 34568558635 both pass.
 - Workflow entrypoint plus CLI: **38 pass** in the combined native environment,
   including immutable-source output confinement, real-worker lifecycle fixtures,
   late-model-output rejection and preserved final supervisor history. Log:
@@ -135,20 +146,27 @@ and the original rejection are both retained. No ordering, dataset or gate chang
 - Scoring aggregate **62130 completed**: 890 passed, eighteen optional skips,
   nine render deselections, 480.11s; `.artifacts/checks-workflow-scoring-final.log`.
   Ruff, formatting, 389 documentation links and README synchronization pass.
+- Process isolation: nineteen real spawned CPU tests pass, including ignored
+  termination, kill/reap, parent interruption, corrupt child evidence and a child
+  sealed as completed while a background thread hangs. Four CLI wiring tests pass.
+- Actual default CLI missing-cohort run `20260911T061251-260718b9a590` returns
+  failed in 0.389s, verifies its failed child and reaps it. No model is loaded.
+- Process aggregate **75625 completed**: 911 passed, eighteen optional skips,
+  nine render deselections, 481.95s; `.artifacts/checks-workflow-process-final.log`.
+  Ruff, formatting, documentation links and README synchronization pass.
 - Native camera recovery test previously passes (3.61s); no new render job runs
   alongside training. Documentation/README checks pass.
 
 ## Next executable steps
 
-1. Verify CI after the scoring checkpoint push. Keep draft
-   PR #1 unmerged and preserve its explicit model-quality limits.
-2. Poll training **61437**. When sealed, run
-   `.artifacts/approach-first-action-loss-offline.py` with its run ID, followed by
-   `.artifacts/compare-first-action-loss-offline.py` with the offline run ID.
-   All six gates must pass before the frozen conditional physical evaluation.
-3. Resolve plate separation using measured contacts and a separately declared
-   physical protocol, preserving every failure and original source artifacts.
-4. Validate the full learned skill cohort, visual reasoning and live operator UI.
+1. Poll Qwen **50272**, verify and score all four outcomes. Keep unchanged gates
+   and distinguish captured-image diagnosis from live dispatch or task completion.
+2. Diagnose the retained ACT launch-direction error; do not run a failed checkpoint.
+3. Continue measured-state plate-release design. Static path
+   `20260911T111303-15937bf42f64` clears path collisions/table but leaves one jaw
+   footprint 0.398 mm inside the disk; it is not a physical release demonstration.
+4. Verify CI after the process checkpoint push. Keep draft PR #1 unmerged.
+5. Validate the full learned cohort, live operator UI and remaining release gates.
 
 ## External dependencies
 

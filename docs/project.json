@@ -25,7 +25,7 @@
       "id": "M2",
       "title": "Learned workflow",
       "state": "in_progress",
-      "detail": "Pinned seven-skill cohorts, local execution, bounded visual retries and independent saved-run scoring are implemented. A controlled ACT experiment is training; learned dinner quality, Qwen recognition and plate transition repair remain incomplete."
+      "detail": "Pinned seven-skill cohorts, isolated execution, bounded visual retries and saved-run scoring are implemented. ACT still fails its launch-direction gate; paired Qwen diagnosis is running. Learned dinner quality and plate transition repair remain incomplete."
     },
     {
       "id": "M3",

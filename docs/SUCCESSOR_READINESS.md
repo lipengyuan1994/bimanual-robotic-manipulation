@@ -220,3 +220,35 @@ samples fail jaw-free, position, upright and height checks; support/speed pass.
 The longest transient jaw-free span during the prefix is only 4 ms. The moving
 plate recontacts the supporting jaw despite predicted frozen-pose clearance.
 No continuation, replacement dataset or repaired workflow was adopted.
+
+
+Measured recontact diagnosis `20260911T060803-b2e840c6886f` motivates testing the
+already-declared larger endpoint west30/south5/down10 mm. Corrected preflight
+`20260911T060831-f4f0d60eeaa2` passes all 40 controls, with 9.154 mm minimum
+jaw/table clearance and 14.650 mm endpoint jaw/base clearance against the frozen
+plate. Protocol `20260911T060858-b9f10eabcc0a` authorizes one bounded prefix trial.
+
+Actual run `20260911T060903-2e2b0e5fc492` completes 2,781 controls/139,050 samples,
+zero forbidden contacts, maximum overlap 1.831 mm. **Release still fails.**
+Analysis `20260911T061047-d494cfcfd579` records goal distance 12.660 mm (passes),
+tilt 10.451 degrees and height +11.740 mm (fail). Fixed-jaw boxes 5/6 carry
+0.388901 N; every final hold sample fails jaw-free. The longest earlier force-free
+span is 30 ms. Bar/cup placements and closed drawer remain intact. Support migrated
+as the plate followed the jaw, so clearance against an old plate pose did not
+predict release. There is no continuation or adopted replacement source.
+
+
+Measured-frame diagnosis `20260911T061313-d36d4430ebe4` finds the loaded box5
+patch 1.897 mm inside the plate edge, while its full footprint extends about
+16.6 mm inward. Clearing an old contact point can expose another supporting patch.
+Local down2 mm opens both measured normals; a northwest edge slide is proposed.
+The first static script could not import SciPy; a dependency-free convex hull
+replaces that dependency. Run `20260911T111041-bc7c39fa6719` then fails explicitly
+on unsupported physical capsule/mesh geometry; no physical trial follows.
+
+Expanded geometry coverage produces static run `20260911T111303-15937bf42f64`:
+down2 mm then northwest20 mm passes the 60-control path and retains at least
+6.277 mm jaw/table clearance. All load-bearing boxes 5/6 move outside the frozen
+plate projection, but box4 still overlaps it radially by 0.398 mm. This is an
+incomplete release design, not a demonstrated physical separation. All physical
+jaw shapes are reported; no visual-only geometry supplies the clearance result.

@@ -649,3 +649,14 @@ normalized over valid weighted targets, giving the executed first action 50%.
 Keep dataset, initialization, sampling, 20,000-update budget, terminal learning-rate
 schedule and all six evaluation gates unchanged. No experiment or promotion has
 occurred under this proposal; benefit remains unmeasured.
+
+
+## First-action weighting result
+
+Controlled run `20260911T053104-2b24b508ff79` completes 20,000 updates in 3,667.71s.
+Offline diagnostic `20260911T110831-7101df3ccdb6` and unchanged gate comparison
+`20260911T110901-a43fc6ef185a` pass five of six checks. Mean launch tool-target
+error is 0.344 mm and settled error 0.033 mm. The first pan prediction remains
+negative (-0.001956 rad) versus the positive teacher command (+0.000564 rad).
+Weights remain unchanged during evaluation. The first-direction gate fails;
+no physical rollout, checkpoint promotion or learned manipulation success follows.

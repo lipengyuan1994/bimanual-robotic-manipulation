@@ -1,8 +1,9 @@
 # Execute a local development workflow
 
 `workflow-run` connects a verified seven-skill checkpoint manifest, local Qwen
-planner and the guarded continuous simulation runner. It loads models before
-capturing execution images and keeps simulation operations on one owning thread.
+planner and the guarded continuous simulation runner. By default the CLI uses
+a spawned worker process, loading models before capturing execution images and
+keeping simulation operations on one owning thread within that process.
 There is currently **no validated seven-model cohort**. This command is an
 execution interface, not evidence that learned dinner setup works.
 
@@ -56,16 +57,46 @@ It retains failures during setup or execution. A completed executor sequence is
 reported separately from `independent_task_success`, which remains unknown here;
 it must not be counted as an independently scored full-task success.
 
-Cancellation revokes execution authority and closes the worker. The overall
-wall timeout is cooperative: it is checked between setup and execution calls.
-It cannot forcibly interrupt a blocked native model load or a single blocked
-inference call. A cancelled model thread can finish computing copied inputs,
-but cannot resume the simulation or write worker artifacts after closure. Hard
-process isolation and a live operator UI remain separate work.
+The default process supervisor handles cancellation and the overall wall deadline
+outside the model process. It first requests cooperative cancellation, waits up to
+two seconds, then terminates and, if necessary, kills the child with one-second
+grace per escalation. It reaps the child before sealing parent evidence. A forced
+interruption never becomes successful execution, even if a child completion
+manifest already exists. Partial worker files remain preserved. Evidence hashing
+and sealing happen afterward and are not included in the stop grace.
 
-After the execution record is sealed, `bimanual dinner-evaluate RUN_ID` can read
-its worker trace and retained layout; see [independent outcomes](DINNER_OUTCOMES.md).
+The parent emits a `dinner_workflow_process` record with child PID, exit status,
+stop events and verified child manifest identity. The child evidence store is
+`RUN_DIRECTORY/child-evidence`; its run ID is recorded as `child_run_id`.
+Only a verified completed `dinner_workflow_execution` child with matching config
+can establish execution completion. This still does not establish physical task
+success. One spawned child owns the simulation; this supervisor does not recover
+from a parent OS crash or manage independently launched subprocess trees.
+The live operator UI remains separate work.
+
+For direct debugging, `--in-process` preserves the original cooperative runner.
+That mode checks cancellation between blocking operations and cannot forcibly
+interrupt a model load or inference kernel. A cancelled planner thread may finish
+computing copied inputs, but cannot resume simulation or modify sealed evidence.
+
+After a child execution record is sealed, evaluate its run ID in its own store:
+
+```sh
+.venv/bin/bimanual --artifacts RUN_DIRECTORY/child-evidence dinner-evaluate CHILD_RUN_ID
+```
+
+For `--in-process`, use the usual artifact store and returned run ID. The parent
+process record is a lifecycle record, not a physical trace. See
+[independent outcomes](DINNER_OUTCOMES.md).
 Missing instrumentation declarations remain an explicit failed condition until a
 source-bound audit is supplied. The execution command itself continues to report
 `independent_task_success: null`; it does not silently equate step completion with
 the separate scorer's result.
+
+
+Validation: nineteen native CPU tests exercise actual spawned processes, including
+cooperative stop, ignored termination followed by kill/reap, parent interruption,
+corrupt/missing child results and completed child evidence with a hung thread.
+Actual CLI run `20260911T061251-260718b9a590` with an absent cohort fails as expected,
+verifies its failed child manifest and reaps the child without loading models.
+This verifies the failure path, not full learned execution or GPU interruption.

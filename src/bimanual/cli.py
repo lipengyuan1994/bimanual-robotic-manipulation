@@ -111,6 +111,11 @@ def main(argv: list[str] | None = None) -> int:
     workflow_run.add_argument("--max-actions-per-skill", type=int, default=2000)
     workflow_run.add_argument("--max-tokens", type=int, default=384)
     workflow_run.add_argument("--step-timeout-seconds", type=float, default=300)
+    workflow_run.add_argument(
+        "--in-process",
+        action="store_true",
+        help="Diagnostic mode: cooperative stops only; default uses an isolated process",
+    )
 
     cup = commands.add_parser("cup", help="Physically carry and release a hollow cup upright")
     cup.add_argument("--no-render", action="store_true")
@@ -357,23 +362,26 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "workflow-run":
             from bimanual.workflow_execution import WorkflowExecutionConfig, run_workflow_execution
 
-            result = invoke_with_diagnostics(
-                run_workflow_execution,
-                WorkflowExecutionConfig(
-                    workflow_manifest=args.manifest,
-                    planner_model_directory=args.planner_model,
-                    instruction=args.instruction,
-                    policy_device=args.policy_device,
-                    planner_device=args.planner_device,
-                    camera_profile=args.camera_profile,
-                    wall_timeout_seconds=args.wall_timeout_seconds,
-                    max_actions_per_skill=args.max_actions_per_skill,
-                    step_timeout_seconds=args.step_timeout_seconds,
-                    max_tokens=args.max_tokens,
-                ),
-                store=store,
-                project_root=root,
+            execution = WorkflowExecutionConfig(
+                workflow_manifest=args.manifest,
+                planner_model_directory=args.planner_model,
+                instruction=args.instruction,
+                policy_device=args.policy_device,
+                planner_device=args.planner_device,
+                camera_profile=args.camera_profile,
+                wall_timeout_seconds=args.wall_timeout_seconds,
+                max_actions_per_skill=args.max_actions_per_skill,
+                step_timeout_seconds=args.step_timeout_seconds,
+                max_tokens=args.max_tokens,
             )
+            if args.in_process:
+                function, config = run_workflow_execution, execution
+            else:
+                from bimanual.workflow_process import WorkflowProcessConfig, run_workflow_process
+
+                function = run_workflow_process
+                config = WorkflowProcessConfig(execution=execution)
+            result = invoke_with_diagnostics(function, config, store=store, project_root=root)
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1
         elif args.command == "cup":

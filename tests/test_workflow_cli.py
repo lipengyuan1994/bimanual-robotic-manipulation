@@ -7,9 +7,10 @@ import pytest
 from bimanual.cli import main
 
 
+@pytest.mark.parametrize("in_process", [False, True])
 @pytest.mark.parametrize("outcome,expected", [("completed", 0), ("failed", 1)])
 def test_workflow_cli_forwards_limits_and_preserves_failure(
-    tmp_path, monkeypatch, outcome, expected
+    tmp_path, monkeypatch, outcome, expected, in_process
 ):
     seen = []
 
@@ -17,7 +18,12 @@ def test_workflow_cli_forwards_limits_and_preserves_failure(
         seen.append(config)
         return SimpleNamespace(outcome=outcome, model_dump=lambda **kw: {"outcome": outcome})
 
-    monkeypatch.setattr("bimanual.workflow_execution.run_workflow_execution", execute)
+    target = (
+        "bimanual.workflow_execution.run_workflow_execution"
+        if in_process
+        else "bimanual.workflow_process.run_workflow_process"
+    )
+    monkeypatch.setattr(target, execute)
     result = main(
         [
             "--artifacts",
@@ -42,10 +48,11 @@ def test_workflow_cli_forwards_limits_and_preserves_failure(
             "800",
             "--max-tokens",
             "200",
+            *(["--in-process"] if in_process else []),
         ]
     )
     assert result == expected and len(seen) == 1
-    config = seen[0]
+    config = seen[0] if in_process else seen[0].execution
     assert config.workflow_manifest == tmp_path / "cohort.json"
     assert config.planner_model_directory == tmp_path / "model"
     assert config.instruction == "Set the dinner table"
