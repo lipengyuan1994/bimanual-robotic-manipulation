@@ -17,9 +17,9 @@ def _records(path: Path):
             yield json.loads(line)
 
 
-def _actions(path: Path):
+def _actions(path: Path, *, legacy: bool = True):
     for index, row in enumerate(_records(path)):
-        if "targets_rad" in row:
+        if not legacy or (isinstance(row, dict) and "targets_rad" in row):
             yield row
         else:
             # Legacy teacher records explicitly acknowledge applied targets. Missing
@@ -35,7 +35,27 @@ def _actions(path: Path):
             }
 
 
-def _diagnostics(directory: Path) -> dict:
+def _trace_layout(kind: str) -> dict:
+    """Select declared producer layouts, never search for plausible alternate files."""
+    if kind == "dinner_workflow_execution":
+        return dict(
+            profile="workflow_worker_v1",
+            physics="worker/physics.jsonl",
+            actions="worker/actions.jsonl",
+            layout="worker/layout.json",
+            scene="worker/scene.xml",
+            legacy_actions=False,
+        )
+    return dict(
+        profile="dinner_teacher_v1" if kind == "dinner_teacher" else "legacy_root_teacher_v1",
+        physics="physics.jsonl.gz",
+        actions="actions.jsonl",
+        layout="teacher-assets/layout.json" if kind == "dinner_teacher" else "layout.json",
+        legacy_actions=True,
+    )
+
+
+def _diagnostics(directory: Path, paths: dict, sealed_files: dict) -> dict:
     """Scan beyond any early scorer stop, retaining partial-action collisions."""
     result = {
         "physics_rows": 0,
@@ -45,7 +65,11 @@ def _diagnostics(directory: Path) -> dict:
         "partial_actions": 0,
         "errors": [],
     }
-    for name in ("physics.jsonl.gz", "actions.jsonl"):
+    for kind in ("physics", "actions"):
+        name = paths[kind]
+        if name not in sealed_files:
+            result["errors"].append(f"{name}: Selected artifact is absent from source seal")
+            continue
         opener = gzip.open if name.endswith(".gz") else open
         try:
             with opener(directory / name, "rt") as stream:
@@ -54,7 +78,7 @@ def _diagnostics(directory: Path) -> dict:
                         row = json.loads(line)
                         if not isinstance(row, dict):
                             raise ValueError("Record must be an object")
-                        if name.startswith("physics"):
+                        if kind == "physics":
                             result["physics_rows"] += 1
                             if not isinstance(row.get("bad"), list):
                                 raise ValueError("Missing or invalid contact list")
@@ -98,19 +122,34 @@ def evaluate_dinner_run(
         scope = source.metrics.get(
             "instrumentation_evidence", "Source declaration provenance unspecified"
         )
-    diagnostics = _diagnostics(directory)
-    layout_name = (
-        "teacher-assets/layout.json"
-        if "teacher-assets/layout.json" in source.files
-        else "layout.json"
-    )
+    paths = _trace_layout(source.kind)
+    diagnostics = _diagnostics(directory, paths, source.files)
+    scene_binding_verified = None if "scene" not in paths else False
     try:
-        layout = json.loads((directory / layout_name).read_text())
+        missing = [
+            paths[name]
+            for name in (
+                ("physics", "actions", "layout", "scene")
+                if "scene" in paths
+                else ("physics", "actions", "layout")
+            )
+            if paths[name] not in source.files
+        ]
+        if missing:
+            raise ValueError("Selected artifacts absent from source seal: " + ", ".join(missing))
+        layout = json.loads((directory / paths["layout"]).read_text())
+        if "scene" in paths:
+            if (
+                not isinstance(layout, dict)
+                or layout.get("scene_sha256") != source.files[paths["scene"]]
+            ):
+                raise ValueError("Workflow layout does not bind the sealed worker scene")
+            scene_binding_verified = True
         score = score_dinner_outcomes(
-            _records(directory / "physics.jsonl.gz"),
+            _records(directory / paths["physics"]),
             layout,
             metadata=metadata,
-            actions=_actions(directory / "actions.jsonl"),
+            actions=_actions(directory / paths["actions"], legacy=paths["legacy_actions"]),
         )
     except (ValueError, TypeError, KeyError, OSError, EOFError) as exc:
         score = {
@@ -140,7 +179,9 @@ def evaluate_dinner_run(
         "full_trace_diagnostics": diagnostics,
         "source_outcome": source.outcome,
         "source_kind": source.kind,
-        "source_error": source.metrics.get("error"),
+        "source_error": source.metrics.get("error", source.metrics.get("reason")),
+        "selected_trace_layout": paths,
+        "scene_binding_verified": scene_binding_verified,
         "learned_execution_verified": False,
     }
     (out / "result.json").write_text(json.dumps(metrics, indent=2, allow_nan=False))
@@ -152,6 +193,7 @@ def evaluate_dinner_run(
             "source_run": run_id,
             "source_manifest_sha256": source.manifest_sha256,
             "profile": PROFILE,
+            "selected_trace_layout": paths,
             "instrumentation": metadata,
             "instrumentation_scope": scope,
             "instrumentation_run": instrumentation_run,

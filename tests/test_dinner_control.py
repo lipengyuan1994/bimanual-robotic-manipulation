@@ -348,3 +348,43 @@ def test_auxiliary_arm_ownership_does_not_grant_object_contact(tmp_path):
         assert instance._env.active_contacts == {"left": {"plate"}}
     finally:
         instance.close()
+
+
+def test_layout_is_recorded_for_scoring_without_policy_truth(worker):
+    from bimanual.dinner_control import ASSETS
+    from bimanual.evidence import digest_file
+
+    instance, _, _, _ = worker
+    assert (instance.directory / "layout.json").read_bytes() == (
+        ASSETS / "layout.json"
+    ).read_bytes()
+    metadata = json.loads((instance.directory / "worker.json").read_text())
+    assert metadata["layout_sha256"] == digest_file(ASSETS / "layout.json")
+    assert metadata["layout_usage"] == "independent_scoring_only"
+    observation = instance.capture()
+    assert not any(
+        "layout" in key or "object" in key for key in instance.policy_inputs(observation)
+    )
+
+
+@pytest.mark.parametrize("fault", ["digest", "scene_binding"])
+def test_layout_mismatch_rejected_without_reading_teacher_actions(tmp_path, monkeypatch, fault):
+    from bimanual import dinner_control
+    from bimanual.evidence import digest_file
+
+    original = dinner_control.ASSETS
+    assets = tmp_path / "assets"
+    assets.mkdir()
+    for name in ("scene.xml", "layout.json", "manifest.json"):
+        (assets / name).write_bytes((original / name).read_bytes())
+    layout = json.loads((assets / "layout.json").read_text())
+    layout["scene_sha256"] = "0" * 64
+    (assets / "layout.json").write_text(json.dumps(layout))
+    if fault == "scene_binding":
+        manifest = json.loads((assets / "manifest.json").read_text())
+        manifest["files"]["layout.json"] = digest_file(assets / "layout.json")
+        (assets / "manifest.json").write_text(json.dumps(manifest))
+    monkeypatch.setattr(dinner_control, "ASSETS", assets)
+    with pytest.raises(ValueError, match="layout"):
+        DinnerControlWorker(tmp_path / "invalid", [])
+    assert not (tmp_path / "invalid/layout.json").exists()

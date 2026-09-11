@@ -62,3 +62,10 @@ It cannot forcibly interrupt a blocked native model load or a single blocked
 inference call. A cancelled model thread can finish computing copied inputs,
 but cannot resume the simulation or write worker artifacts after closure. Hard
 process isolation and a live operator UI remain separate work.
+
+After the execution record is sealed, `bimanual dinner-evaluate RUN_ID` can read
+its worker trace and retained layout; see [independent outcomes](DINNER_OUTCOMES.md).
+Missing instrumentation declarations remain an explicit failed condition until a
+source-bound audit is supplied. The execution command itself continues to report
+`independent_task_success: null`; it does not silently equate step completion with
+the separate scorer's result.

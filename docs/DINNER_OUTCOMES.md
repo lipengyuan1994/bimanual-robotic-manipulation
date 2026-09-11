@@ -89,3 +89,35 @@ The first supported-command evaluations are sealed and verified:
 
 The first uses the linked source-inspection audit shown above; the second retains
 the probe's own explicitly scoped declarations. Both are existing scripted runs.
+
+## Saved learned-workflow records
+
+`dinner-evaluate` also selects the exact recorded worker paths for a sealed
+`dinner_workflow_execution` run: `worker/physics.jsonl`, `worker/actions.jsonl`
+and `worker/layout.json`, with `worker/scene.xml` required for scene binding.
+It never searches alternate directories for a more
+favorable trace. New workers retain the authored layout only after verifying its
+digest and scene binding. Layout coordinates are evaluation artifacts and are
+not planner or policy inputs.
+
+The evaluation records its selected paths, scans partial/malformed traces and
+preserves the source terminal outcome. A clarification, cancellation or failed
+run cannot become a successful evaluation. Missing files or intervention metadata
+remain failures; zero interventions are never inferred from a quiet trace.
+A supplied instrumentation audit must bind the exact source manifest as before.
+This scorer does not certify that a learned model produced the actions, nor does
+one physical pass establish generalization or release readiness.
+
+Learning checkpoint: suppose all seven skills report completion, but the plate
+slides out of its target during the final hold. The workflow finished, yet the
+physical task failed. Conversely, finding objects already near their targets is
+not enough: the trace must also prove the required contact transport and hand-off.
+Ask which recorded observation establishes each claim before calling a run a
+success. Reading this explanation is not recorded as demonstrated mastery.
+
+Historical baseline rescore `20260911T055358-51d16be3e162` preserves all 240,950
+physics samples and 4,819 confirmed actions, with zero forbidden contacts or
+partial actions. It passes independent physical scoring and explicitly retains
+`learned_execution_verified: false`. This is a rescore of existing evidence,
+not a new physical run. Workflow scene/layout binding tests additionally reject
+missing sealed scenes and mismatched layout digests.

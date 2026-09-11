@@ -197,3 +197,26 @@ Design `20260911T054615-6660a468f379` explains that the tilt relieved one loaded
 jaw patch while pressing another. Lowering alone exhausts table clearance. The
 next hypothesis combines outward edge escape with downward unloading, requiring
 all loaded patches to clear. No numeric path or new physical success is validated.
+
+
+## Coupled outward/downward diagnostic
+
+Finite search `20260911T055610-fdc36c2f8056` initially rejected all four declared
+prefixes. Its whole-jaw filter accidentally included a visual-only mesh; that
+rejection is preserved and superseded by collision-geometry-only search
+`20260911T055752-c80c4d63e57f`. Candidate order and actual live guards were unchanged.
+The first candidate, west10/down3 mm, clears all 40 static forbidden-contact
+checks, the three tracked loaded patches and the collision jaw/base geometry.
+These frozen-pose predictions are not measured physical separation.
+
+Protocol `20260911T055842-c4e73a6debec` permits one prefix trial followed by 60
+holds and a mandatory stop. Run `20260911T055847-e6acdec0f110` completes 2,781
+controls / 139,050 physics samples with zero forbidden contacts and maximum
+measured overlap 1.831 mm. Bar/cup placements and the closed drawer are preserved.
+**Plate release fails.** Analysis `20260911T060027-65687a2def5a` finds no jaw-free
+sample during the endpoint hold; final fixed-jaw force is 0.369426 N. Plate goal
+error is 20.836 mm, tilt 15.011 degrees and height +16.731 mm. All final 2,000
+samples fail jaw-free, position, upright and height checks; support/speed pass.
+The longest transient jaw-free span during the prefix is only 4 ms. The moving
+plate recontacts the supporting jaw despite predicted frozen-pose clearance.
+No continuation, replacement dataset or repaired workflow was adopted.

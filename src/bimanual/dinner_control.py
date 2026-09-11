@@ -91,8 +91,16 @@ class DinnerControlWorker:
             manifest = json.loads((ASSETS / "manifest.json").read_text())
             if digest_file(ASSETS / "scene.xml") != manifest["files"]["scene.xml"]:
                 raise ValueError("Authored dinner scene integrity mismatch")
+            # Evaluation provenance only; layout is never passed to planner/policy inputs.
+            layout_bytes = (ASSETS / "layout.json").read_bytes()
+            if hashlib.sha256(layout_bytes).hexdigest() != manifest["files"]["layout.json"]:
+                raise ValueError("Authored dinner layout integrity mismatch")
+            layout = json.loads(layout_bytes)
+            if layout.get("scene_sha256") != manifest["files"]["scene.xml"]:
+                raise ValueError("Authored dinner layout/scene mismatch")
             xml = (ASSETS / "scene.xml").read_text()
             (self.directory / "scene.xml").write_text(xml)
+            (self.directory / "layout.json").write_bytes(layout_bytes)
             self._env = _PolicyDinnerEnvironment(xml, self._trace, cancelled)
             self._expected_model_digest = self._model_digest()
             self._env.phase = "policy/idle"
@@ -103,6 +111,8 @@ class DinnerControlWorker:
                 canonical(
                     {
                         "scene_sha256": digest_file(self.directory / "scene.xml"),
+                        "layout_sha256": digest_file(self.directory / "layout.json"),
+                        "layout_usage": "independent_scoring_only",
                         "camera_source": "live_mujoco"
                         if render_capture is None
                         else "injected_unverified",

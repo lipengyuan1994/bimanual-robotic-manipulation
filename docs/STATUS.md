@@ -2,7 +2,7 @@
 
 Updated: 2026-09-11. Branch: `codex/preparation-foundation`.
 Use `git rev-parse HEAD` for the exact checkpoint; previous pushed checkpoint is
-`17b4415`. Current work adds a supported local workflow execution command.
+`4434407`. Current work connects saved workflow traces to independent scoring.
 [Roadmap](ROADMAP.md), [original plan](PLAN.md), [history](STATUS_HISTORY.md).
 
 ## Readiness
@@ -24,7 +24,7 @@ establish model quality or Intel compliance.
 
 **Handle 61437 is live**, run `20260911T053104-2b24b508ff79`, from clean `1f7c0a0`.
 Log: `.artifacts/approach-first-action-loss.log`. Actual optimizer progress was
-observed beyond update 4,000; the fixed budget is 20,000 updates on native MPS,
+observed beyond update 11,000; the fixed budget is 20,000 updates on native MPS,
 fallback disabled. No quality result or completed checkpoint is claimed yet.
 
 Protocol `20260911T052340-2416748543bb` changes only temporal L1 weighting: first
@@ -54,8 +54,11 @@ No other model inference, rendering or benchmark job may share this GPU while
   sources and loads ACT/Qwen before creating the worker, records final supervisor
   history and preserves failed outcomes. Its timeout is cooperative; process-level
   forced termination and the live operator UI remain incomplete.
-- The original portal remains read-only. Executor completion is separate from
-  independent dinner-task success.
+- Saved workflow traces now retain their verified scene layout for independent
+  scoring. The scorer requires exact sealed paths and scene/layout digest binding;
+  missing intervention evidence remains a failed condition. No object locations
+  enter planner or policy inputs. The original portal remains read-only.
+  Executor completion is separate from independent dinner-task success.
 
 A new locked `.artifacts/workflow-venv` contains both training and reasoning extras.
 Run `20260911T053930-398fa0529139` verifies native ARM64, all 372 compiled libraries
@@ -97,7 +100,12 @@ No failed diagnostic is relabeled as a repaired workflow. Read-only design
 `20260911T054402-12a65c47f446` rejects plate-before-cup ordering: the cup source
 blocks the path earlier. Design `20260911T054615-6660a468f379` proposes outward
 and downward withdrawal after measuring load transfer between two fixed-jaw
-patches. No numeric path is validated yet; no ordering, scene, dataset or gate changed.
+patches. Coupled west10/down3 mm diagnostic `20260911T055847-e6acdec0f110`
+then completes 2,781 controls/139,050 samples without forbidden contacts, but again
+fails release: 0.369 N final jaw load, 15.0-degree tilt, height +16.7 mm and no
+jaw-free hold samples. Analysis `20260911T060027-65687a2def5a` is retained.
+An earlier static filter wrongly included a visual-only mesh; corrected preflight
+and the original rejection are both retained. No ordering, dataset or gate changed.
 [All transition evidence](SUCCESSOR_READINESS.md).
 
 ## Verification
@@ -118,15 +126,21 @@ patches. No numeric path is validated yet; no ordering, scene, dataset or gate c
   including immutable-source output confinement, real-worker lifecycle fixtures,
   late-model-output rejection and preserved final supervisor history. Log:
   `.artifacts/workflow-execution-combined-check.log`. No learned cohort was executed.
-- Final aggregate check **8916 is active**, log
-  `.artifacts/checks-workflow-execution-final.log`, 903 collected/nine render
-  deselections. Do not claim a final aggregate pass yet.
+- Workflow entrypoint aggregate **8916 completed**: 876 passed, eighteen optional
+  skips, nine render deselections, 476.53s;
+  `.artifacts/checks-workflow-execution-final.log`.
+- New scene-layout retention tests: 22 pass. Independent evaluator tests: 21 pass.
+  Historical teacher rescore `20260911T055358-51d16be3e162` passes all 240,950
+  samples/4,819 actions; this reuses old physics and does not certify learned control.
+- Scoring aggregate **62130 completed**: 890 passed, eighteen optional skips,
+  nine render deselections, 480.11s; `.artifacts/checks-workflow-scoring-final.log`.
+  Ruff, formatting, 389 documentation links and README synchronization pass.
 - Native camera recovery test previously passes (3.61s); no new render job runs
   alongside training. Documentation/README checks pass.
 
 ## Next executable steps
 
-1. Poll final aggregate check **8916**, then verify the new CI result. Keep draft
+1. Verify CI after the scoring checkpoint push. Keep draft
    PR #1 unmerged and preserve its explicit model-quality limits.
 2. Poll training **61437**. When sealed, run
    `.artifacts/approach-first-action-loss-offline.py` with its run ID, followed by
