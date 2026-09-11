@@ -103,7 +103,7 @@ live operator UI remain incomplete; the current portal is read-only.
 
 ## External dependencies
 
-Intel BM-PTL Series3 request `bimanual-sim-intel` was last Pending Review. No actual
+Intel BM-PTL Series3 request `bimanual-sim-intel` is Rejected on the September11 signed-in check. No actual
 Intel/OpenVINO validation exists. Verify identity, expiry and rendering when granted.
 Organizer details on assets/seeds, pouring, prior-code eligibility and hosting
 remain provisional. Deadline last verified: September16, 2:30PM EDT.
@@ -132,3 +132,63 @@ All19 process tests pass in14.84s; `.artifacts/process-production-grace-tests.lo
 A final aggregate is still required after the test adjustment.
 Alias inference **38174** is active; log `.artifacts/qwen-alias-pair.log`.
 Only this job uses MPS. Export82810 uses CPU. Timings are not isolated benchmarks.
+Final aggregate **58592** is active from clean `56437fa`;
+`.artifacts/checks-v2-production-grace-final.log`. No code/assets changed since launch.
+
+Intel request was rechecked in the signed-in Instances page on September11:
+`bimanual-sim-intel` is **Rejected**, not Pending Review. No reason is shown in the
+list, and no replacement request or support message was sent. The user has been
+asked for any non-sensitive rejection-email explanation. Local work continues.
+
+Alias inference38174 remains active, run `20260911T120355-678cc31f134e`. Its first
+case recognizes the cyan target but requests `left_gripper` instead of the
+instructed `right_gripper`, so that case fails. New frozen protocol
+`20260911T120740-a2070b401571` tests receiver-first wording in both directions and
+both present/absent scenes. Driver `.artifacts/qwen-direction-pair.py`; no inference
+has run yet. It supersedes an unused draft protocol whose inherited positive-gate
+text named only right; the final protocol explicitly requires the requested direction.
+Wait for38174 to terminate before another MPS job. Export82810 and aggregate58592
+remain active at this checkpoint; no completion is assumed from output files alone.
+
+User steering September11: Intel rejection has no explanation. Defer Intel setup
+until local training is complete, then handle it as a separate step. No further
+access investigation or support request now. Zero spend and actual Intel execution
+requirements remain unchanged. Continue the local dataset, policy training and
+visual-planning work; the Intel rejection does not block those tasks.
+
+Export82810 is terminal successful. Dataset v2 has full native LeRobot
+image/state/action readback parity; export hash
+`38a7939bca2c0465858492a24c9217673a8fe8c57fb0789ca78916062aafeab2`.
+View hash `004d0bf3efa4998f1debd0e86a989fdab6ae7370e919c5c710548fdb45a449d3`.
+Boundary audit **11316** is active, `.artifacts/dinner-v2-boundary-audit.log`.
+Alias38174 is terminal completed: positive fails recipient, negative passes.
+Direction protocol `20260911T120740-a2070b401571` is now launched; log
+`.artifacts/qwen-direction-pair.log`. No production prompt change is adopted.
+
+Boundary audit11316 is terminal **passed**, run
+`20260911T121108-abc948e25b7d`, seal
+`b14dfe17570b2c13528cbbaf524e309e5ce13c7f37e9bc1d5154736424f8a0e7`.
+All seven physical outcomes and boundary readiness checks pass. Terminal stable
+observation counts:43,16,20,64,43,43,43. No gates changed and no learned success
+claimed. See SUCCESSOR_READINESS.md for exact interpretation.
+
+Direction test **69764** remains the sole active MPS job.
+First full hand-off ACT training driver `.artifacts/train-dinner-handoff-v2.py`
+is prepared:20,000 updates, small ACT, chunk10/batch1, uniform skill sampling,
+first-action-weighted loss, terminal learning-rate schedule, final checkpoint only.
+Protocol preparation55788 verifies the completed dataset and boundary audit before
+sealing; log `.artifacts/dinner-handoff-v2-training-protocol.log`. Do not start
+training until69764 is terminal. This separate full-skill experiment does not
+relabel failed approach-checkpoint gates. No training has started yet.
+Training protocol preparation55788 completed:
+`20260911T121325-10260896f896`. Launch the frozen driver with this protocol only
+after direction69764 finishes, using native training-venv, fallback disabled and
+explicit project-local Hugging Face caches/offline settings.
+
+Aggregate58592 completed: **923 passed**, eighteen optional skips, nine render
+deselections,661.80s. Documentation links402 and README synchronization pass.
+Log `.artifacts/checks-v2-production-grace-final.log`. No remaining code test failure.
+The prepared exhaustive hand-off evaluator is
+`.artifacts/evaluate-dinner-handoff-v2.py`; it must run on the completed trained
+checkpoint, cover all630 source observations, retain every forecast/error, and
+report bounds and joint-target errors without claiming physical success.

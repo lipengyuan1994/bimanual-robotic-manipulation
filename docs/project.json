@@ -25,7 +25,7 @@
       "id": "M2",
       "title": "Learned workflow",
       "state": "in_progress",
-      "detail": "Corrected continuous teacher recording passes stage and independent physical scoring; LeRobot export and skill-transition validation are underway. Isolated execution and recovery are implemented. ACT launch-direction and Qwen object-recognition gates still fail; learned dinner completion remains unproven."
+      "detail": "Corrected teacher recording, LeRobot readback and all seven skill-boundary audits pass. Preparing bounded ACT handoff training; visual planner recipient selection remains unresolved. No full learned dinner success or held-out reliability demonstrated."
     },
     {
       "id": "M3",
@@ -44,7 +44,7 @@
     {
       "id": "B2",
       "title": "Intel machine access",
-      "detail": "BM-PTL Series 3 request submitted, Pending Review. Catalog offers Windows 11; host execution remains untested."
+      "detail": "Intel request rejected without explanation. Per user direction, defer Intel setup until local training is complete. Actual target execution remains required; zero spend remains in force."
     },
     {
       "id": "B3",

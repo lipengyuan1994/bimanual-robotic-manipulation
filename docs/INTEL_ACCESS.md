@@ -1,9 +1,13 @@
 # Zero-cost Intel access
 
-Checked September 10, 2026. The user completed registration and sign-in with an
+Checked September 11, 2026. The user completed registration and sign-in with an
 eligible university account. A free-access request has been submitted and is
-**Pending Review**. No machine has been allocated or tested, no payment was made,
+**Rejected**. No machine has been allocated or tested, no payment was made,
 and no separate organizer message was sent.
+
+The current list exposes no rejection reason. The user has been asked whether
+an email explains it. No replacement application, support message or dismissal
+has been submitted. Local development continues; Intel execution remains blocked.
 
 ## Current request
 
@@ -13,11 +17,11 @@ Verified in the signed-in [Instances page](https://cloud.intel.com/preview/compu
 |---|---|
 | Instance name | `bimanual-sim-intel` |
 | Hardware | `BM-PTL`, Intel Core Ultra Series 3, Panther Lake |
-| State | Pending Review |
+| State | Rejected |
 | Use case | AI PC USA |
 | Requested duration | 1 week |
 | Reservation start shown | 09/10/2026 |
-| Reservation end shown | 09/17/2026 6:21 pm; UI did not identify the timezone |
+| Reservation end shown | 09/18/2026 12:05 pm; UI did not identify the timezone |
 | Operating system | Windows 11, fixed in the request form |
 | Access | No SSH key uploaded; browser Connect is documented as available without a key after approval |
 
@@ -105,3 +109,12 @@ Review the event-linked [Intel setup guide](https://docs.openedgeplatform.intel.
 before target installation. It is Intel/Linux guidance, not a script to run on
 our Mac. Do not promise that its Python 3.11 environment is compatible with our
 locked Python 3.12 project without testing in a separate environment.
+
+## User decision: defer Intel setup
+
+September11: the user confirmed the rejection email contains no explanation.
+They requested that Intel setup wait until local training is complete, then be
+handled as a separate setup step. Do not pursue support, reapply, procure hardware
+or investigate access further during local training. Keep the zero-spend constraint;
+no purchase or paid-compute authorization is implied. Actual Intel execution still
+remains necessary for the Intel/hackathon release gate.

@@ -282,3 +282,29 @@ zero partial controls and no malformed rows. This repairs the continuous authore
 teacher sequence. Packaging, synchronized recording and measured successor-boundary
 verification remain before a replacement training dataset is adopted. No learned
 execution or held-out generalization is established.
+
+## Repaired v2 recording: all boundaries pass
+
+Audit `20260911T121108-abc948e25b7d` verifies the completed v2 export and views,
+then consumes the original 252,450 physics rows and synchronized observations.
+All seven outcome/readiness boundaries pass without changing the ten-observation,
+0.005-rad posture-error or 0.02-rad/s joint-speed requirements. Counts of consecutive
+qualifying observations at the exact terminal boundaries are:
+
+| Skill | Qualifying observations |
+|---|---:|
+| Hand-off | 43 |
+| Bar placement and return | 16 |
+| Cup placement | 20 |
+| Plate placement | 64 |
+| Drawer opening | 43 |
+| Spoon retrieval/placement | 43 |
+| Fork retrieval/placement and final parking | 43 |
+
+Post-readiness controls continue through contact/identity checks, and the audit
+requires at least ten qualifying observations at the actual boundary, not merely
+an earlier ready state. References come from the new verified v2 views. The clock
+replays original capture timestamps; this is retained teacher evidence, not live
+freshness, learned successor performance or generalization.
+Audit seal: `b14dfe17570b2c13528cbbaf524e309e5ce13c7f37e9bc1d5154736424f8a0e7`.
+Driver and complete reports are retained in the sealed audit run.

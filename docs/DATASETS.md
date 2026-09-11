@@ -330,3 +330,21 @@ verification confirms 4,819 transitions from one source episode. Manifest file
 SHA-256: `cffe319f4e63a422e32cf740989932d06deccd49a9883ed05f53f545e3ed4df9`.
 Bounded [skill views](SKILL_TRAINING.md) preserve this parent dataset without
 copying it seven times.
+
+## Corrected dinner dataset v2
+
+Export `.artifacts/datasets/dinner-nominal-v2` completes from successful clean
+recording `20260911T114540-8b3b1ff0238d`: all 5,049 action/state rows and three
+RGB views per row match the native LeRobot reader. Source terminal images remain
+in raw evidence. Export manifest:
+`38a7939bca2c0465858492a24c9217673a8fe8c57fb0789ca78916062aafeab2`.
+Verified external view manifest `.artifacts/dinner-skill-views-v2.json`:
+`004d0bf3efa4998f1debd0e86a989fdab6ae7370e919c5c710548fdb45a449d3`.
+This is one seed0 training scene, not seven independent scenes or held-out data.
+
+The first export attempt failed on the default Hugging Face dataset-cache
+permission during readback. Its complete partial output and `EXPORT_FAILED.json`
+remain in `.artifacts/datasets/dinner-nominal-v2-export-failed-cache`. The fresh
+retry sets `HF_HOME` and `HF_DATASETS_CACHE` inside `.artifacts/huggingface`, with
+offline flags; no successful export or source was overwritten. Use these explicit
+cache settings for subsequent sandboxed LeRobot jobs. v1 remains unchanged.
