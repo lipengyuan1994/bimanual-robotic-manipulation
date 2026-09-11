@@ -164,7 +164,7 @@ hackathon submission has been sent.
 
 The continuous worker integration is committed at `1e9e1cb`. This follow-up adds
 an independent outcome evaluator, owned-pause planning, a background local model
-runner, and an optional terminal learning-rate schedule. Final checks pass; a clean checkpoint follows. The development diagnostics
+runner, and an optional terminal learning-rate schedule. Final checks pass and checkpoint `9ca38d1` is pushed. The development diagnostics
 retain their recorded dirty-source lineage.
 
 - Fixed 20,000-update MPS training **`20260911T023624-0e2a88d90d4a`** completed
@@ -464,7 +464,7 @@ Preregistered comparison **`20260911T034840-1019934f5c06`** changes only the
 terminal learning-rate schedule: 1e-5 through update 15,000, linear decrease to
 1e-6 at update 20,000. Same initialization, data, sampler, seed and six gates.
 Final checkpoint only; zero spend. This protocol is sealed before training.
-Training has not started; start only after final checks and a clean commit.
+Training started after final checks and clean checkpoint `9ca38d1`; see below.
 
 All eight actual rendering tests pass (71.75 seconds;
 `.artifacts/render-live-planning-checkpoint.log`). The updated documentation
@@ -478,3 +478,14 @@ in the verified native training environment. Its final offline driver is
 `.artifacts/approach-terminal-decay-offline.py <training-run>`; apply
 `.artifacts/compare-terminal-decay-offline.py <offline-run>` afterward. Failed
 gates prohibit physical execution; the old failed candidate remains unpromoted.
+
+### Active model job
+
+Terminal-decay ACT run **`20260911T035236-64462d013810`** is active under
+handle **27780**, log `.artifacts/approach-terminal-decay.log`. It started from
+clean `9ca38d1` after Qwen finished; 33 applied optimizer updates were observed.
+Do not duplicate or run another GPU workload concurrently. Estimate about
+62 minutes total from the preceding measured run; this is not a new benchmark.
+Apply the frozen final-checkpoint offline gates after sealing. The implementation
+and docs are pushed on `codex/preparation-foundation`; draft PR #1 is updated.
+Current-checkpoint GitHub CI is pending; earlier `1e9e1cb` CI passed.
