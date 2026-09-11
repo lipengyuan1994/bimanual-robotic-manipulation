@@ -360,3 +360,33 @@ was attempted with this checkpoint, and it is not promoted. The result demonstra
 a sampling tradeoff, not reliable learned control. Investigate fitting capacity,
 initialization and training duration before another preregistered intervention;
 keep the validation scenes excluded from training design.
+
+
+## Matched no-VAE ACT experiment
+
+Analysis `20260911T015525-e3f5eb07e758` identifies a testable training/inference
+difference in installed LeRobot: the standard action-conditioned VAE samples a
+latent vector during training, while inference uses zero. The latest run sampled
+nominal frame zero 71 times but still predicted backward. Every update clipped
+the aggregate gradient; final weighted KL was about 3.6 times reconstruction loss.
+This does not prove KL caused clipping or caused the failed movement.
+
+Protocol `20260911T015715-5ef000508650` changes only to ACT's supported `use_vae=False`
+mode at the same 2,000 updates, data, nominal-launch sampler, optimizer and dropout.
+The optional encoder/KL objective is removed and the latent is zero during both
+training and inference. Standard ACT remains the default; `train --no-vae` selects
+this experimental mode. No teacher action enters deployed inference in either mode.
+
+To avoid an initialization confound, the trainer first constructs the standard
+seeded model, copies every shared parameter and buffer to the ablated model, and
+restores the CPU RNG after that extra construction. It records hashes and all
+removed state keys. Verification `20260911T015639-f799b069df61` reproduces the actual
+baseline initial-state hash exactly; the ablated policy has 11,702,604 parameters.
+Training stochastic draws differ because the VAE no longer samples latents; they
+are not claimed identical. Four real LeRobot tests pass, including one CPU update,
+checkpoint/processor/sampler reload and rejection of a mismatched declared initial
+reference hash before any optimizer update. The ablation is not yet quality evidence.
+
+The offline gates remain tied to the original balanced-sampling baseline,
+`20260910T230212-7b5dbe7d1c2b`, rather than accepting the later degraded endpoints
+as the new standard. No physical run follows a failed offline gate.

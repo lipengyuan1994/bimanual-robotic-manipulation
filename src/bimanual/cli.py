@@ -110,6 +110,7 @@ def main(argv: list[str] | None = None) -> int:
         choices=["uniform", "approach_regions_v1", "approach_nominal_launch_v1"],
         default="uniform",
     )
+    train.add_argument("--no-vae", action="store_true", help="Matched-initialization ACT ablation")
     train.add_argument("--sampling-protocol-run", type=Path)
     rollout = commands.add_parser(
         "policy-rollout", help="Evaluate an ACT checkpoint in its declared placement scene"
@@ -329,6 +330,7 @@ def main(argv: list[str] | None = None) -> int:
                     chunk_size=args.chunk_size,
                     seed=args.seed,
                     sampling_profile=args.sampling_profile,
+                    use_vae=not args.no_vae,
                     sampling_protocol_run=args.sampling_protocol_run,
                 ),
                 store=store,

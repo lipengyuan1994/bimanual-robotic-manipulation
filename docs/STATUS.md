@@ -234,3 +234,13 @@ states excluded. Prepared training-only diagnostic drivers remain
 `.artifacts/approach-nominal-launch-offline.py <training-run>` and
 `.artifacts/compare-nominal-launch-offline.py <offline-run>`; the latter retains
 this experiment's frozen gate, not a generic future acceptance threshold.
+
+
+Next experiment: matched no-VAE ACT under protocol
+`20260911T015715-5ef000508650`. Label audit `20260911T015423-6a91877d602a` found no
+exact input/label conflicts in the verified 480 training frames. Analysis
+`20260911T015525-e3f5eb07e758` motivates removing the optional VAE branch while
+retaining the same 2,000-update budget and all other settings. Exact shared
+initialization is verified by `20260911T015639-f799b069df61`; four actual LeRobot
+initializer/CPU-training/checkpoint/reference-rejection tests pass. Standard ACT remains the default.
+The preregistered offline gate must pass before any new physical trial.

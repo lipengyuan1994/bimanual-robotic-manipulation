@@ -16,11 +16,13 @@ from bimanual.evidence import EvidenceStore, canonical, digest_file
 from bimanual.training import (
     ACTTrainingConfig,
     build_sampling_plan,
+    initialize_act_policy,
     run_train,
     sample_training_indices,
     stable_numeric_stats,
     verify_training_dataset,
 )
+from bimanual.training_probe import CAMERA_KEYS, _tensor_digest
 
 
 def write_manifest(root, payload):
@@ -185,11 +187,12 @@ def test_training_cannot_write_inside_dataset(manifest_dataset):
     not os.environ.get("BIMANUAL_TRAIN_TEST_DATASET"),
     reason="Requires explicit real ACT dataset and native training environment",
 )
-def test_real_one_step_training_and_reload(tmp_path):
+@pytest.mark.parametrize("use_vae", [True, False], ids=["vae", "no_vae"])
+def test_real_one_step_training_and_reload(tmp_path, use_vae):
     dataset = Path(os.environ["BIMANUAL_TRAIN_TEST_DATASET"])
     store = EvidenceStore(tmp_path / "evidence")
     manifest = run_train(
-        ACTTrainingConfig(dataset_path=dataset, steps=1, device="cpu"),
+        ACTTrainingConfig(dataset_path=dataset, steps=1, device="cpu", use_vae=use_vae),
         store=store,
         project_root=Path.cwd(),
     )
@@ -207,6 +210,73 @@ def test_real_one_step_training_and_reload(tmp_path):
     assert verified.metrics["sampling_profile"] == "uniform"
     assert len(verified.metrics["steps"][0]["sampled_frames"]) == 1
     assert "trainer_state.pt" in verified.files
+    checkpoint_config = json.loads(
+        (store.root / "runs" / manifest.run_id / "checkpoint/config.json").read_text()
+    )
+    assert checkpoint_config["use_vae"] is use_vae
+    assert verified.metrics["act_initialization"]["use_vae"] is use_vae
+    if not use_vae:
+        assert set(verified.metrics["steps"][0]["loss_parts"]) == {"l1_loss"}
+        assert verified.metrics["steps"][0]["loss"] == pytest.approx(
+            verified.metrics["steps"][0]["loss_parts"]["l1_loss"]
+        )
+        assert verified.metrics["act_initialization"]["removed_state_keys"]
+
+
+@pytest.mark.parametrize("use_vae", [True, False], ids=["vae", "no_vae"])
+def test_real_act_initializer_preserves_shared_tensors_and_rng(use_vae):
+    torch = pytest.importorskip("torch")
+    types = pytest.importorskip("lerobot.configs.types")
+    ACTConfig = pytest.importorskip("lerobot.policies.act.configuration_act").ACTConfig
+    ACTPolicy = pytest.importorskip("lerobot.policies.act.modeling_act").ACTPolicy
+    config = ACTConfig(
+        input_features={
+            "observation.state": types.PolicyFeature(type=types.FeatureType.STATE, shape=(12,)),
+            **{
+                key: types.PolicyFeature(type=types.FeatureType.VISUAL, shape=(3, 270, 480))
+                for key in CAMERA_KEYS
+            },
+        },
+        output_features={"action": types.PolicyFeature(type=types.FeatureType.ACTION, shape=(12,))},
+        device="cpu",
+        pretrained_backbone_weights=None,
+        push_to_hub=False,
+        chunk_size=10,
+        n_action_steps=10,
+        dim_model=128,
+        n_heads=4,
+        dim_feedforward=512,
+        n_encoder_layers=1,
+        n_decoder_layers=1,
+        n_vae_encoder_layers=1,
+        latent_dim=16,
+    )
+    assert config.use_vae is True
+    torch.manual_seed(0)
+    reference = ACTPolicy(copy.deepcopy(config))
+    reference_state = reference.state_dict()
+    reference_rng = torch.get_rng_state().clone()
+    expected_next_random = torch.randn(8)
+    torch.manual_seed(0)
+    actual, metadata = initialize_act_policy(torch, ACTPolicy, config, use_vae=use_vae)
+    assert config.use_vae is True  # The supplied standard config remains reusable.
+    assert actual.config.use_vae is use_vae
+    assert torch.equal(torch.get_rng_state(), reference_rng)
+    assert torch.equal(torch.randn(8), expected_next_random)
+    assert metadata["reference_initial_state_sha256"] == _tensor_digest(reference_state)
+    actual_state = actual.state_dict()
+    assert all(torch.equal(value, reference_state[key]) for key, value in actual_state.items())
+    removed = sorted(set(reference_state) - set(actual_state))
+    if use_vae:
+        assert not removed
+        assert _tensor_digest(actual_state) == _tensor_digest(reference_state)
+        assert metadata["initialization"] == "standard_seeded_act"
+        assert ACTTrainingConfig(dataset_path=Path("unused")).use_vae is True
+    else:
+        assert removed and all(key.startswith("model.vae_encoder") for key in removed)
+        assert metadata["removed_state_keys"] == removed
+        assert metadata["shared_initial_state_sha256"] == _tensor_digest(actual_state)
+        assert metadata["cpu_rng_restored_after_ablation_construction"] is True
 
 
 def test_float64_statistics_do_not_amplify_constant_joint_roundoff():
@@ -482,3 +552,28 @@ def test_nominal_launch_rejects_missing_or_ambiguous_nominal(approach_sampling_d
 def test_nominal_launch_rejects_malformed_offsets(approach_sampling_dataset):
     with pytest.raises(ValueError, match="offsets|episode/config"):
         sampling_plan_fixture(approach_sampling_dataset, "approach_nominal_launch_v1")
+
+
+@pytest.mark.skipif(
+    not os.environ.get("BIMANUAL_TRAIN_TEST_DATASET"),
+    reason="Requires explicit real ACT dataset and native training environment",
+)
+def test_initialization_reference_mismatch_stops_before_training(tmp_path):
+    store = EvidenceStore(tmp_path / "evidence")
+    with pytest.raises(RuntimeError, match="reference initialization"):
+        run_train(
+            ACTTrainingConfig(
+                dataset_path=Path(os.environ["BIMANUAL_TRAIN_TEST_DATASET"]),
+                steps=1,
+                device="cpu",
+                use_vae=False,
+                reference_initial_state_sha256="0" * 64,
+            ),
+            store=store,
+            project_root=Path.cwd(),
+        )
+    (run,) = store.list_runs()
+    assert run["outcome"] == "failed"
+    assert run["metrics"]["steps"] == []
+    assert run["metrics"]["act_initialization"]["reference_initial_state_sha256"] != "0" * 64
+    assert "checkpoint/model.safetensors" not in run["files"]

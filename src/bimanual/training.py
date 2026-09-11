@@ -40,6 +40,8 @@ class ACTTrainingConfig(BaseModel):
         "uniform"
     )
     sampling_protocol_run: Path | None = None
+    use_vae: bool = True
+    reference_initial_state_sha256: str | None = Field(default=None, pattern="^[a-f0-9]{64}$")
 
     @model_validator(mode="after")
     def sampling_configuration(self):
@@ -214,6 +216,50 @@ def build_sampling_plan(
     if nominal_launch is not None:
         plan["nominal_launch"] = nominal_launch
     return plan
+
+
+def initialize_act_policy(torch, policy_class, policy_config, *, use_vae: bool):
+    """Match shared initial weights when removing the optional VAE training branch.
+
+    Construct the standard model first, as previous runs did. The no-VAE model
+    receives every shared parameter/buffer from that model; its extra construction
+    does not advance the training CPU RNG. No trained weights or targets enter here.
+    """
+    if not policy_config.use_vae:
+        raise ValueError("Initialization reference must be standard ACT with VAE")
+    reference = policy_class(policy_config)
+    reference_state = reference.state_dict()
+    reference_digest = _tensor_digest(reference_state)
+    if use_vae:
+        return reference, dict(
+            use_vae=True,
+            initialization="standard_seeded_act",
+            reference_initial_state_sha256=reference_digest,
+        )
+    rng = torch.get_rng_state()
+    disabled_config = copy.deepcopy(policy_config)
+    disabled_config.use_vae = False
+    policy = policy_class(disabled_config)
+    target = policy.state_dict()
+    if any(
+        name not in reference_state or value.shape != reference_state[name].shape
+        for name, value in target.items()
+    ):
+        raise RuntimeError("No-VAE ACT has incompatible shared state")
+    shared = {name: reference_state[name] for name in target}
+    policy.load_state_dict(shared, strict=True)
+    torch.set_rng_state(rng)
+    shared_digest = _tensor_digest(shared)
+    if _tensor_digest(policy.state_dict()) != shared_digest:
+        raise RuntimeError("No-VAE shared initialization differs from standard ACT")
+    return policy, dict(
+        use_vae=False,
+        initialization="shared_state_from_standard_seeded_act",
+        reference_initial_state_sha256=reference_digest,
+        shared_initial_state_sha256=shared_digest,
+        removed_state_keys=sorted(set(reference_state) - set(target)),
+        cpu_rng_restored_after_ablation_construction=True,
+    )
 
 
 def sample_training_indices(torch, generator, plan: dict, batch_size: int) -> list[int]:
@@ -391,7 +437,18 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
         )
         if policy_config.device != config.device:
             raise RuntimeError("LeRobot changed the requested device")
-        policy = ACTPolicy(policy_config).to(config.device)
+        policy, initialization = initialize_act_policy(
+            torch, ACTPolicy, policy_config, use_vae=config.use_vae
+        )
+        metrics["act_initialization"] = initialization
+        if (
+            config.reference_initial_state_sha256 is not None
+            and initialization["reference_initial_state_sha256"]
+            != config.reference_initial_state_sha256
+        ):
+            raise RuntimeError("ACT reference initialization differs from declared experiment")
+        policy_config = policy.config
+        policy = policy.to(config.device)
         devices = {str(parameter.device) for parameter in policy.parameters()}
         expected_device = "cpu" if config.device == "cpu" else "mps:0"
         if devices != {expected_device}:
