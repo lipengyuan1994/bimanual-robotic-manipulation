@@ -119,6 +119,7 @@ def main(argv: list[str] | None = None) -> int:
     rollout.add_argument("--device", choices=["cpu", "mps"], default="cpu")
     rollout.add_argument("--max-seconds", type=float, default=23)
     rollout.add_argument("--execute-chunk-steps", type=int, default=10)
+    rollout.add_argument("--temporal-ensemble-coefficient", type=float)
     rollout.add_argument(
         "--no-replay", action="store_true", help="Keep policy cameras; omit display GIF"
     )
@@ -309,6 +310,7 @@ def main(argv: list[str] | None = None) -> int:
                     device=args.device,
                     max_seconds=args.max_seconds,
                     execute_chunk_steps=args.execute_chunk_steps,
+                    temporal_ensemble_coefficient=args.temporal_ensemble_coefficient,
                     replay=not args.no_replay,
                 ),
                 store=store,

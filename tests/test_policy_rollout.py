@@ -229,3 +229,19 @@ def test_prefix_does_not_extend_source_observation_expiry(queue):
 def test_invalid_prefix_rejected(value, tmp_path):
     with pytest.raises(ValueError):
         PolicyRolloutConfig(training_run=tmp_path, execute_chunk_steps=value)
+
+
+def test_temporal_ensemble_requires_per_step_replanning(tmp_path):
+    with pytest.raises(ValueError, match="one-step"):
+        PolicyRolloutConfig(training_run=tmp_path, temporal_ensemble_coefficient=0.01)
+    cfg = PolicyRolloutConfig(
+        training_run=tmp_path, temporal_ensemble_coefficient=0.01, execute_chunk_steps=1
+    )
+    assert cfg.temporal_ensemble_coefficient == 0.01
+    for coefficient in (-0.01, 1.01, float("nan")):
+        with pytest.raises(ValueError):
+            PolicyRolloutConfig(
+                training_run=tmp_path,
+                temporal_ensemble_coefficient=coefficient,
+                execute_chunk_steps=1,
+            )

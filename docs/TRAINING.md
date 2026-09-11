@@ -390,3 +390,23 @@ reference hash before any optimizer update. The ablation is not yet quality evid
 The offline gates remain tied to the original balanced-sampling baseline,
 `20260910T230212-7b5dbe7d1c2b`, rather than accepting the later degraded endpoints
 as the new standard. No physical run follows a failed offline gate.
+
+### No-VAE result: not promoted
+
+Run `20260911T020002-4ce2f8fd061b` completed 2,000 native MPS updates in 383.62
+seconds from clean `1ae01ae`, with the declared common initialization verified.
+Checkpoint, processor and sampler reloads pass. Offline assessment
+`20260911T021007-6e147d54a964` preserves checkpoint bytes. Frozen comparison
+`20260911T021025-e0da5ef47834` fails four of six gates:
+
+| Measure | Original baseline | No-VAE candidate |
+|---|---:|---:|
+| Nominal launch mean first-joint error | 0.013894 rad | 0.017548 rad |
+| Nominal launch mean tool-target error | 6.960 mm | 7.635 mm |
+| Settled mean tool-target error | 1.180 mm | 1.601 mm |
+| Other training starts mean first-joint error | 0.020952 rad | 0.033530 rad |
+
+The first pan command remains backward. Endpoint retention and unchanged weights
+pass, but launch and other-start gates fail. No physical run follows this result.
+Removing the VAE alone at this budget does not solve the fitting problem; this
+experiment does not establish that the standard VAE is generally better.

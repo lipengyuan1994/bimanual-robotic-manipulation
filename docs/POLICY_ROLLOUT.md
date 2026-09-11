@@ -576,6 +576,24 @@ temporal averaging reduces it further. It does not fix the nominal initial-motio
 bias. Next inspect that failed trajectory against training coverage and collect
 teacher corrections from training-only policy-visited states if warranted. Do not
 add the validation starts to training, silently substitute them for nominal, or
-claim release generalization from this development comparison. The runtime change
-remains in the retained experiment driver until the nominal failure is resolved
-and the adapter's cancellation/history tests are implemented.
+claim release generalization from this development comparison. The optional runtime adapter is now integrated and independently tested below;
+the nominal policy failure still blocks adoption as a reliable skill.
+
+### Guarded temporal runtime
+
+`policy-rollout --execute-chunk-steps 1 --temporal-ensemble-coefficient 0.01`
+enables the optional adapter for compatible rollout checkpoints. Default execution
+is unchanged. The coefficient is bounded to 0–1; positive values favor older
+forecasts in the pinned LeRobot 0.6.1 implementation. This command still targets
+the supported placement interface, not the experimental approach driver.
+
+Every raw forecast is checked before averaging. The averaged action is checked
+again before the right-arm ownership mask. The queue requires one consumed action
+per advancing observation and clears all history on task changes, cancellation,
+stale observations, sequence gaps and invalid targets. Run records retain both
+raw and averaged forecasts. One synchronous caller owns the queue.
+
+Thirty base tests and all 33 native training-environment tests pass, including
+float32 CPU parity with official ACTTemporalEnsembler for coefficients 0, 0.01
+and 1 across overlapping forecasts and reset. These verify runtime behavior,
+not manipulation quality. No new physical rollout is claimed by these tests.

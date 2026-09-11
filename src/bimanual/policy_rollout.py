@@ -19,7 +19,7 @@ from typing import Literal
 
 import numpy as np
 from PIL import Image, ImageDraw
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from bimanual.contracts import ActionChunk, Artifact, CameraFrame, JointLimits, Observation
 from bimanual.dataset_export import CAMERA_FEATURES
@@ -63,6 +63,13 @@ class PolicyRolloutConfig(BaseModel):
     replay: bool = True
     cpu_threads: int = Field(default=4, ge=1, le=32)
     execute_chunk_steps: int = Field(default=10, ge=1, le=100, strict=True)
+    temporal_ensemble_coefficient: float | None = Field(default=None, ge=0, le=1)
+
+    @model_validator(mode="after")
+    def ensemble_cadence(self):
+        if self.temporal_ensemble_coefficient is not None and self.execute_chunk_steps != 1:
+            raise ValueError("Temporal ensembling requires a one-step execution prefix")
+        return self
 
 
 def policy_inputs(raw: dict) -> dict[str, np.ndarray]:
@@ -381,13 +388,23 @@ def run_policy_rollout(
         (directory / "LICENSE-SO101").write_bytes((MODEL_DIR / "LICENSE").read_bytes())
         (directory / "mapping.json").write_text(json.dumps(env.mapping(), indent=2))
         (directory / "observations").mkdir()
-        queue = GuardedActionQueue(
+        queue_args = (
             JointLimits(lower_rad=env.lower.tolist(), upper_rad=env.upper.tolist()),
             env.home,
             checkpoint_digest,
             int(config.max_observation_age_seconds * 1e9),
-            execute_chunk_steps=config.execute_chunk_steps,
         )
+        if config.temporal_ensemble_coefficient is None:
+            queue = GuardedActionQueue(*queue_args, execute_chunk_steps=config.execute_chunk_steps)
+        else:
+            from bimanual.temporal_actions import GuardedTemporalActionQueue
+
+            queue = GuardedTemporalActionQueue(
+                *queue_args,
+                chunk_size=policy.config.chunk_size,
+                coefficient=config.temporal_ensemble_coefficient,
+            )
+        metrics["temporal_ensemble_coefficient"] = config.temporal_ensemble_coefficient
         maximum_steps = min(460, int(config.max_seconds * 20))
         for step in range(maximum_steps):
             if cancelled():

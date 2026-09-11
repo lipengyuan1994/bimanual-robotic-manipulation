@@ -79,8 +79,8 @@ teacher target enters inference; all runs retain actual images/joints, forecasts
 actions and independent scoring truth. These are **open-hand approach** outcomes,
 not grasp or dinner-task successes. The repeated validation starts are not four
 independent successful scenes. The nominal failure blocks adoption as a reliable
-skill. Runtime integration/history-cancellation tests remain before promoting the
-experimental adapter. [Complete runs, caveats and next diagnosis](POLICY_ROLLOUT.md).
+skill. The optional runtime adapter now has history/cancellation and official LeRobot
+parity tests; those checks do not resolve the nominal policy failure. [Complete runs, caveats and next diagnosis](POLICY_ROLLOUT.md).
 
 ## Visual planning and execution authority
 
@@ -127,9 +127,9 @@ and portal are committed at `bdcd4e4`. Use `git rev-parse HEAD` for the latest
 handoff commit; subsequent sampler changes do not alter the sealed teacher run. [Draft PR #1](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/pull/1)
 is open and unmerged.
 
-Latest `scripts/check.sh`: **414 passed, three explicit optional-training skips,
+Latest `scripts/check.sh`: **445 passed, ten explicit optional-training skips,
 eight rendering tests deselected**, with Ruff, formatting, docs and README checks.
-Log: `.artifacts/checks-nominal-launch-profile.log`; the preceding dinner-only
+Log: `.artifacts/checks-temporal-no-vae-final.log`; the preceding dinner-only
 checkpoint had 403 passing tests. The preceding seven actual
 rendering tests and the additional sensor integration rendering test passed
 separately; do not count deselections/skips as passes. Four actual sensor bundles
@@ -244,3 +244,27 @@ retaining the same 2,000-update budget and all other settings. Exact shared
 initialization is verified by `20260911T015639-f799b069df61`; four actual LeRobot
 initializer/CPU-training/checkpoint/reference-rejection tests pass. Standard ACT remains the default.
 The preregistered offline gate must pass before any new physical trial.
+
+
+No-VAE run `20260911T020002-4ce2f8fd061b` completed 2,000 native MPS updates
+in 383.62 seconds from clean `1ae01ae`. Shared initialization, checkpoint,
+processor and sampler reload checks pass; its evidence seal verifies.
+Offline assessment `20260911T021007-6e147d54a964` and frozen comparison
+`20260911T021025-e0da5ef47834` **fail**: nominal launch tool error is 7.635 mm
+versus 6.960 mm baseline, the first pan target remains backward, and other
+training starts regress. No physical trial was run or checkpoint promoted.
+See [training results](TRAINING.md).
+
+The supported optional temporal action queue is implemented with full-forecast
+validation before official LeRobot averaging, second-stage target checks, and
+complete history clearing on errors/cancellation/task changes. All 33 queue
+tests pass in the native training environment, including real official parity;
+30 pass in the base environment with three optional checks skipped. The full
+base suite passes 445 tests (ten optional skips, eight render deselections).
+Logs: `.artifacts/temporal-actions-lerobot-tests.log` and
+`.artifacts/checks-temporal-no-vae-final.log`. No new physical success is claimed.
+
+All training, offline assessment and full-check processes are terminal. Next:
+inspect the retained training-error trajectory and normalization on moving joints
+before declaring one follow-up intervention. Do not repeat failed candidates or
+add validation states to training. The frozen no-VAE comparison remains unchanged.
