@@ -137,6 +137,11 @@ def main(argv: list[str] | None = None) -> int:
     skill_physical.add_argument("--max-actions", type=int, default=2000)
     skill_physical.add_argument("--execute-chunk-steps", type=int, default=2)
     skill_physical.add_argument("--wall-timeout-seconds", type=float, default=1200)
+    handoff_analysis = commands.add_parser(
+        "handoff-failure-analyze",
+        help="Reproduce contact-stage findings from sealed learned hand-off failures",
+    )
+    handoff_analysis.add_argument("wrapper_run_ids", nargs="+")
     evaluation = commands.add_parser("dinner-evaluate", help="Re-score sealed dinner evidence")
     evaluation.add_argument("run_id")
     evaluation.add_argument("--instrumentation-run", help="Sealed declarations linked to this run")
@@ -523,6 +528,18 @@ def main(argv: list[str] | None = None) -> int:
             )
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1
+        elif args.command == "handoff-failure-analyze":
+            from bimanual.handoff_failure_analysis import (
+                HandoffFailureAnalysisConfig,
+                analyse_handoff_failures,
+            )
+
+            result = analyse_handoff_failures(
+                HandoffFailureAnalysisConfig(wrapper_run_ids=tuple(args.wrapper_run_ids)),
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
         elif args.command == "dinner-evaluate":
             from bimanual.dinner_evaluation import evaluate_dinner_run
 

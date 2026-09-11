@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 11, 2026. Latest pushed checkpoint: `548327d` on
+Updated September 11, 2026. Latest pushed checkpoint: `b63ee37` on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -79,6 +79,19 @@ checkpoint has been run through this evaluator yet because the active training j
 owns the model slot. The first command path remains in-process; guardian-based
 native-hang cleanup is still needed before it is a release runner.
 [Evaluation contract and command](SKILL_PHYSICAL_EVALUATION.md).
+
+CPU-only analysis run `20260911T210617-481ff0b6e8eb`, seal
+`6466ef3ce767e469ef58052d4832742a9b60c2f83c5ef8ca966014fc628ceb81`,
+reverified both frozen physical wrappers, child logs, shared checkpoint and teacher
+plan, then reproduced their contact-stage failures. Prefix2 lost continuity at
+action567/physics sample18 after donor hold; its terminal right-gripper target was
+`0.0707rad`, `+0.1707rad` from the nearest nominal `-0.1rad` target. Prefix5 first
+completed the shared hold, then lost continuity at action676/sample30 with a
+`0.1323rad` receiver target, `+0.2323rad` from nominal. This localizes the next
+corrective data to receiver-close/shared-hold through donor release, with the
+receiver held closed and varied measured approach starts. Per user direction,
+collect/retrain that region only after all six planned local skill trainings.
+[Reproduction and interpretation](HANDOFF_FAILURE_ANALYSIS.md).
 
 Full regression85553 exited0:1,058passed,18optional skips,9render deselections,
 472.02seconds. Log `.artifacts/checks-corrective-integration.log`. The subsequent
