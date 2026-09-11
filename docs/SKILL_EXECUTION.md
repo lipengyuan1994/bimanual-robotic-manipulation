@@ -33,8 +33,9 @@ cross-thread worker scheduler.
 
 A physical placement can finish before a training view's final arm retreat or
 parking movement. Passing a physical outcome does **not** establish that the next
-checkpoint's starting arm posture is supported. Successor readiness, the full
-learned chain and visual recovery remain unvalidated. The monitor makes no claim
+checkpoint's starting arm posture is supported. A separate [successor-readiness gate](SUCCESSOR_READINESS.md) now keeps the
+same learned attempt active through retreat. The full learned chain and visual
+recovery remain unvalidated. The monitor makes no claim
 that contact traces prove the absence of unlogged simulator state edits.
 
 Fixture tests use actual MuJoCo stepping with explicitly synthetic camera images
@@ -73,8 +74,8 @@ training observation to its exact final 1 kHz physics sample. The largest
 physical-success to next-entry joint gaps are 1.080203 rad for the bar and
 0.551752 rad for the plate; the cup is effectively unchanged.
 
-The next gate should preserve the physical-success milestone while the same
-owned learned policy completes retreat. It must verify measured joint position,
+The implemented readiness gate preserves the physical-success milestone while the same
+owned learned policy completes retreat. It verifies measured joint position,
 low joint speed and continuous contact/placement invariants before dispatching
 a successor. A bound training-entry reference is an acceptance envelope, never
 a command target or a source of teacher actions.
@@ -82,6 +83,10 @@ a command target or a source of teacher actions.
 The report proposes 0.005 rad / 0.02 rad/s for ten observations as a development
 candidate, not an accepted release threshold. Its joint-only scan fails the bar
 transition, which has only six qualifying observations before its original view
-ends. Combined contact/readiness validation is not yet implemented. Additional
+ends. The combined contact/readiness gate is now implemented and audited in
+[SUCCESSOR_READINESS](SUCCESSOR_READINESS.md). Additional
 settled transition demonstrations must be recorded and versioned if needed;
 the existing dataset and failed cases must remain unchanged.
+
+The executor records physical success, successor readiness and optional final
+parking separately. See the [reference and gate contract](SUCCESSOR_READINESS.md).

@@ -189,3 +189,145 @@ def test_record_failure_before_finish_cannot_advance_task(setup, monkeypatch):
         executor.tick()
     assert worker.supervisor.snapshot().completed_steps == ()
     assert not worker.control.pending
+
+
+def test_chained_attempt_requires_reference_before_binding(setup):
+    worker, _, policy = setup
+    old = worker.supervisor.snapshot().task
+    first = old.steps[0]
+    replacement = old.model_copy(
+        update={
+            "task_id": "chained",
+            "instruction_revision": 1,
+            "steps": (
+                first,
+                StepSpec(
+                    step_id="next",
+                    capability_id=first.capability_id,
+                    prerequisites=(first.step_id,),
+                ),
+            ),
+        }
+    )
+    worker.supervisor.load_task(replacement)
+    observation = worker.capture()
+    attempt = worker.supervisor.dispatch(observation)
+    executor = DinnerSkillExecutor(worker, policy)
+    with pytest.raises(ValueError, match="successor-readiness reference"):
+        executor.start(attempt.attempt_id, observation)
+    assert worker.control.binding is None
+    assert worker._env.data.time == 0
+
+
+def test_physical_milestone_keeps_same_attempt_until_readiness(setup, monkeypatch):
+    import bimanual.skill_executor as module
+    from bimanual.skill_outcomes import SkillOutcome
+
+    worker, executor, policy = setup
+    executor.max_actions = 4
+    executor._reference = SimpleNamespace(
+        final_parking=False
+    )  # Explicit gate seam; no fabricated runtime reference.
+    monkeypatch.setattr(
+        executor._monitor,
+        "consume",
+        lambda action, rows: SkillOutcome("succeeded", "Fixture physical milestone", {}),
+    )
+
+    class Gate:
+        def __init__(self, *args, **kwargs):
+            self.count = 0
+
+        def consume(self, action, rows, observation):
+            self.count += 1
+            assert len(rows) == 50 and observation.sequence == action["observation_sequence"] + 1
+            state = "ready" if self.count == 2 else "pending"
+            return SimpleNamespace(
+                state=state, reason="Fixture readiness", report=lambda: {"state": state}
+            )
+
+    monkeypatch.setattr(module, "SuccessorReadinessMonitor", Gate)
+    first = executor.tick()
+    assert first.state == "pending" and first.physical_success and first.successor_ready is False
+    assert worker.supervisor.snapshot().active is not None
+    assert worker.supervisor.snapshot().completed_steps == ()
+    monkeypatch.setattr(
+        executor._monitor, "consume", lambda *a: pytest.fail("Terminal physical monitor reused")
+    )
+    assert executor.tick().state == "pending"
+    final = executor.tick()
+    assert final.state == "succeeded" and final.physical_success and final.successor_ready
+    assert final.applied_actions == 3 and len(policy.inputs) == 3
+    assert worker.supervisor.snapshot().completed_steps == ("transfer",)
+    assert not worker.control.pending
+
+
+def test_readiness_failure_preserves_physical_milestone(setup, monkeypatch):
+    import bimanual.skill_executor as module
+    from bimanual.skill_outcomes import SkillOutcome
+
+    worker, executor, _ = setup
+    executor.max_actions = 3
+    executor._reference = SimpleNamespace(final_parking=False)
+    monkeypatch.setattr(
+        executor._monitor,
+        "consume",
+        lambda action, rows: SkillOutcome("succeeded", "Fixture physical milestone", {}),
+    )
+    gate = SimpleNamespace(
+        consume=lambda *a: SimpleNamespace(
+            state="failed", reason="Fixture lost support", report=lambda: {"state": "failed"}
+        )
+    )
+    monkeypatch.setattr(module, "SuccessorReadinessMonitor", lambda *a, **kw: gate)
+    executor.tick()
+    final = executor.tick()
+    assert final.state == "failed" and final.physical_success and final.successor_ready is False
+    assert worker.supervisor.snapshot().completed_steps == ()
+    assert not worker.control.pending
+
+
+def test_final_parking_does_not_invent_a_successor(setup, monkeypatch):
+    import bimanual.skill_executor as module
+    from bimanual.skill_outcomes import SkillOutcome
+
+    _, executor, _ = setup
+    executor.max_actions = 3
+    executor._reference = SimpleNamespace(final_parking=True)
+    monkeypatch.setattr(
+        executor._monitor,
+        "consume",
+        lambda action, rows: SkillOutcome("succeeded", "Fixture physical milestone", {}),
+    )
+    gate = SimpleNamespace(
+        consume=lambda *a: SimpleNamespace(
+            state="ready", reason="Fixture final parking", report=lambda: {"state": "ready"}
+        )
+    )
+    monkeypatch.setattr(module, "SuccessorReadinessMonitor", lambda *a, **kw: gate)
+    initial = executor.tick()
+    assert initial.physical_success and initial.successor_ready is None
+    final = executor.tick()
+    assert final.state == "succeeded" and final.final_parking_ready is True
+    assert final.successor_ready is None
+
+
+def test_cancel_after_physical_success_preserves_milestone(setup, monkeypatch):
+    import bimanual.skill_executor as module
+    from bimanual.skill_outcomes import SkillOutcome
+
+    worker, executor, policy = setup
+    executor._reference = SimpleNamespace(final_parking=False)
+    monkeypatch.setattr(
+        executor._monitor,
+        "consume",
+        lambda action, rows: SkillOutcome("succeeded", "Fixture milestone", {}),
+    )
+    monkeypatch.setattr(module, "SuccessorReadinessMonitor", lambda *a, **kw: object())
+    executor.tick()
+    worker.cancel("Stop during retreat")
+    final = executor.tick()
+    assert final.state == "failed" and final.physical_success and final.successor_ready is False
+    assert final.applied_actions == 1 and len(policy.inputs) == 1
+    assert worker.supervisor.snapshot().state == "cancelled"
+    assert worker.supervisor.snapshot().completed_steps == ()

@@ -128,9 +128,9 @@ and portal are committed at `bdcd4e4`. Use `git rev-parse HEAD` for the latest
 handoff commit; subsequent sampler changes do not alter the sealed teacher run. [Draft PR #1](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/pull/1)
 is open and unmerged.
 
-Latest `scripts/check.sh`: **734 passed, fourteen explicit optional-training skips,
+Latest `scripts/check.sh`: **767 passed, fourteen explicit optional-training skips,
 eight rendering tests deselected**, with Ruff, formatting, docs and README checks.
-Log: `.artifacts/checks-skill-execution-hd.log`; all current auxiliary-arm,
+Log: `.artifacts/checks-successor-readiness.log`; all current auxiliary-arm,
 stationary transition, registry, policy adapter and worker cases are included.
 The preceding dinner-only
 checkpoint had 403 passing tests. The preceding seven actual
@@ -541,3 +541,43 @@ Final checkpoint checks pass: Ruff, formatting, 734 base tests, 354 documentatio
 links and README synchronization. No actual HD rendering was run during the
 active MPS experiment. Training handle 27780 remains active; 4647 updates were
 observed at this handoff. Its final checkpoint and frozen gates remain pending.
+
+## Successor readiness implementation and transition probe
+
+The preceding goal turn changed authoritative code/evidence and was progress.
+`SuccessorReadinessMonitor` now binds measured training-entry posture and checks
+all physics samples plus ten new fresh observations. Nonfinal chained execution
+requires a matching reference; physical success remains a separate milestone
+while the same learned attempt retreats. Optional final parking cannot invent a
+successor. Source/reference verification occurs before live capture.
+
+Twenty-eight focused readiness tests pass. Sealed combined teacher audit
+`20260911T041524-a18f4e1922da` verifies six ready transitions and retains the
+original bar failure. Reference matching does not prove model generalization.
+
+The ten-control bar settling probe `20260911T041046-acd11fe83176` fails the full
+workflow on a later plate/cabinet collision. Its hold alone passes numerical
+joint/contact predicates. No cameras were captured and no existing data was
+overwritten. Diagnosis `20260911T041433-5d21278da297` shows tiny initial
+differences amplifying during release/withdrawal. Both seals verify; do not
+relabel the failed probe as validated training data. See
+[successor readiness](SUCCESSOR_READINESS.md).
+
+Base checks completed under terminal handle 81586, log
+`.artifacts/checks-successor-readiness.log`. Training 27780 remains the only GPU
+job; no new rendering or model runs were started. Next teacher work is a bounded
+release-clearance repair experiment, followed by full physical revalidation.
+
+Read-only clearance proposal `20260911T041924-2c2111b5399c` is sealed and verified.
+A candidate plate destination shift of +20 mm Y gives at least 15.688 mm static
+clearance across 16 restored poses, with reachable sampled endpoint IK. No new
+physics was run and this does not prove dynamic success. Next teacher trial:
+preregister a separate scene/target revision, regenerate corresponding tool goals,
+retain ten bar holds, and run the unchanged full physical gates. Preserve the
+original scene/data and all failures; adopt no new dataset before full validation.
+
+Final verification for this checkpoint: **767 tests passed**, fourteen optional
+skips and eight render deselections, 344.19 seconds; Ruff, formatting, 359 documentation links
+and README synchronization passed. Training 27780 is still active with 9507 updates
+observed; the final checkpoint and frozen offline gates remain pending. No
+additional GPU work started. Actual HD camera/Qwen validation remains pending.

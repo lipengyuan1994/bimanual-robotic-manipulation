@@ -9,6 +9,8 @@ from dataclasses import asdict, dataclass
 from bimanual.dinner_teacher import ASSETS
 from bimanual.evidence import digest_file
 from bimanual.skill_outcomes import SkillOutcomeMonitor
+from bimanual.skill_registry import dinner_capability
+from bimanual.successor_readiness import SuccessorReadinessMonitor, SuccessorReference
 
 
 @dataclass(frozen=True)
@@ -17,6 +19,9 @@ class SkillExecutionResult:
     state: str
     reason: str
     applied_actions: int
+    physical_success: bool = False
+    successor_ready: bool | None = None
+    final_parking_ready: bool | None = None
 
 
 class DinnerSkillExecutor:
@@ -29,7 +34,7 @@ class DinnerSkillExecutor:
     is checked again before any action. No teacher actions or fallback are loaded.
     """
 
-    def __init__(self, worker, policy, *, max_actions: int = 2000):
+    def __init__(self, worker, policy, *, max_actions: int = 2000, successor_reference=None):
         if type(max_actions) is not int or not 1 <= max_actions <= 20000:
             raise ValueError("Skill action budget must be between one and 20000")
         manifest = json.loads((ASSETS / "manifest.json").read_text())
@@ -43,6 +48,17 @@ class DinnerSkillExecutor:
         self._count = 0
         self._trace_offset = None
         self._next_observation = None
+        if successor_reference is not None and not isinstance(
+            successor_reference, SuccessorReference
+        ):
+            raise TypeError("Expected a verified immutable successor reference")
+        self._reference = (
+            successor_reference.reverify() if successor_reference is not None else None
+        )
+        self._readiness = None
+        self._physical_success = False
+        self._successor_ready = None
+        self._final_parking_ready = None
 
     def start(self, attempt_id, observation, *, temporal_ensemble_coefficient=None):
         if self._attempt is not None:
@@ -52,6 +68,36 @@ class DinnerSkillExecutor:
             raise ValueError("Executor requires the canonical active attempt")
         if observation.episode_id != active.request.episode_id:
             raise ValueError("Executor observation belongs to another episode")
+        snapshot = self.worker.supervisor.snapshot()
+        step_index = next(
+            i for i, step in enumerate(snapshot.task.steps) if step.step_id == active.step_id
+        )
+        successor = (
+            snapshot.task.steps[step_index + 1]
+            if step_index + 1 < len(snapshot.task.steps)
+            else None
+        )
+        if successor is not None and self._reference is None:
+            raise ValueError(
+                "Chained skill execution requires a verified successor-readiness reference"
+            )
+        if self._reference is not None:
+            if self._reference.skill_id != self.policy.binding.view.skill_id:
+                raise ValueError("Readiness reference does not match the current skill")
+            if (
+                self._reference.parent_episode_id != self.policy.binding.view.parent_episode_id
+                or self._reference.dataset_root.resolve()
+                != self.policy.binding.dataset_root.resolve()
+                or self._reference.export_manifest_sha256
+                != digest_file(self.policy.binding.dataset_root / "export_manifest.json")
+            ):
+                raise ValueError("Readiness reference does not match checkpoint dataset lineage")
+            if successor is not None and (
+                self._reference.successor_skill_id is None
+                or dinner_capability(self._reference.successor_skill_id).capability_id
+                != successor.capability_id
+            ):
+                raise ValueError("Readiness reference does not match the registered successor")
         # The worker validates current observation and exact capability/checkpoint binding.
         self.worker.policy_inputs(observation)
         self.worker.bind_skill(
@@ -77,6 +123,7 @@ class DinnerSkillExecutor:
                 {
                     "skill_id": self.policy.binding.view.skill_id,
                     "max_actions": self.max_actions,
+                    "successor_reference": self._reference.report() if self._reference else None,
                     "physical_truth_consumer": "independent_skill_outcome_monitor",
                 },
             )
@@ -109,8 +156,19 @@ class DinnerSkillExecutor:
             self._trace_offset = stream.tell()
         return [json.loads(line) for line in lines[:50]]
 
+    def _outcome(self, state, reason):
+        return SkillExecutionResult(
+            self._attempt,
+            state,
+            reason,
+            self._count,
+            self._physical_success,
+            self._successor_ready,
+            self._final_parking_ready,
+        )
+
     def _finish(self, state, reason, observation):
-        result = SkillExecutionResult(self._attempt, state, reason, self._count)
+        result = self._outcome(state, reason)
         self._write("termination_requested", asdict(result))
         self.worker.finish(self._attempt, observation, executor_outcome=state, reason=reason)
         self._result = result
@@ -121,7 +179,7 @@ class DinnerSkillExecutor:
         active = self.worker.supervisor.snapshot().active
         if active is not None and active.attempt_id == self._attempt:
             self.worker._abort(self._attempt, observation, error)
-        self._result = SkillExecutionResult(self._attempt, "failed", reason, self._count)
+        self._result = self._outcome("failed", reason)
         self._write("error", asdict(self._result))
 
     def tick(self) -> SkillExecutionResult:
@@ -134,16 +192,16 @@ class DinnerSkillExecutor:
             snapshot = self.worker.supervisor.snapshot()
             if snapshot.active is None or snapshot.active.attempt_id != self._attempt:
                 # A cancelled/replaced task must not cancel or finish its replacement.
-                self._result = SkillExecutionResult(
-                    self._attempt, "failed", "Attempt authority was revoked", self._count
-                )
+                self._result = self._outcome("failed", "Attempt authority was revoked")
                 self._write("revoked", asdict(self._result))
                 return self._result
             observation = self._next_observation or self.worker.capture()
             self._next_observation = None
             if self._count >= self.max_actions:
                 return self._finish(
-                    "failed", "Physical completion not reached within action budget", observation
+                    "failed",
+                    "Physical completion/readiness not reached within action budget",
+                    observation,
                 )
             if not self.worker.control.pending:
                 start = time.perf_counter()
@@ -152,11 +210,58 @@ class DinnerSkillExecutor:
                 self._write("forecast", {"inference_seconds": time.perf_counter() - start})
             action = self.worker.step(self._attempt, observation)
             self._count += 1
-            outcome = self._monitor.consume(action, self._rows())
+            rows = self._rows()
+            if self._readiness is not None:
+                fresh = self.worker.capture()
+                self._next_observation = fresh
+                outcome = self._readiness.consume(action, rows, fresh)
+                self._write("successor_readiness", outcome.report())
+                if outcome.state == "ready":
+                    if self._reference.final_parking:
+                        self._final_parking_ready = True
+                    else:
+                        self._successor_ready = True
+                    return self._finish("succeeded", outcome.reason, fresh)
+                if outcome.state == "failed":
+                    if self._reference.final_parking:
+                        self._final_parking_ready = False
+                    else:
+                        self._successor_ready = False
+                    return self._finish("failed", outcome.reason, fresh)
+                return self._outcome("pending", outcome.reason)
+            outcome = self._monitor.consume(action, rows)
             self._write("physical_outcome", outcome.report())
-            if outcome.state != "pending":
-                return self._finish(outcome.state, outcome.reason, self.worker.capture())
-            return SkillExecutionResult(self._attempt, "pending", outcome.reason, self._count)
+            if outcome.state == "failed":
+                return self._finish("failed", outcome.reason, self.worker.capture())
+            if outcome.state == "succeeded":
+                self._physical_success = True
+                fresh = self.worker.capture()
+                if self._reference is None:
+                    return self._finish("succeeded", outcome.reason, fresh)
+                self._successor_ready = None if self._reference.final_parking else False
+                self._final_parking_ready = False if self._reference.final_parking else None
+                self._readiness = SuccessorReadinessMonitor(
+                    self._reference,
+                    attempt_id=self._attempt,
+                    physical_success=outcome,
+                    initial_observation=fresh,
+                    layout=self._layout,
+                    limits=self.worker.limits,
+                    clock_ns=self.worker._clock,
+                )
+                self._next_observation = fresh
+                self._write(
+                    "physical_milestone",
+                    {
+                        "physical_success": True,
+                        "successor_ready": self._successor_ready,
+                        "final_parking_ready": self._final_parking_ready,
+                    },
+                )
+                return self._outcome(
+                    "pending", "Physical outcome passed; learned retreat/readiness still required"
+                )
+            return self._outcome("pending", outcome.reason)
         except (Exception, KeyboardInterrupt) as error:
             self._fail(error, observation)
             raise
