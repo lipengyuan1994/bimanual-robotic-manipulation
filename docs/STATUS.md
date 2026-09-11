@@ -127,9 +127,9 @@ and portal are committed at `bdcd4e4`. Use `git rev-parse HEAD` for the latest
 handoff commit; subsequent sampler changes do not alter the sealed teacher run. [Draft PR #1](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/pull/1)
 is open and unmerged.
 
-Latest `scripts/check.sh`: **452 passed, eleven explicit optional-training skips,
+Latest `scripts/check.sh`: **461 passed, twelve explicit optional-training skips,
 eight rendering tests deselected**, with Ruff, formatting, docs and README checks.
-Log: `.artifacts/checks-dinner-recorder.log`; the preceding dinner-only
+Log: `.artifacts/checks-long-timestamps.log`; the preceding dinner-only
 checkpoint had 403 passing tests. The preceding seven actual
 rendering tests and the additional sensor integration rendering test passed
 separately; do not count deselections/skips as passes. Four actual sensor bundles
@@ -288,30 +288,43 @@ Continuous dinner recording is implemented behind `dinner-teacher
 --record-demonstration`, independent of replay. Fifteen focused tests pass,
 including complete-transition and interruption boundary checks. Full checks pass: 452 tests, eleven optional-training skips and eight render
 deselections (`.artifacts/checks-dinner-recorder.log`); handle 58082 is terminal.
-No completed full-rate dinner capture or export is claimed yet. The proposed [live planner bridge](PLANNER_LIVE_INTEGRATION.md)
+Full-rate capture is verified below; export is still active. The proposed [live planner bridge](PLANNER_LIVE_INTEGRATION.md)
 records explicit pause ownership/fresh revalidation requirements and remains
 unimplemented; old images are never simply retimestamped.
 
 
-Active physical capture: `20260911T022644-a24a56ff004c`, clean source `6c6c991`,
-process 84841, log `.artifacts/dinner-recorded-v1.log`. It runs the supported
-`dinner-teacher --record-demonstration` command with full-rate PNGs and a replay.
-Actual PNG files are accumulating. Check the live handle before restarting;
-a partial folder is not a successful demonstration. After it finishes, verify
-the seal, independent score, episode/action/phase alignment and camera artifacts,
-then export/read back through the existing LeRobot path. All model training and
-assessment processes are terminal.
+Physical capture `20260911T022644-a24a56ff004c` is completed from clean
+`6c6c991`; process 84841 is terminal. Independent audit
+`20260911T023608-8896f729ffd5` verifies the successful physical score, 4,819 aligned
+actions, 4,820 observations and 14,460 RGB files. Actor/capture time 445.07 seconds,
+240.95 simulated seconds; source size approximately 595 MiB. Final preview inspected.
 
 
 Long-episode export timestamp verification now compares the exact LeRobot
 float32 storage value, replacing a tolerance that could reject correct late
 frames. All 23 native LeRobot dataset tests pass, including an actual 4,819-frame
-numeric timestamp fixture. Full checks are active under handle 26057, log
-`.artifacts/checks-long-timestamps.log`.
+numeric timestamp fixture. Full checks pass: 461 tests, twelve optional skips and eight render deselections;
+handle 26057 is terminal. Log `.artifacts/checks-long-timestamps.log`.
 
 Next model experiment is declared by `20260911T023056-6649c0803bb0`: same
 no-VAE/dropout-zero settings and frozen acceptance gates, fixed 20,000 updates
-from the same initialization. It has not started. Estimate about 62.5 minutes
-native MPS, zero spend; start only after physical capture ends. Prepared driver:
+from the same initialization. It is now running as described below. Estimate about 62.5 minutes
+native MPS, zero spend; physical capture ended before it started. Prepared driver:
 `.artifacts/approach-fixed-20000.py`. Prepared post-capture recording audit:
 `.artifacts/verify-dinner-recording.py`; it requires the sealed successful run.
+
+
+Active jobs (check handles before restarting):
+
+- Fixed-duration ACT: `20260911T023624-0e2a88d90d4a`, handle 61071,
+  `.artifacts/approach-fixed-20000.log`. 20,000 updates; inference/physical gates
+  remain pending. Source lineage will be verified after sealing.
+- Dinner LeRobot export: handle 99921, `.artifacts/dinner-nominal-export.log`,
+  destination `.artifacts/datasets/dinner-nominal-v1`. No completed export claim
+  until byte/pixel/timestamp read-back and final manifest succeed.
+- Skill-view module is being implemented in a bounded agent task; no integration
+  with training or learned bimanual execution is claimed.
+
+After model completion, run `.artifacts/approach-fixed-20000-offline.py <run>`
+then `.artifacts/compare-fixed-20000-offline.py <offline-run>`. Failed gates still
+prohibit physical validation. Do not select intermediate checkpoints.

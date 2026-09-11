@@ -280,7 +280,7 @@ to stderr so stdout remains a parseable JSON result. CPU CLI verification run
 `20260910T212012-c722c7d4d0cb` completed one update and produced valid JSON. All
 previous runs remain available, including the earlier output with mixed progress.
 
-## Continuous dinner capture (runtime validation pending)
+## Continuous dinner capture
 
 The successful fixed-scene dinner teacher is connected to the same raw
 recording contract through `dinner-teacher --record-demonstration`. Collection
@@ -294,14 +294,12 @@ captures are not independent randomized scenes or held-out evaluation. Phase
 annotations remain a separate training sidecar; they do not enter deployed
 observations. Episode success must agree with the independent dinner scorer.
 Failed or cancelled episodes remain evidence and are rejected by success-only
-training intake. Runtime capture and export verification remain pending until a
-new complete recorded run passes; the earlier replay cannot supply missing
-full-rate observations retroactively.
+training intake. Runtime capture now passes in the recorded run below. Export verification remains
+pending; the earlier replay cannot supply missing full-rate observations retroactively.
 
 Fifteen focused actor/recording tests pass, including real PNG/episode-contract
 checks with a short synthetic environment and failed-step boundaries. Those
-tests do not establish physical dinner success; complete recorded reproduction
-and LeRobot export/read-back remain pending.
+tests do not establish physical dinner success; complete recorded reproduction now passes below; LeRobot export/read-back remains pending.
 
 ## Long-episode timestamp precision
 
@@ -315,3 +313,14 @@ Twenty-three native LeRobot export tests pass, including a real 4,819-frame
 numeric storage episode and rejection of one-ULP timestamp changes/nonfinite
 values. Log: `.artifacts/dataset-long-timestamp-real-tests.log`. The long numeric
 fixture validates timestamp storage, not image rendering or manipulation.
+
+### First complete recorded dinner
+
+Run `20260911T022644-a24a56ff004c` completes from clean `6c6c991` with a passing
+independent physical score and valid demonstration. Audit
+`20260911T023608-8896f729ffd5` verifies all 4,819 applied actions against their
+pre-action observations/phase sidecar, 4,820 observations and 14,460 RGB files.
+Source size is about 595 MiB. Actor/capture time is 445.07 seconds for 240.95
+simulated seconds; scoring, replay encoding and final sealing are excluded from
+that timer. Final three-camera preview was inspected. This is one nominal scripted
+training episode, with no learned execution or generalization claim.
