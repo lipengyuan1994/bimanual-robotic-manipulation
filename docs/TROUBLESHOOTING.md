@@ -13,7 +13,7 @@
 | Run integrity failed | Preserve original files and inspect digests; never reseal changed files as the original run. |
 | A process died mid-run | Inspect the unsealed run directory; do not count it as successful. |
 | ACT/VLM runtime unavailable | Follow [skill training](SKILL_TRAINING.md) and [planner setup](PLANNER_LIVE_INTEGRATION.md); the base environment does not include every ML dependency or model. Runtime availability does not establish learned task success. |
-| `A workflow worker still holds this lease` | A supported worker or guardian still owns the evidence store. Allow bounded cleanup to finish; do not delete `.workflow-worker.lock` or launch against a different store to bypass ownership. Inspect the run's guardian journal and terminal record. |
+| `A workflow worker still holds this lease` | A supported model job or guardian still owns the evidence store. Allow bounded cleanup to finish; do not delete `.model-job.lock` or launch against a different store to bypass ownership. Inspect the run's journal and terminal record. |
 | `cleanup unconfirmed` or `group ownership unconfirmed` | Preserve the unsealed parent directory and partial child evidence. Do not infer success from a child completion message or signal an old numeric PID. Investigate the recorded guardian state before restarting. |
 | `Guardian PID pin requires validated Python 3.12` | Use the verified Python3.12 project runtime. Guardian process ownership relies on that validated multiprocessing implementation. |
 | Intel result missing | A Mac runtime check cannot substitute for the required Intel machine. |

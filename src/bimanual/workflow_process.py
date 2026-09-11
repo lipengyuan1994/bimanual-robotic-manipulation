@@ -164,7 +164,9 @@ def run_workflow_process(
     child_store = EvidenceStore(directory / "child-evidence")
     process = None
     guardian_root = directory / "guardian"
-    lease_path = store.root / ".workflow-worker.lock"
+    from bimanual.worker_lease import MODEL_JOB_LEASE
+
+    lease_path = store.root / MODEL_JOB_LEASE
     cleanup_lease = None
     cancellation = None
     message = None

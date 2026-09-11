@@ -3,6 +3,12 @@
 Status: verified data/runtime integration; physical learning remains pending. No learned dinner skill has
 passed physical evaluation. See [datasets](DATASETS.md) and [training](TRAINING.md).
 
+Training acquires the evidence store's `.model-job.lock` before allocating a run
+or importing the ML runtime. The default workflow process uses the same lease, so
+supported training and workflow inference cannot overlap. A busy lease fails
+closed without allocating a misleading training attempt. Do not delete or bypass
+the lock; its live file descriptor, not the filename alone, proves ownership.
+
 The full dinner recording remains one nominal training episode. Small versioned
 view manifests select contiguous action intervals without duplicating the images
 or inventing new scene seeds. They bind the original export, episode, controller

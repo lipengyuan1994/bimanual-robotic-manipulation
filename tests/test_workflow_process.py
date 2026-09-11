@@ -363,7 +363,7 @@ def test_guardian_crash_kills_owned_group_before_parent_seal(tmp_path):
     assert not result.metrics["child_reaped"]  # Orphan group cleanup is not waitpid certification.
     assert not result.metrics["execution_complete"]
     assert result.metrics["guardian_exitcode"] == -signal.SIGKILL
-    with WorkerLease.acquire(store.root / ".workflow-worker.lock"):
+    with WorkerLease.acquire(store.root / ".model-job.lock"):
         time.sleep(0.05)
         assert store.verify(result.run_id) == result
 
@@ -389,7 +389,7 @@ def test_group_cleanup_lease_released_after_publication_error(tmp_path, monkeypa
         run_workflow_process(
             settings(), store=store, project_root=tmp_path, _entrypoint=guardian_crash
         )
-    with WorkerLease.acquire(store.root / ".workflow-worker.lock"):
+    with WorkerLease.acquire(store.root / ".model-job.lock"):
         assert not list((store.root / "runs").glob("*/manifest.json"))
 
 
@@ -504,7 +504,7 @@ def test_integrated_parent_death_reaps_native_worker_and_allows_restart(tmp_path
             time.sleep(0.01)
         assert len(ready) == 1, "Native worker did not start within bounded fixture budget"
         parent_run = ready[0].parent.parent
-        lease_path = tmp_path / "evidence/.workflow-worker.lock"
+        lease_path = tmp_path / "evidence/.model-job.lock"
         with pytest.raises(RuntimeError, match="still holds"):
             WorkerLease.acquire(lease_path)
         owner.kill()  # Owned process handle; no raw worker/guardian PID signaling.

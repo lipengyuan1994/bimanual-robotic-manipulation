@@ -102,6 +102,29 @@ def main(argv: list[str] | None = None) -> int:
     )
     visual_source.add_argument("run_root", type=Path)
     visual_source.add_argument("--protocol", type=Path, required=True)
+    cohort_create = commands.add_parser(
+        "training-cohort-create", help="Freeze the remaining six ACT training configurations"
+    )
+    cohort_create.add_argument("--dataset", type=Path, required=True)
+    cohort_create.add_argument("--skill-views", type=Path, required=True)
+    cohort_create.add_argument("--destination", type=Path, required=True)
+    for role in (
+        "experiment-protocol",
+        "training",
+        "recorded",
+        "physical-prefix2",
+        "physical-prefix5",
+    ):
+        cohort_create.add_argument(f"--{role}-run", required=True)
+    cohort_check = commands.add_parser(
+        "training-cohort-check", help="Reverify a frozen six-skill training protocol"
+    )
+    cohort_check.add_argument("protocol", type=Path)
+    cohort_run = commands.add_parser(
+        "training-cohort-run", help="Run or reconcile one frozen ACT skill attempt"
+    )
+    cohort_run.add_argument("protocol", type=Path)
+    cohort_run.add_argument("--skill", required=True)
     evaluation = commands.add_parser("dinner-evaluate", help="Re-score sealed dinner evidence")
     evaluation.add_argument("run_id")
     evaluation.add_argument("--instrumentation-run", help="Sealed declarations linked to this run")
@@ -437,6 +460,34 @@ def main(argv: list[str] | None = None) -> int:
                     lerobot_decoded_parity=result.lerobot_decoded_parity,
                 )
             )
+        elif args.command == "training-cohort-create":
+            from bimanual.training_cohort import create_training_cohort_protocol
+
+            result = create_training_cohort_protocol(
+                args.dataset,
+                args.skill_views,
+                {
+                    "experiment_protocol": args.experiment_protocol_run,
+                    "training": args.training_run,
+                    "recorded": args.recorded_run,
+                    "physical_prefix2": args.physical_prefix2_run,
+                    "physical_prefix5": args.physical_prefix5_run,
+                },
+                store=store,
+                destination=args.destination,
+            )
+            emit(result.model_dump(mode="json"))
+        elif args.command == "training-cohort-check":
+            from bimanual.training_cohort import load_training_cohort_protocol
+
+            result = load_training_cohort_protocol(args.protocol)
+            emit(result.model_dump(mode="json"))
+        elif args.command == "training-cohort-run":
+            from bimanual.training_cohort_runner import run_training_cohort_skill
+
+            result = run_training_cohort_skill(args.protocol, args.skill)
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
         elif args.command == "dinner-evaluate":
             from bimanual.dinner_evaluation import evaluate_dinner_run
 

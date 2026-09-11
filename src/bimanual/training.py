@@ -23,6 +23,7 @@ from bimanual.demonstrations import require_successful_training_episode
 from bimanual.evidence import EvidenceStore, Manifest, canonical, digest_file, provenance
 from bimanual.training_loss import act_training_loss, temporal_loss_definition
 from bimanual.training_probe import _tensor_digest
+from bimanual.worker_lease import MODEL_JOB_LEASE, WorkerLease
 
 
 class ACTTrainingConfig(BaseModel):
@@ -426,7 +427,30 @@ def stable_numeric_stats(values: np.ndarray, *, std_floor: float) -> dict:
     }
 
 
-def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: Path) -> Manifest:
+def run_train(
+    config: ACTTrainingConfig,
+    *,
+    store: EvidenceStore,
+    project_root: Path,
+    model_job_lease_path: Path | None = None,
+    model_job_lease: WorkerLease | None = None,
+) -> Manifest:
+    """Own the shared model-job lease before imports, evidence allocation or training."""
+    dataset_root = config.dataset_path.resolve()
+    if store.root.is_relative_to(dataset_root):
+        raise ValueError("Training evidence store must be outside the immutable dataset")
+    store.root.mkdir(parents=True, exist_ok=True)
+    lease_path = model_job_lease_path or store.root / MODEL_JOB_LEASE
+    if model_job_lease is not None:
+        if model_job_lease_path is None:
+            raise ValueError("An existing model-job lease requires its expected path")
+        model_job_lease.assert_path(lease_path)
+        return _run_train(config, store=store, project_root=project_root)
+    with WorkerLease.acquire(lease_path):
+        return _run_train(config, store=store, project_root=project_root)
+
+
+def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: Path) -> Manifest:
     """Train actual ACT; seal success/failure without claiming physical task completion."""
     dataset_root = config.dataset_path.resolve()
     if store.root.is_relative_to(dataset_root):

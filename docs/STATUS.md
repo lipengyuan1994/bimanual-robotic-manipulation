@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 11, 2026. Latest pushed checkpoint: `66e0c1c` on
+Updated September 11, 2026. Latest pushed checkpoint: `c124e4a` on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -21,12 +21,44 @@ checks as learned task success, generalization or Intel compliance.
 
 ## Active job and next executable step
 
-Corrective training session61470 is active, run `20260911T184624-653277cfce84`:
-20,000updates on native MPS, with
-fallback disabled and offline caches. Log `.artifacts/handoff-corrective-v1-training.log`.
-Poll this existing handle; do not start another model/render job or restart from
-an observation timeout. The training protocol is frozen below. No physical success
-is implied by progress or loss.
+Corrective training run `20260911T184624-653277cfce84` completed20,000updates
+on native MPS in5,908.77seconds, with fallback disabled and offline caches. Its
+seal is `246f19c17b7f1795b4e10c0bb9799c6c5fbeae1add264ea876bd68080c5ac6ac`.
+Checkpoint, processors, sampler, temporal loss, learning-rate schedule and external
+registry binding reverify. Log `.artifacts/handoff-corrective-v1-training.log`.
+This proves training completion only; learned manipulation success remains unknown.
+
+Frozen recorded-input evaluation `20260911T202723-0973816bd4b8` completed over
+all630handoff frames:630valid, zero invalid/out-of-bounds, first-action mean
+absolute error0.0011597rad and maximum0.0859281rad. Physical success remains null.
+Seal `edae68351d72ccb9d6841647da719044f58bd24ad9a2a43f5e15485415649a89`.
+Log `.artifacts/handoff-corrective-v1-recorded-eval.log`.
+
+Frozen physical prefix2 wrapper `20260911T202840-4d435b9b3475` failed after567
+actions: hand-off support/grip continuity was lost after donor hold. The verified
+child used actual MPS and no teacher actions. Wrapper seal
+`305e269b772d6c8cd6a6fa4b2cbab49dfe74e77ff2304162230b6e38ef3526d8`;
+child seal `5a8661ce035b9a12947e5a79aacda8c55923609926e085a28cc9f69aded27869`.
+Log `.artifacts/handoff-corrective-v1-physical-prefix2.log`.
+
+Frozen physical prefix5 wrapper `20260911T203307-69308d4aecf0` also failed on
+support/grip continuity after donor hold, after676actions. Its verified child used
+actual MPS and no teacher actions. Wrapper seal
+`18acbd0c85aae61eed7c6180657a9f3452c8b070c966d1602967923d858431c0`;
+child seal `9af6175cf4a59be585a0f520ab8bc9cbb562a328cf67a71ec12baf5485c1659e`.
+Log `.artifacts/handoff-corrective-v1-physical-prefix5.log`. The corrective model
+reached donor hold instead of the earlier prefix2 pre-grasp stall, but did not
+complete a hand-off. It is not promoted.
+
+The remaining-six-skill protocol is frozen at
+[`experiments/six-skill-training-protocol-v1.json`](experiments/six-skill-training-protocol-v1.json),
+seal `777c6d54a3248de896849b0fccfcf61610fe799a0bf79c0ae74aed9c4f8a0d2a`.
+It binds nominal v2 data/views, exact20,000-update MPS configurations, final-only
+checkpoint selection, the prepared hand-off protocol and all three frozen
+evaluation records. Both physical failures remain prerequisites as failures, not
+success claims. The [resumable one-skill-at-a-time executor](TRAINING_COHORT.md)
+passes six CPU recovery fixtures; CLI/protocol/model-lease coverage totals28tests.
+No remaining-skill training has started yet.
 
 Full regression85553 exited0:1,058passed,18optional skips,9render deselections,
 472.02seconds. Log `.artifacts/checks-corrective-integration.log`. The subsequent
@@ -85,9 +117,10 @@ combined workflow suite passed21tests. Parent combined regression83708 exited0:5
 Required fullcheck11603 exited0:1,073passed,18optional skips,9render deselections,
 487.52seconds; log
 `.artifacts/checks-corrective-relocation.log`. V1 body seals are preserved.
-The active training experiment is untouched. A subsequent source-confinement fix
+The completed corrective training experiment was not changed. Source confinement
 rejects output nested in corrective datasets before allocating files in both
-execution paths; all9confinement tests pass. Guardian integration now passes targeted process tests; full regression is running.
+execution paths; all9confinement tests pass. Guardian integration passes the full
+regression reported below.
 The ordinary dataset intake still rejects intervened episodes.
 
 Horizon50 training completed20,000updates, but both physical comparisons failed:
@@ -134,7 +167,7 @@ Known development seeds0/7 cannot enter held-out sets. Protocol validation passe
 internal visual-only experiment on one physical layout, not the final production
 or organizer evaluation suite. No visual recordings have entered training;
 verified export/view/composition integration remains the next data step after
-the active model job frees the rendering slot.
+the frozen hand-off evaluation sequence frees the model/render slot.
 [Protocol and source-verification guide](VISUAL_TRAINING.md). The source verifier
 and CLI pass41targeted checks, including rejection by real physics scorers of a
 synthetic integrity fixture. No real visual recording has passed this gate yet.
@@ -160,7 +193,8 @@ Parent-record reconstruction remains unresolved. The original portal service was
   against hashed lockfile requirements:ARM64,68compiled extensions, CPU arithmetic
   and MuJoCo stepping. It predates visual variants and excludes ML extras/rendering.
   [Repeatable installation](SETUP.md).
-- Checkpoint66e0c1c is pushed; new remote CI remains unverified. Prior checkpoint2399b2f's GitHub Actions
+- Checkpointc124e4a is pushed; its portal job passes and its Python/render job is
+  still running. Prior checkpoint2399b2f's GitHub Actions
   runs34635313597 and34635303088 now have successful portal and Python/render jobs.
   These checks cover pushed2399b2f, not the subsequent working-tree changes.
   No merge is authorized here.
@@ -199,4 +233,12 @@ deselections,2warnings in504.38seconds; log
 `.artifacts/checks-guardian-integration.log`. It predates the additional parent-loss
 test and24visual-protocol tests, which passed separately. Scope is POSIX/Python3.12, one worker with threads;
 independently launched subprocess trees and parent-record reconstruction remain
-unsupported. The portal was not restarted, and MPS training61470 continues unchanged.
+unsupported. The portal was not restarted. Frozen physical prefix2 evaluation
+session30402 is the only active model/render job.
+
+Uncommitted shared model-job ownership now makes training and the default workflow
+use the same `.model-job.lock`. Two focused tests pass: a competing training start
+is rejected before run allocation, the lease becomes available after the owner
+exits, and nested cohort evidence borrows the continuously held top-level lease.
+All84 existing training tests pass with13 optional-dependency skips;47 earlier
+cohort/process tests pass. Full regression for this working tree is still required.

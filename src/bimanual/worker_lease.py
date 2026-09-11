@@ -8,6 +8,8 @@ import stat
 from multiprocessing.reduction import DupFd
 from pathlib import Path
 
+MODEL_JOB_LEASE = ".model-job.lock"
+
 
 def _spawn_reference(duplicate):
     return duplicate
@@ -31,7 +33,7 @@ class WorkerLease:
     A guardian must retain its descriptor until its worker has exited. A spawned
     worker detaches an exported descriptor before model initialization and retains
     it until exit. Closing one duplicate must not unlock the remaining owners.
-    This primitive is not yet a substitute for guardian integration.
+    The workflow guardian and training entry point use the shared model-job name.
     """
 
     def __init__(self, descriptor: int):
@@ -67,6 +69,22 @@ class WorkerLease:
         if self._descriptor is None:
             raise RuntimeError("Worker lease is closed")
         return _LeaseTransfer(self)
+
+    def assert_path(self, path: Path) -> None:
+        """Require this live descriptor to reference the expected regular lock file."""
+        if self._descriptor is None:
+            raise RuntimeError("Worker lease is closed")
+        descriptor = os.fstat(self._descriptor)
+        try:
+            expected = os.stat(Path(path), follow_symlinks=False)
+        except OSError as error:
+            raise RuntimeError("Worker lease does not own the expected lock file") from error
+        if (
+            not stat.S_ISREG(descriptor.st_mode)
+            or not stat.S_ISREG(expected.st_mode)
+            or (descriptor.st_dev, descriptor.st_ino) != (expected.st_dev, expected.st_ino)
+        ):
+            raise RuntimeError("Worker lease does not own the expected lock file")
 
     def close(self):
         if self._descriptor is not None:
