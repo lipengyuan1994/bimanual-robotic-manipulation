@@ -25,7 +25,7 @@
       "id": "M2",
       "title": "Learned workflow",
       "state": "in_progress",
-      "detail": "Corrected teacher recording, LeRobot readback and all seven skill-boundary audits pass. Preparing bounded ACT handoff training; visual planner recipient selection remains unresolved. No full learned dinner success or held-out reliability demonstrated."
+      "detail": "Corrected teacher recording, LeRobot readback and all seven skill-boundary audits pass. Full handoff ACT training is running locally. Four bounded planner direction cases pass; broader reasoning and full learned dinner success remain unproven. Optional operator start/stop controls pass fixture checks."
     },
     {
       "id": "M3",

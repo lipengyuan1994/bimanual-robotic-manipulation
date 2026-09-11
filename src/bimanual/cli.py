@@ -220,6 +220,11 @@ def main(argv: list[str] | None = None) -> int:
     evidence.add_argument("run_id", nargs="?")
     serve = commands.add_parser("serve", help="Serve the read-only project and learning portal")
     serve.add_argument("--port", type=int, default=8767)
+    serve.add_argument(
+        "--operator-config",
+        type=Path,
+        help="Opt in to local workflow control with a server-owned WorkflowProcessConfig JSON file",
+    )
     args = parser.parse_args(argv)
     root = args.project_root.resolve()
     artifacts = args.artifacts if args.artifacts.is_absolute() else root / args.artifacts
@@ -564,7 +569,19 @@ def main(argv: list[str] | None = None) -> int:
 
             from bimanual.api import create_app
 
-            uvicorn.run(create_app(root, artifacts), host="127.0.0.1", port=args.port)
+            operator_config = None
+            if args.operator_config is not None:
+                from bimanual.workflow_process import WorkflowProcessConfig
+
+                config_path = args.operator_config
+                if not config_path.is_absolute():
+                    config_path = root / config_path
+                operator_config = WorkflowProcessConfig.model_validate_json(config_path.read_text())
+            uvicorn.run(
+                create_app(root, artifacts, operator_config=operator_config),
+                host="127.0.0.1",
+                port=args.port,
+            )
         return 0
     except KeyboardInterrupt:
         emit({"outcome": "interrupted"})

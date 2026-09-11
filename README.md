@@ -16,9 +16,16 @@ The complete evidence and handoff record is in [docs/STATUS.md](docs/STATUS.md).
 <!-- README-STATUS:END -->
 
 Event-window implementation is authorized in [decision 0003](docs/decisions/0003-event-window-implementation.md).
-Two SO-101 arms run locally with bounded control and three cameras. A scripted
-teacher now grasps, lifts and releases a block using physics contacts.
-Drawer use, hand-off and learned execution remain pending. [Accepted plan](docs/PLAN.md)
+Two SO-101 arms run locally with bounded control and three cameras. The scripted
+teacher completes drawer use, tableware placement and physical hand-off in one
+authored scene. Corrected demonstrations and skill boundaries have been checked;
+full hand-off ACT training is running locally. Learned dinner-table success and
+release reliability remain unproven. [Accepted plan](docs/PLAN.md)
+
+The portal offers optional instruction/start/stop controls through a server-owned
+configuration. API, setup and browser fixture checks pass; live cameras and step
+progress remain unfinished. See [workflow setup](docs/WORKFLOW_EXECUTION.md).
+Intel setup is deferred until local training completes.
 
 ## Start here
 

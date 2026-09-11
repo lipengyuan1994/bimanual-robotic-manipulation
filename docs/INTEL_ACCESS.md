@@ -5,9 +5,10 @@ eligible university account. A free-access request has been submitted and is
 **Rejected**. No machine has been allocated or tested, no payment was made,
 and no separate organizer message was sent.
 
-The current list exposes no rejection reason. The user has been asked whether
-an email explains it. No replacement application, support message or dismissal
-has been submitted. Local development continues; Intel execution remains blocked.
+The user confirmed that the rejection has no explanation. Intel setup is deferred
+until local training is complete, then will be handled as a separate step. No
+replacement application, support message or dismissal has been submitted.
+Local development continues; actual Intel execution remains unverified.
 
 ## Current request
 

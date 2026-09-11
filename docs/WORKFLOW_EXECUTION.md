@@ -100,3 +100,31 @@ corrupt/missing child results and completed child evidence with a hung thread.
 Actual CLI run `20260911T061251-260718b9a590` with an absent cohort fails as expected,
 verifies its failed child manifest and reaps the child without loading models.
 This verifies the failure path, not full learned execution or GPU interruption.
+
+## Optional local operator controls
+
+`bimanual serve --operator-config /absolute/path/operator.json` enables the
+portal's instruction form and job-specific stop button. The JSON must validate
+as `WorkflowProcessConfig`; model/cohort paths and runtime limits are configured
+by the server owner, never supplied by browser requests. Without this option the
+portal remains read-only. The server binds to loopback.
+
+The API exposes `GET /api/operator`, `POST /api/operator/jobs` (instruction only),
+and `POST /api/operator/jobs/{job_id}/stop`. Mutations require the
+`X-Bimanual-Operator: 1` header and reject foreign browser origins. One worker
+runs at a time. Stop remains `stopping` until worker termination is confirmed;
+server shutdown requests cancellation and waits for the bounded process cleanup.
+A network error does not mean the worker stopped; refresh status before retrying.
+
+`finished` describes process completion, not independently verified dinner-table
+success. Inspect sealed evidence separately. The current interface shows process
+status; live cameras and per-step progress remain unfinished. No validated full
+seven-skill learned cohort is available yet, so enabling controls alone does not
+make the workflow ready. Do not run it alongside local GPU training.
+
+Run history requests 20 fully verified records per page. Older/Newest controls
+navigate the archive; failed and corrupted records are retained in page order.
+`GET /api/runs?limit=20&before=<last-run-id>` uses an exclusive run-ID cursor,
+so newly sealed runs do not shift subsequent older pages. Omitting the limit
+retains the complete listing. Verification of a single large run can still be
+slow; the project description and operator status load independently.

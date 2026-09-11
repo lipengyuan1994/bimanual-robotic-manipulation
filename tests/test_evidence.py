@@ -69,3 +69,41 @@ def test_optional_index_failure_does_not_lose_manifest(tmp_path):
         )
     assert store.verify(directory.name).outcome == "completed"
     assert store.list_runs()[0]["integrity"] == "verified"
+
+
+def test_run_pages_verify_only_selected_records_and_keep_failures(tmp_path, monkeypatch):
+    store = EvidenceStore(tmp_path)
+    ids = []
+    for _ in range(5):
+        directory = store.new_run()
+        (directory / "value.txt").write_text("original")
+        store.seal(
+            directory, kind="test", outcome="completed", config={}, metrics={}, source={}, claims=[]
+        )
+        ids.append(directory.name)
+    ids.sort(reverse=True)
+    (store.directory(ids[1]) / "value.txt").write_text("corrupt")
+    verified = []
+    original = store.verify
+
+    def verify(run_id):
+        verified.append(run_id)
+        return original(run_id)
+
+    monkeypatch.setattr(store, "verify", verify)
+    page = store.list_runs(limit=2)
+    assert verified == ids[:2]
+    assert [r["run_id"] for r in page] == ids[:2]
+    assert [r["integrity"] for r in page] == ["verified", "failed"]
+    verified.clear()
+    older = store.list_runs(limit=2, before=page[-1]["run_id"])
+    assert verified == ids[2:4]
+    assert [r["run_id"] for r in older] == ids[2:4]
+    assert len(store.list_runs()) == 5
+    assert store.list_runs(limit=2, before=ids[-1]) == []
+
+
+@pytest.mark.parametrize("limit", [0, -1, 101, True, 1.5])
+def test_invalid_run_page_limit(tmp_path, limit):
+    with pytest.raises(ValueError, match="limit"):
+        EvidenceStore(tmp_path).list_runs(limit=limit)

@@ -164,10 +164,18 @@ class EvidenceStore:
             raise ValueError("Unsealed files found in run")
         return manifest
 
-    def list_runs(self) -> list[dict[str, Any]]:
+    def list_runs(
+        self, *, limit: int | None = None, before: str | None = None
+    ) -> list[dict[str, Any]]:
         # Manifests are authoritative. The SQLite index is only a rebuildable cache.
+        if limit is not None and (type(limit) is not int or not 1 <= limit <= 100):
+            raise ValueError("Run page limit must be between 1 and 100")
         result = []
         for file in sorted((self.root / "runs").glob("*/manifest.json"), reverse=True):
+            if before is not None and file.parent.name >= before:
+                continue
+            if limit is not None and len(result) >= limit:
+                break
             try:
                 manifest = self.verify(file.parent.name)
                 result.append(manifest.model_dump() | {"integrity": "verified"})

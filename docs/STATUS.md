@@ -104,7 +104,9 @@ live operator UI remain incomplete; the current portal is read-only.
 ## External dependencies
 
 Intel BM-PTL Series3 request `bimanual-sim-intel` is Rejected on the September11 signed-in check. No actual
-Intel/OpenVINO validation exists. Verify identity, expiry and rendering when granted.
+Intel/OpenVINO validation exists. The rejection has no explanation. Defer access
+work and Intel setup until local training is complete, then verify hardware
+identity and rendering on the eventual target.
 Organizer details on assets/seeds, pouring, prior-code eligibility and hosting
 remain provisional. Deadline last verified: September16, 2:30PM EDT.
 No organizer message or hackathon submission has been sent.
@@ -204,3 +206,61 @@ stop requests, verified final evidence and explicit shutdown-timeout reporting.
 Eleven CPU tests pass, including simultaneous starts, stale stop IDs, corrupted
 results and failed thread startup. It is not yet wired into the API or UI; the
 portal remains read-only. Job completion never claims independent task success.
+
+ACT hand-off training **95347 is active**, run
+`20260911T122319-b2ee550f005b`, started from clean `284e86f` with protocol
+`20260911T121325-10260896f896`. Native MPS, fallback disabled, explicit local
+Hugging Face caches,20,000 planned updates. Actual step175 is recorded; no result
+or checkpoint quality is claimed. Log `.artifacts/dinner-handoff-v2-training.log`;
+progress is the run's `steps.jsonl`. Do not run another GPU/model/render job alongside it.
+
+Next independent implementation: wire the tested OperatorJobs controller into an
+opt-in local API and UI, preserving read-only default, one active simulation,
+job-specific cancellation, request-origin protection and no task-success claim
+from process completion. No validated seven-model cohort exists yet. Run the full
+regression after API/UI integration; the new controller currently has11 focused
+passing tests. Latest pushed checkpoint is `c3479a3`; operator component `284e86f`
+is local. Draft PR#1 remains open/unmerged; CI34598151792 was last in progress.
+
+Operator integration checkpoint: optional `serve --operator-config` now wires
+OperatorJobs into the API and a React instruction/start/stop panel. Default is
+read-only. Sixteen focused API/controller tests pass; native ARM frontend build
+passes. The panel polls process status and preserves job-specific stop identity;
+process completion never claims table success. Live cameras/per-step UI and
+browser interaction validation remain outstanding. Full regression is running
+in session33890, log `.artifacts/checks-operator-integration.log`; do not claim its
+result until terminal. Training95347 was re-polled live at this checkpoint, with
+step2615 recorded toward20000. No second GPU job was started.
+
+Operator setup verification: five CLI tests pass (valid opt-in/default read-only,
+relative configuration path, malformed/incomplete configuration rejected before
+server start, loopback bind). Temporary portal54779 on8769 displayed the unconfigured
+operator message in the real browser; no start control exposed. This is only
+read-only browser verification; configured interactions remain to check. Original
+portal8768 was left untouched. Full regression33890 and training95347 both
+confirmed live again; latest observed training step3440. No learned-quality claim.
+
+Configured browser fixture verification (no models/physics): native Node24 with
+installed Chrome, isolated evidence root `.artifacts/operator-browser-fixture/evidence`.
+Start initially disabled, instruction enabled Start, active job disabled duplicate
+start/edit, Stop showed `stopping`, polling reached `cancelled`. Fixture run
+`20260911T123653-f9bcf0d10a98`, seal
+`85f5211c6b2b409bf7ef75bd71c68bdd04d79b73fddf81bf26c7a8fc31ee5500`.
+Snapshots retained in `output/playwright/operator/`. Only console error was a
+missing favicon404. This does not verify learned execution or physical stopping.
+Large existing run archives still delay `/api/runs` because every artifact is
+hashed; operator polling is independent, but archive pagination remains next work.
+
+Operator integration full regression33890 completed: **936 passed,18 skipped,
+9 render deselected**,501.83s;403 documentation links pass and generated README
+is synchronized. This full run predates the subsequent pagination changes and
+five separately verified CLI tests. It is not a rendering or model-quality test.
+
+Run-history follow-up: optional `limit`/`before` cursor pagination verifies only
+selected records and preserves corrupt/failed entries. CLI/default unpaged API
+behavior remains available; portal requests20 records with Older/Newest controls.
+Project data now renders without waiting for run verification. No integrity cache
+or unverified-success shortcut was introduced. One very large run may still be
+slow; no latency target is claimed. Targeted evidence/API/controller/CLI checks
+cover this delta; live browser pagination remains to verify. Training95347 remains
+active; do not launch GPU evaluation until it is terminal and sealed.

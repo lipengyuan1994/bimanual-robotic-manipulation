@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
+import { OperatorPanel } from "./OperatorPanel";
 
 type Milestone = { id: string; title: string; state: string; detail: string };
 type Project = {
@@ -69,21 +70,22 @@ function App() {
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [before, setBefore] = useState<string | null>(null);
+  const [loadingRuns, setLoadingRuns] = useState(false);
   useEffect(() => {
     let active = true;
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 15000);
     setError("");
+    setLoadingRuns(true);
     Promise.all([
-      readJson<Project>("/api/project", controller.signal),
-      readJson<Run[]>("/api/runs", controller.signal),
+      readJson<Project>("/api/project", controller.signal).then(data => {
+        if (active) setProject(data);
+      }),
+      readJson<Run[]>(`/api/runs?limit=20${before ? `&before=${encodeURIComponent(before)}` : ""}`, controller.signal).then(history => {
+        if (active) setRuns(history);
+      }),
     ])
-      .then(([data, history]) => {
-        if (active) {
-          setProject(data);
-          setRuns(history);
-        }
-      })
       .catch((reason: Error) => {
         if (active)
           setError(
@@ -92,13 +94,16 @@ function App() {
               : reason.message,
           );
       })
-      .finally(() => window.clearTimeout(timeout));
+      .finally(() => {
+        window.clearTimeout(timeout);
+        if (active) setLoadingRuns(false);
+      });
     return () => {
       active = false;
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [revision]);
+  }, [revision, before]);
   const labs = runs.filter(
     (run) =>
       ["preparation_pendulum", "dual_arm_foundation", "contact_grasp_teacher", "contact_placement_teacher", "contact_handoff_teacher", "contact_drawer_teacher", "contact_cup_teacher", "contact_plate_teacher", "contact_utensils_teacher", "act_policy_rollout", "dinner_teacher"].includes(run.kind ?? "") &&
@@ -301,6 +306,7 @@ function App() {
             </div>
           </div>
         </section>
+        <OperatorPanel />
         <section id="learn">
           <div className="section-heading">
             <div>
@@ -419,6 +425,11 @@ function App() {
             </table>
           </div>
           <p className="table-note">
+            {loadingRuns ? "Checking this page’s evidence… " : "Showing up to 20 runs per page. "}
+            <button disabled={loadingRuns || runs.length < 20 || !!error}
+              onClick={() => { setBefore(runs[runs.length - 1].run_id); setSelectedId(null); }}>Older runs</button>{" "}
+            <button disabled={loadingRuns || before === null}
+              onClick={() => { setBefore(null); setSelectedId(null); }}>Newest runs</button>{" "}
             These development runs include a scripted dinner baseline and bounded learned-skill checks.
             They are not release reliability evaluations or judging scores.{" "}
             <a href="/read/docs/EVIDENCE.md">Evidence protocol ↗</a>
