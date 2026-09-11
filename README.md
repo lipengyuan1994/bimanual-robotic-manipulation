@@ -10,7 +10,7 @@ manipulation, recovery, reproducible evaluation, and Intel OpenVINO deployment.
 - Challenge manipulation: not available
 - Intel target: not validated
 - Active blockers: B2, B3
-- Status data updated: 2026-09-10
+- Status data updated: 2026-09-11
 
 The complete evidence and handoff record is in [docs/STATUS.md](docs/STATUS.md).
 <!-- README-STATUS:END -->

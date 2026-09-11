@@ -7,12 +7,13 @@ import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
+from PIL import Image
 from pydantic import Field
 
 from bimanual.contracts import Contract, Counter, Digest, Identifier, Observation, SkillRequest
-from bimanual.dinner_control import DinnerControlWorker
+from bimanual.dinner_control import PLANNER_PROFILES, DinnerControlWorker, LivePlannerCapture
 from bimanual.evidence import canonical, digest_file
-from bimanual.planner import PlannerContext, VisualProposal, camera_images, parse_proposal
+from bimanual.planner import PlannerContext, VisualProposal, parse_proposal
 from bimanual.supervisor import Attempt
 
 
@@ -27,6 +28,8 @@ class PlanningJob(Contract):
     deadline_ns: Counter
     camera_source: str = Field(min_length=1)
     warmup_observation: Observation
+    warmup_capture: LivePlannerCapture
+    original_capture: LivePlannerCapture
     context: PlannerContext
 
 
@@ -47,17 +50,26 @@ class LivePlanningSession:
     to an external model executor, and deliver its text to complete on that same
     actor. Do not run blocking model generation on the actor: cancellation and
     task replacement must remain responsive. No torch/model imports are needed.
-    Only the existing 480px policy camera profile is supported by this bridge.
+    The explicit HD planner profile leaves ACT's 480px policy inputs unchanged.
     Each begin records one fixed warm-up capture before the model context, even
     when the renderer already exists. This initializes cold rendering without
     hiding captures, changing physics, or relaxing subsequent pixel equality.
     """
 
-    def __init__(self, worker: DinnerControlWorker, *, max_planning_ns: int = 300_000_000_000):
+    def __init__(
+        self,
+        worker: DinnerControlWorker,
+        *,
+        max_planning_ns: int = 300_000_000_000,
+        camera_profile: str = "policy480_v1",
+    ):
         if type(max_planning_ns) is not int or max_planning_ns <= 0:
             raise ValueError("Planning timeout must be a positive integer")
         self.worker = worker
         self.max_planning_ns = max_planning_ns
+        if camera_profile not in PLANNER_PROFILES:
+            raise ValueError("Unsupported live planner camera profile")
+        self.camera_profile = camera_profile
         self.directory = worker.directory / "planning"
         self.directory.mkdir(exist_ok=True)
         self._jobs: dict[str, tuple[PlanningJob, str]] = {}
@@ -85,6 +97,10 @@ class LivePlanningSession:
             raise TimeoutError("Planning job expired; no execution authorized")
         if digest_file(self.directory / job.job_id / "job.json") != self._jobs[job.job_id][1]:
             raise ValueError("Immutable original planning context changed")
+        if self.camera_profile != job.context.camera_profile:
+            raise ValueError("Planner camera profile changed during inference")
+        job.original_capture.calibration.verify(self.worker.directory)
+        job.warmup_capture.calibration.verify(self.worker.directory)
         pause = self.worker.check_planning_pause(job.pause_id)
         if any(
             pause[name] != getattr(job, name)
@@ -107,11 +123,13 @@ class LivePlanningSession:
     def begin(self) -> PlanningJob:
         pause = self.worker.acquire_planning_pause()
         try:
-            warmup = self.worker.capture_planning_pause(pause["pause_id"])
-            observation = self.worker.capture_planning_pause(pause["pause_id"])
+            warmup = self.worker.capture_planner_pause(pause["pause_id"], self.camera_profile)
+            captured = self.worker.capture_planner_pause(pause["pause_id"], self.camera_profile)
+            observation = captured.planner_observation
             snapshot = self.worker.supervisor.snapshot()
             context = PlannerContext(
                 observation=observation,
+                camera_profile=self.camera_profile,
                 instruction=snapshot.task.instruction,
                 completed_steps=snapshot.completed_steps,
                 available_skills=tuple(
@@ -126,8 +144,10 @@ class LivePlanningSession:
                 state_sha256=pause["state_sha256"],
                 model_sha256=pause["model_sha256"],
                 task_sha256=pause["task_sha256"],
-                camera_source=pause["camera_source"],
-                warmup_observation=warmup,
+                camera_source=captured.camera_source,
+                warmup_observation=warmup.planner_observation,
+                warmup_capture=warmup,
+                original_capture=captured,
                 created_ns=now,
                 deadline_ns=now + self.max_planning_ns,
                 context=context,
@@ -144,7 +164,38 @@ class LivePlanningSession:
     def images(self, job_id: str):
         """Verified copies of the original camera pixels for external model generation."""
         job = self.check_pending(job_id)
-        return camera_images(job.context, self.worker.directory)
+        return self._images(job.context)
+
+    def _images(self, context: PlannerContext):
+        images = []
+        for frame, dimensions in zip(
+            context.observation.frames, PLANNER_PROFILES[context.camera_profile], strict=True
+        ):
+            with Image.open(frame.artifact.verify(self.worker.directory)) as image:
+                if image.format != "PNG" or image.mode != "RGB" or image.size != dimensions:
+                    raise ValueError("Live planner pixels disagree with the declared profile")
+                image.load()
+                images.append(image.copy())
+        return tuple(images)
+
+    @staticmethod
+    def _validate_recapture(original: Observation, current: Observation):
+        if (
+            current.episode_id != original.episode_id
+            or current.instruction_revision != original.instruction_revision
+            or current.sequence != original.sequence
+            or current.simulation_seconds != original.simulation_seconds
+            or current.joint_position_rad != original.joint_position_rad
+            or current.joint_velocity_rad_s != original.joint_velocity_rad_s
+            or current.observed_monotonic_ns <= original.observed_monotonic_ns
+            or any(
+                a.camera != b.camera
+                or a.artifact.sha256 != b.artifact.sha256
+                or a.artifact.path == b.artifact.path
+                for a, b in zip(current.frames, original.frames, strict=True)
+            )
+        ):
+            raise ValueError("Live recapture did not preserve unchanged paused sensor content")
 
     def cancel(self, job_id: str, reason: str = "Operator cancelled planning"):
         job = self._pending(job_id)
@@ -190,25 +241,32 @@ class LivePlanningSession:
             )
             self._check_job(job)
             proposal = parse_proposal(raw_model_text, job.context)
-            camera_images(job.context, self.worker.directory)  # Verify original artifacts again.
-            current = self.worker.capture_planning_pause(job.pause_id)
-            original = job.context.observation
-            if (
-                current.episode_id != original.episode_id
-                or current.instruction_revision != original.instruction_revision
-                or current.sequence != original.sequence
-                or current.simulation_seconds != original.simulation_seconds
-                or current.joint_position_rad != original.joint_position_rad
-                or current.joint_velocity_rad_s != original.joint_velocity_rad_s
-                or current.observed_monotonic_ns <= original.observed_monotonic_ns
-                or any(
-                    a.camera != b.camera
-                    or a.artifact.sha256 != b.artifact.sha256
-                    or a.artifact.path == b.artifact.path
-                    for a, b in zip(current.frames, original.frames, strict=True)
+            self._images(job.context)  # Verify original artifacts again.
+            for saved in (job.warmup_capture, job.original_capture):
+                for observation in (saved.policy_observation, saved.planner_observation):
+                    for frame in observation.frames:
+                        frame.artifact.verify(self.worker.directory)
+            captured = self.worker.capture_planner_pause(job.pause_id, self.camera_profile)
+            self._images(
+                job.context.model_copy(
+                    update={
+                        "observation": captured.planner_observation,
+                    }
                 )
+            )
+            current = captured.policy_observation
+            original = job.context.observation
+            self._validate_recapture(original, captured.planner_observation)
+            self._validate_recapture(job.original_capture.policy_observation, current)
+            if (
+                captured.calibration.sha256 != job.original_capture.calibration.sha256
+                or captured.calibration.path == job.original_capture.calibration.path
+                or captured.render_model_sha256 != job.original_capture.render_model_sha256
+                or captured.source_model_sha256 != job.original_capture.source_model_sha256
+                or captured.camera_source != job.original_capture.camera_source
+                or captured.profile != job.original_capture.profile
             ):
-                raise ValueError("Live recapture did not preserve unchanged paused sensor content")
+                raise ValueError("Live planner calibration or renderer identity changed")
             # This is a distinct worker-issued request, never relabeled model output.
             request = SkillRequest.model_validate(
                 proposal.request.model_dump()
@@ -227,6 +285,7 @@ class LivePlanningSession:
                 "original_proposal": proposal.model_dump(mode="json"),
                 "original_observation": original.model_dump(mode="json"),
                 "fresh_observation": current.model_dump(mode="json"),
+                "fresh_planner_capture": captured.model_dump(mode="json"),
                 "execution_request": request.model_dump(mode="json"),
                 "worker_generation": job.worker_generation,
                 "state_sha256": job.state_sha256,

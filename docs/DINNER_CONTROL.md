@@ -98,3 +98,7 @@ the comparison baseline, not a fallback silently substituted for learned actions
 
 The [phase-free physical evaluator](DINNER_OUTCOMES.md) checks complete dinner
 outcomes independently of the operating controller or teacher stage labels.
+
+A [bounded skill executor](SKILL_EXECUTION.md) now connects policy forecasts to
+physical outcome monitoring. Its outcome does not certify successor arm posture
+or full-task success.

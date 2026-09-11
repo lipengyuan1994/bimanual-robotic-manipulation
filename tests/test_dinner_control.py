@@ -66,6 +66,43 @@ def start(worker):
     return attempt, observation, forecast
 
 
+def test_hd_renderer_uses_copied_model_and_same_live_data_without_reset(worker, monkeypatch):
+    instance, _, _, _ = worker
+    calls = []
+
+    class RendererFixture:
+        def __init__(self, model, *, width, height):
+            assert model is not instance._env.model
+            assert (width, height) == (1920, 1080)
+            assert (model.vis.global_.offwidth, model.vis.global_.offheight) == (1920, 1080)
+            calls.append("construct")
+
+        def update_scene(self, data, *, camera):
+            assert data is instance._env.data and camera == "overhead"
+            calls.append("update_live")
+
+        def render(self):
+            return np.zeros((1080, 1920, 3), np.uint8)
+
+        def close(self):
+            calls.append("close")
+
+    monkeypatch.setattr(mujoco, "Renderer", RendererFixture)
+    before = instance._token()
+    pause = instance.acquire_planning_pause()
+    first = instance.capture_planner_pause(pause["pause_id"], "overhead1920_wrist480_v1")
+    second = instance.capture_planner_pause(pause["pause_id"], "overhead1920_wrist480_v1")
+    assert calls == ["construct", "update_live", "update_live"]
+    assert instance._token() == before and instance._env.data.time == 0
+    assert first.render_model_sha256 == second.render_model_sha256
+    assert first.source_model_sha256 == instance._expected_model_digest
+    assert first.camera_source == "injected_unverified"
+    assert first.calibration.sha256 == second.calibration.sha256
+    assert first.calibration.path != second.calibration.path
+    instance.close()
+    assert calls[-1] == "close"
+
+
 def test_real_mujoco_step_uses_continuous_environment_and_policy_boundary(worker):
     instance, clock, _, _ = worker
     attempt, before, _ = start(worker)

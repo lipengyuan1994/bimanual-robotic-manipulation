@@ -46,3 +46,5 @@ change. Record a new decision when a material assumption changes. Do not depend 
 chat history to resume implementation.
 
 Bounded learned dinner work: [skill training and dataset views](SKILL_TRAINING.md).
+
+Measured skill termination: [learned executor and physical monitor](SKILL_EXECUTION.md).

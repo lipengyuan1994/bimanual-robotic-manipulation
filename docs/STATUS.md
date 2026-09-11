@@ -1,6 +1,6 @@
 # Project status
 
-Updated: 2026-09-10. Branch: `codex/preparation-foundation`.
+Updated: 2026-09-11. Branch: `codex/preparation-foundation`.
 Readiness follows [ROADMAP](ROADMAP.md); original scope remains in [PLAN](PLAN.md).
 
 ## Current readiness
@@ -128,9 +128,9 @@ and portal are committed at `bdcd4e4`. Use `git rev-parse HEAD` for the latest
 handoff commit; subsequent sampler changes do not alter the sealed teacher run. [Draft PR #1](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/pull/1)
 is open and unmerged.
 
-Latest `scripts/check.sh`: **689 passed, fourteen explicit optional-training skips,
+Latest `scripts/check.sh`: **734 passed, fourteen explicit optional-training skips,
 eight rendering tests deselected**, with Ruff, formatting, docs and README checks.
-Log: `.artifacts/checks-live-planning-schedule-final.log`; all current auxiliary-arm,
+Log: `.artifacts/checks-skill-execution-hd.log`; all current auxiliary-arm,
 stationary transition, registry, policy adapter and worker cases are included.
 The preceding dinner-only
 checkpoint had 403 passing tests. The preceding seven actual
@@ -489,3 +489,55 @@ Do not duplicate or run another GPU workload concurrently. Estimate about
 Apply the frozen final-checkpoint offline gates after sealing. The implementation
 and docs are pushed on `codex/preparation-foundation`; draft PR #1 is updated.
 Current-checkpoint GitHub CI is pending; earlier `1e9e1cb` CI passed.
+
+## Current follow-up — measured skill execution and HD planner path
+
+The preceding goal turn made verified implementation progress; the full goal
+remains active. Training handle 27780 was polled live again in this turn and
+continues the same experiment, without restart or overlapping GPU work.
+
+`DinnerSkillExecutor` now connects a preloaded ACT policy to confirmed physical
+steps and a separate per-attempt outcome monitor. Ten actor/fixture tests pass,
+including budgets, cancellation during inference, stale output, missing physics,
+replacement tasks and failure to record termination. Policies receive only
+cameras and joints. Physics truth goes explicitly to the monitor, not the model.
+A passing physical outcome does not certify successor arm posture or full-task
+success; those remain separate integration work. [Skill execution](SKILL_EXECUTION.md).
+
+The optional live `overhead1920_wrist480_v1` profile is implemented with separate
+ACT/planner artifacts and calibration. Thirty live-planning tests pass; actual
+HD rendering and Qwen validation remain pending until the training GPU is free.
+The original ACT input dimensions are unchanged. Base regression completed under terminal
+handle 92019 (`.artifacts/checks-skill-execution-hd.log`): 734 passed, fourteen
+optional skips and eight render deselections in 333.86 seconds.
+
+Per-attempt monitor tests pass all 27 cases. Sealed audit
+`20260911T040117-901674a49b49` verifies all seven nominal teacher-segment outcomes,
+with phase labels ignored; the seal verifies. These are physical termination
+checks on one existing authored trajectory, not learned-policy successes.
+The bar outcome completes 409 controls before the training view ends, exposing
+the need for a separate next-skill arm-posture check.
+
+Next executable work after this checkpoint:
+
+1. Keep watching training 27780; only run the declared offline evaluation after
+   the final checkpoint seals. Do not select intermediate checkpoints.
+2. Implement a separate arm-readiness condition before chaining learned skills.
+   Physical completion can precede the recorded next-start posture substantially;
+   per-skill success currently leaves `successor_start_ready` unknown.
+3. After GPU training terminates, use the prepared
+   `.artifacts/live-qwen-hd-check.py` in the native reasoning environment for an
+   actual HD capture/model/revalidation diagnostic. It applies zero robot actions.
+   No HD camera/model-quality result is claimed before that execution.
+
+Successor analysis `20260911T040255-4778b5b83120` is sealed and verified. It
+measures a 1.080203 rad bar/right-elbow gap and 0.551752 rad plate/left-wrist gap
+between first physical success and next training entry. A proposed joint-only
+readiness scan also finds insufficient settled bar-transition coverage. The
+combined readiness gate and any new transition demonstrations remain next work;
+no reference posture is supplied as an action target.
+
+Final checkpoint checks pass: Ruff, formatting, 734 base tests, 354 documentation
+links and README synchronization. No actual HD rendering was run during the
+active MPS experiment. Training handle 27780 remains active; 4647 updates were
+observed at this handoff. Its final checkpoint and frozen gates remain pending.

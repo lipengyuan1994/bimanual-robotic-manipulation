@@ -65,9 +65,11 @@ reason rather than falling back silently to the teacher.
 records the original context. Model code receives verified image copies and the
 immutable context. `complete` parses the original response, rechecks unchanged
 worker/model/task identity, renders fresh images and records their link to the
-original proposal before dispatch. This initial implementation supports the
-480-pixel policy-camera profile. Live 1920-pixel reasoning remains separate work;
-the recorded-reset high-resolution bundle cannot authorize a live action.
+original proposal before dispatch. The default profile remains 480-pixel policy cameras. The optional
+`overhead1920_wrist480_v1` profile captures a live 1920-by-1080 overhead image
+with the original 480-by-270 wrist images. Its live rendering/model integration
+check is pending; the recorded-reset high-resolution bundle still cannot authorize
+a live action.
 
 `LocalPlannerRunner(session, preloaded_planner)` provides `submit`, nonblocking
 `poll`, `cancel` and `close`. A single background thread invokes the already-loaded
@@ -97,3 +99,19 @@ MPS run `20260911T034324-a1bda3e43bd4` completes in 29.50 seconds inference afte
 not visible. Recapture verification passes and no movement occurs. This confirms
 the live model/supervisor path; it does not establish accurate recognition or
 learned hand-off success. Both evidence seals verify.
+
+## Optional high-resolution live profile
+
+Construct `LivePlanningSession(worker, camera_profile="overhead1920_wrist480_v1")`.
+The renderer copies the current compiled model only to enlarge its offscreen
+framebuffer, then reads the existing live simulation data. It does not reset the
+scene or change the model used for physics. Warm-up, original and fresh captures
+retain calibration, source/render model hashes and separate policy observations.
+Both planner and ACT image artifacts are reverified before dispatch; the executor
+receives the fresh original-resolution policy observation.
+
+Injected-camera and renderer-seam tests verify profile dimensions, unchanged ACT
+inputs, camera/model provenance, cancellation and tampered artifacts. Actual
+high-resolution rendering and Qwen behavior remain pending while the fixed MPS
+training job owns local GPU resources. Earlier actual 480-pixel evidence remains
+historical evidence for that profile and source revision.

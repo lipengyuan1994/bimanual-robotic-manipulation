@@ -7,6 +7,7 @@ import pytest
 from bimanual.dinner_control import DinnerControlWorker
 from bimanual.dual_arm import CAMERAS
 from bimanual.live_planning import LivePlanningSession
+from bimanual.planner import planner_messages
 from bimanual.supervisor import Capability, StepSpec, TaskSpec
 
 
@@ -157,6 +158,112 @@ def test_persistent_single_bit_variation_still_rejects_after_warmup(setup):
         session.complete(job.job_id, response(job))
     assert captures == [0, 0, 0]  # Fixed warm-up, never retry until pixels happen to match.
     assert worker.supervisor.snapshot().active is None and worker._env.data.time == 0
+
+
+def test_hd_live_context_keeps_act_pixels_and_paused_dispatch_separate(setup):
+    worker, _, clock, captures = setup
+    hd_captures = []
+
+    def overhead(env):
+        hd_captures.append((env.sequence, float(env.data.time)))
+        image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        image[0, 0, 0] = int(len(hd_captures) == 1)  # Retained cold-frame variation.
+        return image
+
+    worker._planner_render_capture = overhead
+    session = LivePlanningSession(worker, camera_profile="overhead1920_wrist480_v1")
+    physical_model = worker._model_digest()
+    job = session.begin()
+    assert captures == [0, 0] and hd_captures == [(0, 0), (0, 0)]
+    assert job.original_capture.mode == "live_paused_v1"
+    assert job.camera_source == "injected_unverified"
+    images = session.images(job.job_id)
+    assert [image.size for image in images] == [(1920, 1080), (480, 270), (480, 270)]
+    assert np.asarray(images[0])[0, 0, 0] == 0
+    assert planner_messages(job.context, images)
+    policy = job.original_capture.policy_observation
+    inputs = worker.policy_inputs(policy)
+    assert inputs["observation.images.overhead"].shape == (3, 270, 480)
+    assert set(inputs) == {
+        "observation.state",
+        "observation.images.overhead",
+        "observation.images.left_wrist",
+        "observation.images.right_wrist",
+    }
+    with pytest.raises(ValueError, match="exact current capture"):
+        worker.policy_inputs(job.context.observation)
+    calibration = json.loads(job.original_capture.calibration.verify(worker.directory).read_text())
+    assert calibration["source_model_sha256"] == physical_model
+    assert calibration["render_model_sha256"] != physical_model
+    assert calibration["cameras"][0]["render_dimensions_wh"] == [1920, 1080]
+    assert calibration["render_model_overrides"] == {"offwidth": 1920, "offheight": 1080}
+    assert worker._model_digest() == physical_model
+    clock.now += 95_000_000_000
+    result = session.complete(job.job_id, response(job))
+    assert result.attempt is not None and worker._env.data.time == 0
+    assert result.execution_observation == worker._observation
+    assert (
+        result.execution_observation.frames[0].artifact.path
+        != job.context.observation.frames[0].artifact.path
+    )
+    assert worker.policy_inputs(result.execution_observation)[
+        "observation.images.overhead"
+    ].shape == (3, 270, 480)
+    record = json.loads(result.revalidation_path.read_text())
+    assert record["fresh_planner_capture"]["mode"] == "live_paused_v1"
+    assert (
+        record["fresh_planner_capture"]["calibration"]["sha256"]
+        == job.original_capture.calibration.sha256
+    )
+    assert len(hd_captures) == 3
+
+
+@pytest.mark.parametrize(
+    "fault",
+    [
+        "pixels",
+        "render_model",
+        "calibration",
+        "profile",
+        "policy_artifact",
+    ],
+)
+def test_hd_changed_pixels_or_render_identity_rejects(setup, fault):
+    worker, _, clock, _ = setup
+    worker._planner_render_capture = lambda env: np.zeros((1080, 1920, 3), np.uint8)
+    session = LivePlanningSession(worker, camera_profile="overhead1920_wrist480_v1")
+    job = session.begin()
+    clock.now += 95_000_000_000
+    if fault == "pixels":
+
+        def changed(env):
+            pixels = np.zeros((1080, 1920, 3), np.uint8)
+            pixels[0, 0, 0] = 1
+            return pixels
+
+        worker._planner_render_capture = changed
+    elif fault == "render_model":
+        worker._planner_model.geom_friction[0, 0] += 0.1
+    elif fault == "calibration":
+        (worker.directory / job.original_capture.calibration.path).write_text("{}")
+    elif fault == "policy_artifact":
+        (
+            worker.directory / job.original_capture.policy_observation.frames[0].artifact.path
+        ).write_bytes(b"changed original ACT camera")
+    else:
+        session.camera_profile = "policy480_v1"
+    with pytest.raises(ValueError):
+        session.complete(job.job_id, response(job))
+    assert worker.supervisor.snapshot().active is None and worker._env.data.time == 0
+
+
+def test_hd_rejects_upscaled_profile_shape_and_releases_pause(setup):
+    worker, _, _, _ = setup
+    worker._planner_render_capture = lambda env: np.zeros((270, 480, 3), np.uint8)
+    session = LivePlanningSession(worker, camera_profile="overhead1920_wrist480_v1")
+    with pytest.raises(ValueError, match="1920 x 1080"):
+        session.begin()
+    assert worker._planning_pause is None and worker._env.data.time == 0
 
 
 @pytest.mark.parametrize("fault", ["state", "model", "task", "generation", "context", "pixels"])

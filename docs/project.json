@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-10",
+  "updated_at": "2026-09-11",
   "title": "Bimanual manipulation lab",
   "phase": "learned_workflow",
   "phase_label": "Physical foundation complete locally; learned workflow in progress",
@@ -25,7 +25,7 @@
       "id": "M2",
       "title": "Learned workflow",
       "state": "in_progress",
-      "detail": "Dinner data/views, ACT loading, continuous control, independent outcomes and live Qwen recapture are connected. The 20000-update approach fails initial-direction gating; no learned grasp or complete dinner success. Recognition and skill termination remain."
+      "detail": "Verified ACT loading, continuous control, live planner recapture and per-skill physical termination are connected. HD planner rendering and successor posture readiness remain unvalidated. No learned grasp or full dinner success; training continues."
     },
     {
       "id": "M3",

@@ -2,18 +2,20 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import time
 import uuid
 from collections.abc import Callable, Iterable
 from pathlib import Path
+from typing import Literal
 
 import mujoco
 import numpy as np
 from PIL import Image
 
-from bimanual.contracts import Artifact, CameraFrame, JointLimits, Observation
+from bimanual.contracts import Artifact, CameraFrame, Contract, Digest, JointLimits, Observation
 from bimanual.dinner_teacher import ASSETS, DinnerEnvironment
 from bimanual.dual_arm import CAMERAS, JOINT_ORDER, verify_assets
 from bimanual.evidence import canonical, digest_file
@@ -21,6 +23,22 @@ from bimanual.policy_rollout import policy_inputs
 from bimanual.supervised_control import SupervisedPolicyControl
 from bimanual.supervisor import Capability
 from bimanual.teacher import check_carried_path, check_joint_path
+
+PLANNER_PROFILES = {
+    "policy480_v1": ((480, 270),) * 3,
+    "overhead1920_wrist480_v1": ((1920, 1080), (480, 270), (480, 270)),
+}
+
+
+class LivePlannerCapture(Contract):
+    mode: Literal["live_paused_v1"] = "live_paused_v1"
+    profile: Literal["policy480_v1", "overhead1920_wrist480_v1"]
+    camera_source: Literal["live_mujoco", "injected_unverified"]
+    policy_observation: Observation
+    planner_observation: Observation
+    calibration: Artifact
+    source_model_sha256: Digest
+    render_model_sha256: Digest
 
 
 class _PolicyDinnerEnvironment(DinnerEnvironment):
@@ -49,11 +67,14 @@ class DinnerControlWorker:
         clock_ns: Callable[[], int] = time.monotonic_ns,
         cancelled: Callable[[], bool] = lambda: False,
         render_capture: Callable[[DinnerEnvironment], dict[str, np.ndarray]] | None = None,
+        planner_render_capture: Callable[[DinnerEnvironment], np.ndarray] | None = None,
     ):
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=False)
         (self.directory / "observations").mkdir()
         self._clock, self._cancelled, self._render_capture = clock_ns, cancelled, render_capture
+        self._planner_render_capture = planner_render_capture
+        self._planner_model = self._planner_renderer = self._planner_model_digest = None
         self._trace = (self.directory / "physics.jsonl").open("x")
         self._env = None
         self._closed = False
@@ -105,6 +126,10 @@ class DinnerControlWorker:
         with (self.directory / name).open("a") as stream:
             stream.write(json.dumps(row, allow_nan=False) + "\n")
 
+    def flush_physics_trace(self) -> None:
+        """Make existing append-only evidence readable; never advance physics."""
+        self._trace.flush()
+
     def acquire_planning_pause(self) -> dict:
         """Claim a ready boundary for externally executed reasoning; no physics advances."""
         self._available()
@@ -139,6 +164,10 @@ class DinnerControlWorker:
 
     def check_planning_pause(self, pause_id: str) -> dict:
         self._available()
+        if self._planner_model is not None and (
+            self._digest_model(self._planner_model) != self._planner_model_digest
+        ):
+            raise ValueError("Planner render model changed after initialization")
         pause = self._planning_pause
         snapshot = self.supervisor.snapshot()
         if (
@@ -164,6 +193,114 @@ class DinnerControlWorker:
         observation = self.capture()
         self.check_planning_pause(pause_id)
         return observation
+
+    def _ensure_planner_renderer(self):
+        if self._planner_model is None:
+            # A full compiled-model copy, never a reconstructed/reset episode. The
+            # sole difference is offscreen framebuffer capacity; MjData stays live.
+            self._planner_model = copy.copy(self._env.model)
+            self._planner_model.vis.global_.offwidth = 1920
+            self._planner_model.vis.global_.offheight = 1080
+            self._planner_model_digest = self._digest_model(self._planner_model)
+        if self._planner_renderer is None and self._planner_render_capture is None:
+            self._planner_renderer = mujoco.Renderer(self._planner_model, width=1920, height=1080)
+
+    def capture_planner_pause(self, pause_id: str, profile: str) -> LivePlannerCapture:
+        """Fresh live views with separate planner/ACT pixels and calibration evidence."""
+        if profile not in PLANNER_PROFILES:
+            raise ValueError("Unsupported live planner camera profile")
+        self.check_planning_pause(pause_id)
+        high_resolution = profile != "policy480_v1"
+        if high_resolution:
+            self._ensure_planner_renderer()
+        self.check_planning_pause(pause_id)
+        before_count = self._capture_count
+        policy_observation = self.capture_planning_pause(pause_id)
+        if self._capture_count != before_count + 1 or policy_observation != self._observation:
+            raise ValueError("Planner recapture requires new worker-owned camera artifacts")
+        model, data = self._env.model, self._env.data
+        camera_transforms = (data.cam_xpos.copy(), data.cam_xmat.copy())
+        calibration = {
+            "mode": "live_paused_v1",
+            "profile": profile,
+            "source_model_sha256": self._expected_model_digest,
+            "render_model_sha256": self._planner_model_digest
+            if high_resolution
+            else self._expected_model_digest,
+            "render_model_overrides": {"offwidth": 1920, "offheight": 1080}
+            if high_resolution
+            else {},
+            "cameras": [
+                {
+                    "camera": name,
+                    "render_dimensions_wh": list(dimensions),
+                    "fovy_degrees": float(model.cam_fovy[model.camera(name).id]),
+                    "intrinsic": model.cam_intrinsic[model.camera(name).id].tolist(),
+                    "sensor_size": model.cam_sensorsize[model.camera(name).id].tolist(),
+                    "authored_resolution": model.cam_resolution[model.camera(name).id].tolist(),
+                    "position": data.cam_xpos[model.camera(name).id].tolist(),
+                    "rotation": data.cam_xmat[model.camera(name).id].tolist(),
+                }
+                for name, dimensions in zip(CAMERAS, PLANNER_PROFILES[profile], strict=True)
+            ],
+        }
+        observation = policy_observation
+        if high_resolution:
+            if self._planner_render_capture is None:
+                self._planner_renderer.update_scene(data, camera="overhead")
+                pixels = self._planner_renderer.render().copy()
+            else:
+                pixels = self._planner_render_capture(self._env)
+            if not isinstance(pixels, np.ndarray) or (
+                pixels.shape != (1080, 1920, 3) or pixels.dtype != np.uint8
+            ):
+                raise ValueError("Live planner overhead must be native 1920 x 1080 RGB8")
+            self.check_planning_pause(pause_id)
+            if not all(
+                np.array_equal(a, b)
+                for a, b in zip(camera_transforms, (data.cam_xpos, data.cam_xmat), strict=True)
+            ):
+                raise ValueError("Live camera calibration changed during planner rendering")
+            relative = f"observations/{self._capture_count - 1:06d}-planner-overhead.png"
+            with (self.directory / relative).open("xb") as stream:
+                Image.fromarray(pixels).save(stream, format="PNG")
+            frame = policy_observation.frames[0].model_copy(
+                update={
+                    "artifact": Artifact(
+                        path=relative, sha256=digest_file(self.directory / relative)
+                    )
+                }
+            )
+            observation = Observation.model_validate(
+                policy_observation.model_dump()
+                | {"frames": (frame, *policy_observation.frames[1:])}
+            )
+        relative = f"observations/{self._capture_count - 1:06d}-planner-calibration.json"
+        with (self.directory / relative).open("xb") as stream:
+            stream.write(canonical(calibration))
+        self.check_planning_pause(pause_id)
+        captured = LivePlannerCapture(
+            profile=profile,
+            camera_source="injected_unverified"
+            if (
+                self._render_capture is not None
+                or (high_resolution and self._planner_render_capture is not None)
+            )
+            else "live_mujoco",
+            policy_observation=policy_observation,
+            planner_observation=observation,
+            calibration=Artifact(path=relative, sha256=digest_file(self.directory / relative)),
+            source_model_sha256=self._expected_model_digest,
+            render_model_sha256=calibration["render_model_sha256"],
+        )
+        self._record(
+            "planner-captures.jsonl",
+            {
+                "capture": captured.model_dump(mode="json"),
+                "capture_finished_monotonic_ns": self._clock(),
+            },
+        )
+        return captured
 
     def release_planning_pause(self, pause_id: str):
         if self._planning_pause is None or self._planning_pause["pause_id"] != pause_id:
@@ -214,8 +351,12 @@ class DinnerControlWorker:
         ).hexdigest()
 
     def _model_digest(self) -> str:
-        buffer = np.empty(mujoco.mj_sizeModel(self._env.model), dtype=np.uint8)
-        mujoco.mj_saveModel(self._env.model, buffer=buffer)
+        return self._digest_model(self._env.model)
+
+    @staticmethod
+    def _digest_model(model) -> str:
+        buffer = np.empty(mujoco.mj_sizeModel(model), dtype=np.uint8)
+        mujoco.mj_saveModel(model, buffer=buffer)
         return hashlib.sha256(buffer.tobytes()).hexdigest()
 
     def _available(self):
@@ -554,6 +695,8 @@ class DinnerControlWorker:
             else:
                 self.control.clear()
         finally:
+            if self._planner_renderer is not None:
+                self._planner_renderer.close()
             if self._env is not None:
                 self._env.close()
             self._trace.close()
