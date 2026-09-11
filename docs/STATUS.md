@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 11, 2026. Latest pushed checkpoint: `b63ee37` on
+Updated September 11, 2026. Latest pushed checkpoint: `b33c4df` on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -59,6 +59,10 @@ evaluation records. Both physical failures remain prerequisites as failures, not
 success claims. The [resumable one-skill-at-a-time executor](TRAINING_COHORT.md)
 passes seven CPU recovery fixtures; combined cohort/model-lease checks pass34tests.
 Targeted training/process checks pass107tests with13optional skips.
+An ordered `training-cohort-run-all` coordinator now resumes/reverifies completed
+attempts, starts exactly one remaining skill at a time through the existing runner,
+stops at the first sealed failure, and reports physical quality as unknown. Its
+three coordinator fixtures plus the existing cohort/lease group pass18tests.
 
 `bar_place_and_return` cohort attempt `20260911T204632-867e6f75a36e` is active;
 child training run `20260911T204632-a60b589a1eea` is configured for20,000native-MPS

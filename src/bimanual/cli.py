@@ -125,6 +125,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     cohort_run.add_argument("protocol", type=Path)
     cohort_run.add_argument("--skill", required=True)
+    cohort_sequence = commands.add_parser(
+        "training-cohort-run-all",
+        help="Resume all six frozen ACT trainings serially; stop on first failure",
+    )
+    cohort_sequence.add_argument("protocol", type=Path)
     skill_physical = commands.add_parser(
         "skill-physical-eval",
         help="Run one teacher-prepared learned-skill physical diagnostic",
@@ -505,6 +510,12 @@ def main(argv: list[str] | None = None) -> int:
             result = run_training_cohort_skill(args.protocol, args.skill)
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1
+        elif args.command == "training-cohort-run-all":
+            from bimanual.training_cohort_sequence import run_training_cohort_sequence
+
+            result = invoke_with_diagnostics(run_training_cohort_sequence, args.protocol)
+            emit(result)
+            return 0 if result["all_training_complete"] else 1
         elif args.command == "skill-physical-eval":
             from bimanual.skill_physical_evaluation import (
                 SkillPhysicalEvaluationConfig,

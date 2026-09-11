@@ -36,6 +36,20 @@ child seals, the next invocation reconciles that exact child; an incomplete chil
 is preserved and sealed failed only after the shared lease proves no model job is
 still active. Ambiguous attempts stop without selecting one.
 
+After the first skill has been inspected, resume the complete ordered sequence
+without manually starting each model job:
+
+```sh
+PYTORCH_ENABLE_MPS_FALLBACK=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+  .artifacts/training-venv/bin/bimanual training-cohort-run-all \
+  docs/experiments/six-skill-training-protocol-v1.json
+```
+
+The sequence invokes the same one-skill runner serially. It reverifies and reuses
+completed attempts, stops on the first sealed failure, and never retries a failed
+attempt. Each model job still owns the shared lease independently. The sequence
+report sets physical success to unknown; training completion cannot promote a skill.
+
 Training completion requires all20,000 ordered updates, the checkpoint schedule,
 all processor/sampler/loss/schedule reload flags, and a reconstructed skill binding.
 It does not establish physical manipulation, generalization, or release readiness.
