@@ -57,6 +57,8 @@ Failed hand-off diagnosis: [receiver-grip continuity analysis](HANDOFF_FAILURE_A
 
 Appearance variation: [frozen visual splits and source verification](VISUAL_TRAINING.md).
 
+Six-family release variation: [frozen dinner-scene perturbations](SCENE_VARIANTS.md).
+
 Measured skill termination: [learned executor and physical monitor](SKILL_EXECUTION.md).
 
 Learned skill transitions: [successor readiness](SUCCESSOR_READINESS.md).

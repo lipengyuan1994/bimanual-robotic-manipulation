@@ -104,6 +104,17 @@ and carries no evidence claims. The real dinner protocol is deliberately not fro
 or run until high-resolution inputs can be captured after the active serial ACT
 training finishes. [Planner evaluation boundary](PLANNER.md#frozen-decision-suite).
 
+The missing six-family robustness input boundary is also implemented and frozen.
+The generator makes bounded, deterministic pre-load changes to object placement,
+mass, sliding friction, horizontal shape, lighting and background, while recording
+every changed XML attribute. Protocol
+[`experiments/dinner-perturbation-protocol-v1.json`](experiments/dinner-perturbation-protocol-v1.json),
+seal `3aba583eecc9ba96d6e703d61fcf58d236fdafcd907c45ba01b3bab36446cff7`,
+reserves seed29001 for six one-factor diagnostics and seeds30001–30010 for ten
+all-family combined tests. Twenty-six generator/protocol fixtures pass, including
+actual SO-101 scene compilation. No perturbed policy evaluation has run, and
+prepared scenes keep task success unknown. [Perturbation boundary](SCENE_VARIANTS.md).
+
 The next seven-checkpoint manifest version now seals the per-skill execution
 profile alongside checkpoint lineage: all seven ordered skill/capability IDs,
 checkpoint digests, exact twice-nominal-v2 action budgets, prefix2 and no temporal
@@ -156,8 +167,8 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `a8369f74b6b8e22e2e5a196a04c7775aa66a48cc04d4fc401bf06e38c107bafa`.
-It binds the training cohort and 100 package/runtime and authored-scene/SO-101 asset
+seal `30097a0edaa4359f3fc5bd9ffb6f84d5bec05a74a1de690a03486ae7bd26309c`.
+It binds the training cohort and 102 package/runtime and authored-scene/SO-101 asset
 files,
 final-update20,000 selection,
 MPS, execution prefix2, exact teacher preparation, fixed nominal-v2 scene,
@@ -197,7 +208,7 @@ action beyond its explicit budget, leaving the executor as the single stopping
 authority and preventing premature v2 plate termination. The unused protocol was
 regenerated before any outcome with all then-current transitive evaluator/control/scoring
 sources pinned. The later guardian hardening and step-report addition produced the current
-100-source-and-asset
+102-source-and-asset
 seal before any component evaluation. The combined executor/outcome/protocol/evaluator group passes61
 tests; the corrected protocol re-verifies.
 

@@ -102,6 +102,24 @@ def main(argv: list[str] | None = None) -> int:
     )
     visual_source.add_argument("run_root", type=Path)
     visual_source.add_argument("--protocol", type=Path, required=True)
+    scene_protocol_create = commands.add_parser(
+        "scene-variant-protocol-create", help="Freeze six-family dinner perturbation seeds"
+    )
+    scene_protocol_create.add_argument("--destination", type=Path, required=True)
+    scene_protocol_check = commands.add_parser(
+        "scene-variant-protocol-check", help="Verify the frozen dinner perturbation protocol"
+    )
+    scene_protocol_check.add_argument("protocol", type=Path)
+    scene_variant_prepare = commands.add_parser(
+        "scene-variant-prepare", help="Prepare one allocated dinner scene without evaluation"
+    )
+    scene_variant_prepare.add_argument("protocol", type=Path)
+    scene_variant_prepare.add_argument(
+        "--family",
+        choices=["placement", "mass", "friction", "shape", "lighting", "background", "combined"],
+        required=True,
+    )
+    scene_variant_prepare.add_argument("--seed", type=int, required=True)
     cohort_create = commands.add_parser(
         "training-cohort-create", help="Freeze the remaining six ACT training configurations"
     )
@@ -527,6 +545,27 @@ def main(argv: list[str] | None = None) -> int:
                     lerobot_decoded_parity=result.lerobot_decoded_parity,
                 )
             )
+        elif args.command == "scene-variant-protocol-create":
+            from bimanual.scene_variant_protocol import create_dinner_perturbation_protocol
+
+            result = create_dinner_perturbation_protocol(args.destination)
+            emit(result.model_dump(mode="json"))
+        elif args.command == "scene-variant-protocol-check":
+            from bimanual.scene_variant_protocol import load_dinner_perturbation_protocol
+
+            result = load_dinner_perturbation_protocol(args.protocol)
+            emit(result.model_dump(mode="json"))
+        elif args.command == "scene-variant-prepare":
+            from bimanual.scene_variant_protocol import create_scene_variant_bundle
+
+            result = create_scene_variant_bundle(
+                protocol_path=args.protocol,
+                family=args.family,
+                seed=args.seed,
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
         elif args.command == "training-cohort-create":
             from bimanual.training_cohort import create_training_cohort_protocol
 
