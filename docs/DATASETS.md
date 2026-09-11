@@ -294,12 +294,11 @@ captures are not independent randomized scenes or held-out evaluation. Phase
 annotations remain a separate training sidecar; they do not enter deployed
 observations. Episode success must agree with the independent dinner scorer.
 Failed or cancelled episodes remain evidence and are rejected by success-only
-training intake. Runtime capture now passes in the recorded run below. Export verification remains
-pending; the earlier replay cannot supply missing full-rate observations retroactively.
+training intake. Runtime capture now passes in the recorded run below. Export verification now passes below; the earlier replay cannot supply missing full-rate observations retroactively.
 
 Fifteen focused actor/recording tests pass, including real PNG/episode-contract
 checks with a short synthetic environment and failed-step boundaries. Those
-tests do not establish physical dinner success; complete recorded reproduction now passes below; LeRobot export/read-back remains pending.
+tests do not establish physical dinner success; complete recorded reproduction now passes below; LeRobot export/read-back now passes below.
 
 ## Long-episode timestamp precision
 
@@ -324,3 +323,10 @@ Source size is about 595 MiB. Actor/capture time is 445.07 seconds for 240.95
 simulated seconds; scoring, replay encoding and final sealing are excluded from
 that timer. Final three-camera preview was inspected. This is one nominal scripted
 training episode, with no learned execution or generalization claim.
+
+The complete LeRobot export `.artifacts/datasets/dinner-nominal-v1` finished and
+passed all-row image/state/action/timestamp read-back. Independent manifest
+verification confirms 4,819 transitions from one source episode. Manifest file
+SHA-256: `cffe319f4e63a422e32cf740989932d06deccd49a9883ed05f53f545e3ed4df9`.
+Bounded [skill views](SKILL_TRAINING.md) preserve this parent dataset without
+copying it seven times.

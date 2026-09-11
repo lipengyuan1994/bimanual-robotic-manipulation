@@ -42,10 +42,16 @@ class ACTTrainingConfig(BaseModel):
     sampling_protocol_run: Path | None = None
     use_vae: bool = True
     dropout: float = Field(default=0.1, ge=0, lt=1)
+    skill_views_path: Path | None = None
+    skill_id: str | None = None
     reference_initial_state_sha256: str | None = Field(default=None, pattern="^[a-f0-9]{64}$")
 
     @model_validator(mode="after")
     def sampling_configuration(self):
+        if (self.skill_views_path is None) != (self.skill_id is None):
+            raise ValueError("Skill training requires both a verified view manifest and skill id")
+        if self.skill_id is not None and self.sampling_profile != "uniform":
+            raise ValueError("Skill views currently support uniform sampling only")
         if (self.sampling_profile == "uniform") != (self.sampling_protocol_run is None):
             raise ValueError(
                 "Nonuniform profiles require a sampling protocol run; uniform forbids it"
@@ -219,6 +225,36 @@ def build_sampling_plan(
     return plan
 
 
+def restrict_sampling_plan(plan: dict, view, views_digest: str) -> dict:
+    """Map local samples to their unchanged parent recording indices."""
+    if plan["profile"] != "uniform" or len(plan["episodes"]) != 1:
+        raise ValueError("Skill sampling requires one uniform parent episode")
+    selected = plan["frames"][view.start : view.end]
+    if len(selected) != view.end - view.start or any(
+        frame["episode_id"] != view.parent_episode_id
+        or frame["source_frame_index"] != view.start + offset
+        for offset, frame in enumerate(selected)
+    ):
+        raise ValueError("Skill sampling does not match parent recording boundaries")
+    result = copy.deepcopy(plan)
+    result["frames"] = [
+        dict(
+            frame,
+            dataset_index=index,
+            parent_dataset_index=frame["dataset_index"],
+            probability=1 / len(selected),
+            region="skill",
+        )
+        for index, frame in enumerate(selected)
+    ]
+    result["episodes"][0]["regions"] = [
+        dict(name="skill", start=0, end=len(selected), conditional_probability=1.0)
+    ]
+    result["skill_view"] = view.model_dump(mode="json")
+    result["skill_views_file_sha256"] = views_digest
+    return result
+
+
 def initialize_act_policy(torch, policy_class, policy_config, *, use_vae: bool):
     """Match shared initial weights when removing the optional VAE training branch.
 
@@ -363,6 +399,25 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
         sampling_plan = build_sampling_plan(
             dataset_root, dataset_manifest, config, project_root=project_root
         )
+        skill_view = None
+        if config.skill_views_path is not None:
+            from bimanual.skill_views import load_skill_views
+
+            view_path = config.skill_views_path
+            if not view_path.is_absolute():
+                view_path = project_root / view_path
+            view_digest = digest_file(view_path)
+            views = load_skill_views(view_path, dataset_root=dataset_root)
+            matches = [view for view in views.views if view.skill_id == config.skill_id]
+            if len(matches) != 1:
+                raise ValueError("Unknown or ambiguous skill view")
+            skill_view = matches[0]
+            sampling_plan = restrict_sampling_plan(sampling_plan, skill_view, view_digest)
+            (directory / "skill_views.json").write_bytes(view_path.read_bytes())
+            if digest_file(directory / "skill_views.json") != view_digest:
+                raise ValueError("Skill view manifest changed during training setup")
+            metrics["skill_view"] = skill_view.model_dump(mode="json")
+            metrics["skill_views_file_sha256"] = view_digest
         (directory / "sampling-plan.json").write_bytes(canonical(sampling_plan))
         sampling_digest = digest_file(directory / "sampling-plan.json")
         metrics["sampling_profile"] = config.sampling_profile
@@ -399,10 +454,19 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
         dataset = LeRobotDataset(
             repo_id=dataset_manifest["repo_id"],
             root=dataset_root,
-            delta_timestamps={"action": [i / 20 for i in range(config.chunk_size)]},
+            delta_timestamps=(
+                None
+                if skill_view is not None
+                else {"action": [i / 20 for i in range(config.chunk_size)]}
+            ),
         )
         if len(dataset) != dataset_manifest["frames"]:
             raise ValueError("Loaded dataset frame count mismatch")
+        metrics["parent_dataset_frames"] = len(dataset)
+        if skill_view is not None:
+            from bimanual.skill_dataset import SkillDatasetView
+
+            dataset = SkillDatasetView(dataset, skill_view, config.chunk_size)
         architecture = (
             dict(
                 dim_model=128,
@@ -553,6 +617,8 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
                     "numeric_stats": numeric_stats,
                     "numeric_statistics_method": "float64 training rows; population std",
                     "numeric_std_floor_rad": config.normalization_std_floor,
+                    "numeric_scope": "selected_skill" if skill_view else "full_training_dataset",
+                    "image_statistics_scope": "full_parent_training_dataset",
                 },
                 indent=2,
             )

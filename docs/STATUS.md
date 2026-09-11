@@ -127,9 +127,9 @@ and portal are committed at `bdcd4e4`. Use `git rev-parse HEAD` for the latest
 handoff commit; subsequent sampler changes do not alter the sealed teacher run. [Draft PR #1](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/pull/1)
 is open and unmerged.
 
-Latest `scripts/check.sh`: **461 passed, twelve explicit optional-training skips,
+Latest `scripts/check.sh`: **510 passed, thirteen explicit optional-training skips,
 eight rendering tests deselected**, with Ruff, formatting, docs and README checks.
-Log: `.artifacts/checks-long-timestamps.log`; the preceding dinner-only
+Log: `.artifacts/checks-skill-training.log`; the preceding dinner-only
 checkpoint had 403 passing tests. The preceding seven actual
 rendering tests and the additional sensor integration rendering test passed
 separately; do not count deselections/skips as passes. Four actual sensor bundles
@@ -162,14 +162,14 @@ hackathon submission has been sent.
 See the final handoff entry below for live process handles; do not restart jobs
 without checking their actual state.
 
-1. Execute the declared dropout-zero fitting experiment after full checks pass,
-   then apply the unchanged training-only acceptance gates.
-2. Inspect the stalled nominal learned trajectory against training coverage; use
-   training-only policy-visited states for any corrective demonstrations. Keep the
-   two validation starts out of training and retain all prior failures.
-3. Integrate successful learned skills and live visual supervision only after their
-   physical/freshness gates pass. Freeze release evaluation later; no final test
-   suite or checkpoint has been selected.
+1. Monitor the fixed 20,000-update ACT run listed below; do not duplicate it.
+   Apply its unchanged offline gates only after it seals.
+2. Keep the verified full export and seven skill views as one nominal training
+   scene. The data/trainer integration passes full checks and the actual CPU
+   test, but no learned dinner capability is available yet.
+3. Implement explicit ownership-aware, incremental learned skill execution in the
+   continuous dinner environment, then the live planner revalidation bridge.
+   Do not expose unsupported skills or silently substitute the teacher.
 
 Verify the current teacher evidence with
 `.venv/bin/bimanual evidence verify 20260911T011032-a9fda4aee41f`.
@@ -288,7 +288,7 @@ Continuous dinner recording is implemented behind `dinner-teacher
 --record-demonstration`, independent of replay. Fifteen focused tests pass,
 including complete-transition and interruption boundary checks. Full checks pass: 452 tests, eleven optional-training skips and eight render
 deselections (`.artifacts/checks-dinner-recorder.log`); handle 58082 is terminal.
-Full-rate capture is verified below; export is still active. The proposed [live planner bridge](PLANNER_LIVE_INTEGRATION.md)
+Full-rate capture and export are verified below. The proposed [live planner bridge](PLANNER_LIVE_INTEGRATION.md)
 records explicit pause ownership/fresh revalidation requirements and remains
 unimplemented; old images are never simply retimestamped.
 
@@ -319,12 +319,31 @@ Active jobs (check handles before restarting):
 - Fixed-duration ACT: `20260911T023624-0e2a88d90d4a`, handle 61071,
   `.artifacts/approach-fixed-20000.log`. 20,000 updates; inference/physical gates
   remain pending. Source lineage will be verified after sealing.
-- Dinner LeRobot export: handle 99921, `.artifacts/dinner-nominal-export.log`,
-  destination `.artifacts/datasets/dinner-nominal-v1`. No completed export claim
-  until byte/pixel/timestamp read-back and final manifest succeed.
-- Skill-view module is being implemented in a bounded agent task; no integration
-  with training or learned bimanual execution is claimed.
+- Dinner LeRobot export completed; handle 99921 is terminal. All-row read-back
+  and manifest verification pass for `.artifacts/datasets/dinner-nominal-v1`: 4,819
+  transitions, one nominal training episode. Manifest file SHA-256
+  `cffe319f4e63a422e32cf740989932d06deccd49a9883ed05f53f545e3ed4df9`.
+- Skill-view and trainer integration now passes the real CPU test described
+  below; learned bimanual execution remains unimplemented.
 
 After model completion, run `.artifacts/approach-fixed-20000-offline.py <run>`
 then `.artifacts/compare-fixed-20000-offline.py <offline-run>`. Failed gates still
 prohibit physical validation. Do not select intermediate checkpoints.
+
+
+Bounded skill-view/trainer integration passes the real CPU test below; full
+checks pass.
+CLI flags `train --skill-views <manifest> --skill-id <id>` select a verified
+interval; numeric normalization and sample indices use that interval, images
+retain explicitly declared parent-training statistics. Adapter/view and actual CPU checkpoint tests pass; full checks now pass.
+The existing 20,000-update MPS job remains untouched and is the only GPU job.
+
+
+Dinner export verification `20260911T024510-e940a5d9fee0` is completed. The seven
+real skill views are created at `.artifacts/dinner-skill-views-v1.json`, canonical
+hash `45bf9464a68a93f04ccc23fdd7ebbe473040af40e6b6f1e6414e9e5b521487f2`.
+Three native CPU integration tests pass, including one ACT optimizer step on the
+real 940-transition bar-placement view and checkpoint/processor/sampler reload.
+This proves the selected data path, not learned skill success. Full checks pass: 510 tests, thirteen optional skips and eight render
+deselections. Handle 13759 is terminal; log `.artifacts/checks-skill-training.log`. Export/view
+creation/CPU-test handles 99921, 78500, 40623 and 56003 are terminal.

@@ -43,3 +43,5 @@ Read [STATUS](STATUS.md) first when resuming work.
 After a milestone, update status, evidence links, and the next command in the same
 change. Record a new decision when a material assumption changes. Do not depend on
 chat history to resume implementation.
+
+Bounded learned dinner work: [skill training and dataset views](SKILL_TRAINING.md).

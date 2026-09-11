@@ -94,6 +94,11 @@ def main(argv: list[str] | None = None) -> int:
         "--repo-id", required=True, help="Local dataset identifier; nothing is uploaded"
     )
     dataset_export.add_argument("--comparison-run", type=Path, action="append", default=[])
+    skill_views = commands.add_parser(
+        "dataset-skill-views", help="Derive bounded training views from a verified dinner export"
+    )
+    skill_views.add_argument("--dataset", type=Path, required=True)
+    skill_views.add_argument("--destination", type=Path, required=True)
     probe = commands.add_parser(
         "training-probe", help="ACT optimizer/inference runtime check, not task training"
     )
@@ -117,6 +122,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     train.add_argument("--no-vae", action="store_true", help="Matched-initialization ACT ablation")
     train.add_argument("--dropout", type=float, default=0.1)
+    train.add_argument("--skill-views", type=Path)
+    train.add_argument("--skill-id")
     train.add_argument("--sampling-protocol-run", type=Path)
     rollout = commands.add_parser(
         "policy-rollout", help="Evaluate an ACT checkpoint in its declared placement scene"
@@ -344,6 +351,8 @@ def main(argv: list[str] | None = None) -> int:
                     sampling_profile=args.sampling_profile,
                     use_vae=not args.no_vae,
                     dropout=args.dropout,
+                    skill_views_path=args.skill_views,
+                    skill_id=args.skill_id,
                     sampling_protocol_run=args.sampling_protocol_run,
                 ),
                 store=store,
@@ -379,6 +388,11 @@ def main(argv: list[str] | None = None) -> int:
                 comparison_run_roots=tuple(args.comparison_run),
             )
             emit({"destination": str(result), "manifest": str(result / "export_manifest.json")})
+        elif args.command == "dataset-skill-views":
+            from bimanual.skill_views import create_skill_views
+
+            result = create_skill_views(args.dataset, args.destination)
+            emit(result.model_dump(mode="json"))
         elif args.command == "status":
             emit(json.loads((root / "docs/project.json").read_text()))
         elif args.command == "planner-sensors":
