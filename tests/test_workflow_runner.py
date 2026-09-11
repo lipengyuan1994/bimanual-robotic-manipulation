@@ -82,7 +82,17 @@ def setup(tmp_path, references):
         captures.append((env.sequence, len(prepared)))
         return {camera: np.zeros((270, 480, 3), np.uint8) for camera in CAMERAS}
 
-    worker = DinnerControlWorker(tmp_path / "worker", caps, render_capture=pixels)
+    # Lifecycle assertions use explicit logical time. Slow CI filesystem/model imports
+    # must not accidentally turn this into a wall-clock performance benchmark.
+    clock = SimpleNamespace(now=1_000_000_000)
+
+    def clock_ns():
+        clock.now += 1000
+        return clock.now
+
+    worker = DinnerControlWorker(
+        tmp_path / "worker", caps, render_capture=pixels, clock_ns=clock_ns
+    )
     planner = SimpleNamespace(generate=lambda context, images, **kw: reply(context))
     local = LocalPlannerRunner(LivePlanningSession(worker), planner)
     factories = {}
@@ -124,6 +134,7 @@ def setup(tmp_path, references):
 
     yield SimpleNamespace(
         worker=worker,
+        clock=clock,
         runner=runner,
         local=local,
         planner=planner,
@@ -404,3 +415,16 @@ def test_recovery_boundary_is_revoked_by_authority_change(setup, action):
         s.worker._env.stop()
     assert not s.worker.recovery_available()
     assert s.worker._env.sequence == sequence
+
+
+def test_deliberately_stale_dispatch_capture_still_stops_execution(setup):
+    s = setup
+    s.runner.start(s.task())
+    s.runner.tick()
+    finish_model(s)
+    s.clock.now += 2_000_000_001
+    with pytest.raises(ValueError, match="fresh camera capture"):
+        s.runner.tick()
+    assert s.worker._env.sequence == 0
+    assert not s.worker._env.active
+    assert s.runner.snapshot().state == "failed"

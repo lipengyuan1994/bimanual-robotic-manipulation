@@ -1,225 +1,147 @@
 # Project status
 
 Updated: 2026-09-11. Branch: `codex/preparation-foundation`.
-Use `git rev-parse HEAD` for the current checkpoint. The previous pushed checkpoint
-is `1f7c0a0`; a preregistered first-action ACT training run is now active.
-[Roadmap](ROADMAP.md), [original plan](PLAN.md),
-[historical status and evidence](STATUS_HISTORY.md).
+Use `git rev-parse HEAD` for the exact checkpoint; previous pushed checkpoint is
+`17b4415`. Current work adds a supported local workflow execution command.
+[Roadmap](ROADMAP.md), [original plan](PLAN.md), [history](STATUS_HISTORY.md).
 
 ## Readiness
 
-| Milestone | Current evidence |
+| Milestone | Evidence and remaining gate |
 |---|---|
-| M0 complete | Native environment, evidence, read-only portal, seven lessons, learning site and README/CI synchronization |
-| M1 locally complete | One continuous scripted dinner scene passes contact, placement, drawer and hand-off checks with three-camera replay |
-| M2 in progress | ACT and Qwen run locally; supervisor, guarded control, skill monitors, successor gates, checkpoint cohorts and serialized workflow exist. No learned grasp or full learned dinner success. Bounded soft-failure retries locally checked; learned recovery quality unmeasured |
-| M3 incomplete | No frozen release suite, Intel/OpenVINO run or final submission package |
+| M0 complete | Native tooling, evidence portal, seven lessons, learning site, README/CI synchronization |
+| M1 locally complete | One authored continuous teacher dinner scene passes contact, placement, drawer and hand-off checks |
+| M2 in progress | Learned training, visual planner, skill monitors, pinned cohorts, runner and bounded recovery exist. No learned grasp or full learned dinner success |
+| M3 incomplete | No frozen release suite, Intel/OpenVINO execution or final submission package |
 | M4 pending | Production reliability, held-out perturbations, interruption/rollback and operational gates incomplete |
 
 Implementation is authorized by [decision 0003](decisions/0003-event-window-implementation.md).
-Prior-code eligibility remains unconfirmed. Spend is zero. Physical hardware
-deployment is outside this simulation release. Do not equate a passing runtime,
-integrity check, synthetic fixture or teacher episode with learned task quality.
+Spend remains zero. Prior-code eligibility remains unconfirmed. Physical robot
+deployment is outside this release. Runtime, fixture and integrity checks do not
+establish model quality or Intel compliance.
 
-## Latest learned-model results
+## Active training: do not restart
 
-**ACT first-action weighting is training locally.** Run
-`20260911T053104-2b24b508ff79` started from clean `1f7c0a0` on native MPS, with
-fallback disabled and the same 20,000-update budget. Handle **61437** is active;
-do not restart it on an observation timeout. Log `.artifacts/approach-first-action-loss.log`.
-Only its final checkpoint will be evaluated against the unchanged six gates.
+**Handle 61437 is live**, run `20260911T053104-2b24b508ff79`, from clean `1f7c0a0`.
+Log: `.artifacts/approach-first-action-loss.log`. Actual optimizer progress was
+observed beyond update 4,000; the fixed budget is 20,000 updates on native MPS,
+fallback disabled. No quality result or completed checkpoint is claimed yet.
 
-The most recently completed terminal-decay run
-`20260911T035236-64462d013810` completed 20,000 native MPS updates in 3,672.98
-seconds from clean `9ca38d1`. Its checkpoint, processor, sampler and seal verify.
-Handle 27780 is terminal; do not restart it.
+Protocol `20260911T052340-2416748543bb` changes only temporal L1 weighting: first
+action 50%, remaining nine share 50%, with valid-target normalization. Dataset,
+initialization, sampler, terminal learning-rate schedule and all six offline gates
+remain unchanged. Only the final checkpoint may be evaluated.
 
-Final offline evaluation `20260911T045418-d8a9a5277bc8` and frozen comparison
-`20260911T045441-86b5ad13622d` pass five of six gates. Launch tool error is
-0.375 mm and settled error 0.068 mm, but first pan remains -0.002800 rad versus
-+0.000564 rad. **The candidate is not promoted; no physical rollout follows.**
-The earlier fixed-rate 20,000-update run also failed this gate. The retained
-diagnosis supports testing first-action weighting; it does not establish a fix.
-[Policy evidence and earlier physical failures](POLICY_ROLLOUT.md).
+Previous terminal-decay training `20260911T035236-64462d013810` completed 20,000
+updates in 3,672.98s. Offline/gate runs `20260911T045418-d8a9a5277bc8` and
+`20260911T045441-86b5ad13622d` passed five of six checks: first pan remains
+-0.002800 rad versus teacher +0.000564 rad. No promotion or physical rollout followed.
+CPU diagnosis `20260911T050712-1aacb1d9c003` motivates the new weighting but does
+not establish its effectiveness. [Training](TRAINING.md), [policy evidence](POLICY_ROLLOUT.md).
 
-**Actual HD Qwen integration completes but recognition still fails.** Run
-`20260911T045505-ef9d1f373348` uses live overhead1920/wrist480 cameras, native MPS
-and exact fresh recapture. Load/inference are 16.62/85.60 seconds, with a CPU test
-suite running concurrently. Qwen reports the bar not visible and requests
-clarification; zero attempts/actions/physics steps follow. Human inspection sees
-the cyan bar in the overhead image. A paired appearance-description and missing-
-object comparison is next, not an inference that the model now recognizes it.
-[Live planner details](PLANNER_LIVE_INTEGRATION.md).
+No other model inference, rendering or benchmark job may share this GPU while
+61437 is running. Poll the existing handle after timeouts; do not launch duplicates.
 
-## Current implementation and gaps
+## Workflow execution and recovery
 
-- [Pinned workflow cohorts](WORKFLOW_MANIFEST.md) verify all seven selected skills,
-  dataset/view lineage and measured successor references. `workflow-create` and
-  `workflow-check` do not imply model quality. No validated seven-model cohort exists.
-- [Serialized workflow runner](WORKFLOW_RUNNER.md) prepares executors before
-  planning capture, chains successful steps in the same simulation and preserves
-  cancellation, replacement and persistence failures. It does not reset the scene.
-- The executor's incorrect comparison of an export file hash to its canonical
-  body seal is fixed with a sealed synthetic-source regression. Loaded policies
-  are checked against their pinned bindings and cannot be shared by two cohorts
-  or workers; factories recheck ownership and binding before execution.
-- **Owned soft-failure recovery is implemented and locally checked.**
-  An incomplete action-budget attempt can request fresh stationary camera assessment
-  and retry at most twice. Exact failure identity, task and simulator state remain
-  bound. Collisions, partial actions and stopped workers remain ineligible.
-- The portal remains a read-only evidence/learning application, not the finished
-  live operator UI. End-to-end learned execution and full-task scoring still need
-  integration and actual quality validation.
+- [Pinned cohorts](WORKFLOW_MANIFEST.md) bind all seven selected policies to their
+  dataset, view and successor references. No validated seven-model cohort exists.
+- [Workflow runner](WORKFLOW_RUNNER.md) chains authorized steps in one simulation.
+  Eligible incomplete action-budget attempts may request fresh visual assessment
+  and retry at most twice. Collision, partial-action and stopped-worker failures
+  remain ineligible. No reset, teacher fallback or artificial grasp is inserted.
+- [Local execution command](WORKFLOW_EXECUTION.md) is implemented. It verifies
+  sources and loads ACT/Qwen before creating the worker, records final supervisor
+  history and preserves failed outcomes. Its timeout is cooperative; process-level
+  forced termination and the live operator UI remain incomplete.
+- The original portal remains read-only. Executor completion is separate from
+  independent dinner-task success.
 
-## Physical baseline and next repair
+A new locked `.artifacts/workflow-venv` contains both training and reasoning extras.
+Run `20260911T053930-398fa0529139` verifies native ARM64, all 372 compiled libraries
+and ACT/Qwen class imports. No weights or inference were run in that environment.
+The active `.artifacts/training-venv` was not modified.
 
-The clean teacher `20260911T013229-b7184e9ba66a` completes 4,819 controls and
-240,950 samples at 1 kHz, with zero forbidden contacts and a two-second final
-placement hold. This is one authored scene. Full-rate recording
-`20260911T022644-a24a56ff004c` exports to
-`.artifacts/datasets/dinner-nominal-v1`; views are
-`.artifacts/dinner-skill-views-v1.json`. Preserve both unchanged.
-[Scene](DINNER_SCENE.md), [datasets](DATASETS.md), [skill training](SKILL_TRAINING.md).
+## Visual reasoning
 
-The original bar boundary has only six qualifying settled observations. Adding
-10 hold controls fails later on a plate/cabinet collision. Static destination,
-arm-parking, cup-relocation and timed-return searches all fail their tested
-candidates; none proceeds to physics. Repartitioning existing controls at
-1574/1580/1660/1670 also lacks the ten stationary observations. No new skill-view
-profile, dataset or scene has been adopted.
+Actual HD Qwen run `20260911T045505-ef9d1f373348` uses overhead1920/wrist480 images,
+native MPS and exact fresh recapture. Load/inference: 16.62/85.60s while CPU tests
+also ran. It reports the visible cyan bar missing and requests clarification;
+zero attempts/actions follow. Recognition remains unresolved. Next: a preregistered
+appearance-description comparison with missing-object controls after GPU training
+finishes. [Planner evidence](PLANNER_LIVE_INTEGRATION.md).
 
-Release diagnosis `20260911T045528-4a0b37e4eba3` and design note
-`20260911T045721-41f7350bb2c3` show that the fixed jaw still supports the plate
-after opening. The mostly westward withdrawal intermittently drags it. Next:
-preregister and preflight a separating movement/controlled tilt before the long
-withdrawal, retaining the original destination and all contact/placement gates.
-No proposed separating path is validated yet. [All repair evidence](SUCCESSOR_READINESS.md).
+## Physical foundation and plate repair
 
-`dinner-evaluate` independently reproduces the baseline pass in
-`20260911T043031-3fe61f7bd44b` and retains the failed hold run in
-`20260911T043017-446d1af42961`, including its partial-action collision.
-It preserves instrumentation declarations and failed source outcomes; it never
-manufactures missing zero counters. [Evaluation command](DINNER_OUTCOMES.md).
+Teacher `20260911T013229-b7184e9ba66a` completes 4,819 controls and 240,950 samples
+at 1kHz, with zero forbidden contacts and final placement hold. Recording
+`20260911T022644-a24a56ff004c` exports to `.artifacts/datasets/dinner-nominal-v1`;
+views are `.artifacts/dinner-skill-views-v1.json`. Preserve both unchanged.
+[Scene](DINNER_SCENE.md), [datasets](DATASETS.md).
 
-## Verification and process handoff
+The original bar boundary has six stationary observations; ten are required.
+Adding holds perturbs the subsequent plate release. Destination/parking searches
+and boundary repartitioning have not produced a validated replacement.
 
-- First integration regression: 807 passed, fourteen optional skips, eight render
-  deselections in 450.24 seconds. A subsequent policy-ownership correction requires
-  the final run below; do not treat the earlier suite as verification of that fix.
-- Final base check passed: **808 tests**, fourteen optional skips and eight render
-  deselections, 446.95 seconds. Handle 48189 is terminal; log
-  `.artifacts/checks-workflow-cohort-final.log`. Ruff, formatting, documentation
-  links and README synchronization pass.
-- All eight actual native rendering tests passed separately in 72.45 seconds,
-  `.artifacts/render-workflow-cohort.log`. No rendering overlapped ACT training.
-- ACT training 27780, final offline inference 68644 and HD Qwen 56295 are terminal.
-  Those previous jobs are terminal. The current first-action run is listed above.
-- Previous checkpoint [b793460 CI](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34562948517)
-  passed. New workflow checkpoint CI is not yet claimed. The [draft PR](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/pull/1)
-  remains unmerged.
+Measured prefix diagnostics retain original destinations and all live guards:
 
-Next executable work:
+- North5 mm: `20260911T053109-6c16dbcb8104`, 2,761 controls/138,050 samples,
+  zero forbidden contacts. Fixed jaw supports the tilted plate throughout all
+  3,000 endpoint-hold samples; release fails.
+- +5-degree tilt: `20260911T053710-429c53f79518`, same complete coverage and no
+  forbidden contacts. Final jaw load 0.365 N, tilt 17.3 degrees, height +19.2 mm;
+  sustained release fails. Analysis `20260911T053909-574e0b62c3ed` preserves details.
 
-1. Build a separately recorded plate-jaw separation trial from the diagnosis;
-   require complete preflight and unchanged full physical gates before adoption.
-2. Execute the preregistered first-action weighting trial after its clean code
-   checkpoint; preserve both failed 20,000-update experiments.
-3. Compare visible-object descriptions against missing-object controls for Qwen.
-4. Verify the published recovery checkpoint CI; broaden fault recovery only with evidence.
-5. Train/validate the full skill cohort and connect the live operator application.
+The earlier static-heuristic failure `20260911T052918-cdeba1a0c381` remains retained.
+No failed diagnostic is relabeled as a repaired workflow. Read-only design
+`20260911T054402-12a65c47f446` rejects plate-before-cup ordering: the cup source
+blocks the path earlier. Design `20260911T054615-6660a468f379` proposes outward
+and downward withdrawal after measuring load transfer between two fixed-jaw
+patches. No numeric path is validated yet; no ordering, scene, dataset or gate changed.
+[All transition evidence](SUCCESSOR_READINESS.md).
+
+## Verification
+
+- Clean recovery regression: **822 passed**, fourteen optional skips, nine render
+  deselections, 446.40s; `.artifacts/checks-recovery-clean.log` (68236 terminal).
+- Clean final ACT-loss regression: **837 passed**, eighteen optional skips, nine
+  render deselections, 473.74s; `.artifacts/checks-first-action-loss-final.log`
+  (1206 terminal). This precedes the new workflow entrypoint.
+- Actual weighted-loss CPU suite: sixteen pass, one MPS skip, including a real
+  update and checkpoint/processor/sampler/loss reload. Separate native Metal test
+  passes in 11.51s with fallback disabled. Runtime evidence is not quality evidence.
+- Recovery CI 34565689004 failed because its lifecycle fixture used real time and
+  slow work exceeded the unchanged two-second freshness guard. The fixture now
+  uses controlled time, with a separate deliberately stale-frame rejection test:
+  **19 pass**, `.artifacts/workflow-logical-clock-check.log`. CI rerun is pending.
+- Workflow entrypoint plus CLI: **38 pass** in the combined native environment,
+  including immutable-source output confinement, real-worker lifecycle fixtures,
+  late-model-output rejection and preserved final supervisor history. Log:
+  `.artifacts/workflow-execution-combined-check.log`. No learned cohort was executed.
+- Final aggregate check **8916 is active**, log
+  `.artifacts/checks-workflow-execution-final.log`, 903 collected/nine render
+  deselections. Do not claim a final aggregate pass yet.
+- Native camera recovery test previously passes (3.61s); no new render job runs
+  alongside training. Documentation/README checks pass.
+
+## Next executable steps
+
+1. Poll final aggregate check **8916**, then verify the new CI result. Keep draft
+   PR #1 unmerged and preserve its explicit model-quality limits.
+2. Poll training **61437**. When sealed, run
+   `.artifacts/approach-first-action-loss-offline.py` with its run ID, followed by
+   `.artifacts/compare-first-action-loss-offline.py` with the offline run ID.
+   All six gates must pass before the frozen conditional physical evaluation.
+3. Resolve plate separation using measured contacts and a separately declared
+   physical protocol, preserving every failure and original source artifacts.
+4. Validate the full learned skill cohort, visual reasoning and live operator UI.
 
 ## External dependencies
 
-| ID | Needed | Effect |
-|---|---|---|
-| B2 | Free Core Ultra Series 2/3 access | Last checked BM-PTL request Pending Review; no actual Intel validation |
-| B3 | Remaining organizer clarifications | Assets/seeds, pouring scope, prior-code eligibility and hosting interpretation remain provisional |
-
-The user requested `bimanual-sim-intel`, BM-PTL Series 3, September 10–17; catalog
-choices offered Windows 11 and Ubuntu was requested. Verify host identity,
-expiry, rendering and OpenVINO after access is granted. Deadline last verified:
-September 16, 2:30 PM EDT. No organizer message or hackathon submission has been sent.
+Intel BM-PTL Series3 request `bimanual-sim-intel` was last Pending Review. No actual
+Intel/OpenVINO validation exists. Access was requested for September10–17, with
+Ubuntu requested; verify hardware identity, expiry and rendering when granted.
+Organizer clarifications on assets/seeds, pouring, prior-code eligibility and
+hosting remain provisional. Deadline last verified: September16, 2:30PM EDT.
+No organizer message or hackathon submission has been sent.
 [Intel access](INTEL_ACCESS.md), [questions](ORGANIZER_QUESTIONS.md).
-
-## Current session evidence
-
-ACT diagnosis `20260911T050712-1aacb1d9c003` retains 13 CPU train-frame predictions.
-The first action contributes 38.0% of raw left-arm error despite 10% temporal loss
-weight. Normalization round-trip error is only 9.05e-8 rad; successive camera and
-joint inputs differ. Proposed next experiment: first-action temporal loss weight
-50%, with the remaining nine sharing 50%, retaining all six gates. No training or
-physical rollout has started for that proposal.
-
-Plate separation search `20260911T050732-285490837b8c` retains all five preflight
-failures. North10/20 mm paths encounter camera/cup overlap. North5 mm and ±5-degree
-tilts exceed the static plate-overlap threshold during retreat. The latter use a
-counterfactual plate-pose approximation, not observed dynamic collisions. No
-physics trial or source dataset change followed.
-
-Current full regression `.artifacts/checks-owned-recovery.log` completed in 453.53s:
-820 passed, fourteen optional skips, eight render deselections, and two failures.
-The failures were the prior status heading change and a new replacement test that
-reused a forbidden task ID. Both are corrected: API/supervisor recheck passes 58
-and recovery revocation recheck passes three. Focused integration initially passed
-124; the final focused run passed 62 with only that same corrected fixture failure.
-This is combined verification, not a clean final full-suite pass. CI remains pending.
-
-Actual native camera recovery test passes (3.61s): fresh files, identical pixels,
-unchanged simulation time and exact failed-attempt dispatch. This uses an injected
-planner response and declared fixture failure, not a learned recovery demonstration.
-Log `.artifacts/render-owned-recovery.log`. Ruff, formatting, 382 documentation
-links and README synchronization pass. All current test/model processes are terminal.
-
-The clean recovery check now passes below. The new first-action implementation
-and active training run supersede this earlier next-command note.
-
-## First-action objective implementation
-
-Protocol `20260911T052340-2416748543bb` seals the next 20,000-update trial before
-training. Only temporal L1 weighting changes: first action 50%, remaining nine
-share 50%, with valid-target normalization. Dataset, initialization, sampler,
-terminal learning-rate schedule and all six gates remain unchanged. Uniform
-still calls the official LeRobot loss; the opt-in rejects VAE and chunk size one.
-Checkpoint and trainer-state loss metadata are saved and reverified.
-
-Verification: 75 base tests pass with eleven optional skips; 16 native training-
-environment tests pass with one MPS skip, including actual one-update training
-and model/processor/sampler/loss metadata reload. Runtime smoke
-`20260911T052831-698fee235767` is under `.artifacts/weighted-loss-test-20260911/`.
-The separate actual native MPS test passes in 11.51s with fallback disabled,
-`.artifacts/first-action-loss-mps-check.log`. This checks implementation, not policy
-quality. The 20,000-update experiment is now active as run
-`20260911T053104-2b24b508ff79`, handle 61437, from clean `1f7c0a0`.
-[Objective and learning exercise](TRAINING.md).
-
-Clean recovery regression handle 68236 is terminal: **822 passed**, fourteen
-optional skips and nine render deselections in 446.40s;
-`.artifacts/checks-recovery-clean.log`. Recovery CI run 34565689004 remains in
-progress at the last check. New loss code is covered by the focused checks above.
-
-Plate prefix diagnostic `20260911T052918-cdeba1a0c381` stopped at original control
-200, before reaching the plate. An added static commanded-overlap heuristic
-rejected an intentional grasp; actual physics had zero forbidden contacts and
-0.640 mm maximum overlap. No release conclusion follows. A separately declared
-replacement diagnostic must preserve the existing live guards and scope new
-trajectory preflight correctly; the failed experiment remains retained.
-
-## Current live handles
-
-- Training **61437**, run `20260911T053104-2b24b508ff79`: actual optimizer updates
-  observed; 20,000-update final-only experiment, no quality outcome yet.
-- Final full check **1206**: `.artifacts/checks-first-action-loss-final.log`,
-  864 tests collected, including the new loss tests. This follows the clean
-  822-pass recovery checkpoint check; its result is not yet claimed.
-- Plate diagnostic **89905 is terminal**, sealed run `20260911T053109-6c16dbcb8104`.
-  All 2,761 controls and 138,050 rows complete without forbidden contacts; maximum
-  physical overlap is 1.831 mm. Release fails: the fixed jaw supports the tilted
-  plate throughout the 3,000 hold samples (about 0.370 N at the end). The north5 mm
-  prefix is collision-free in this trial but insufficient to unseat the plate.
-  Bar/cup and closed drawer are preserved. This is not a full-workflow success.
-
-Next: poll these exact handles. After training seals successfully, use
-`.artifacts/approach-first-action-loss-offline.py` with its run ID, then
-`.artifacts/compare-first-action-loss-offline.py` with the offline run ID. Only
-passing all six gates permits the already frozen conditional physical evaluation.
-No model inference/render job may share the GPU with this training run.

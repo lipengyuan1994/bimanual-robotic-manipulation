@@ -180,3 +180,20 @@ samples, ending near 0.370 N; the plate remains tilted, upright cosine 0.957639,
 center height 0.396589 m. Bar/cup placements and the closed drawer are preserved.
 The small northward prefix is physically collision-free in this trial but does
 not free the fixed jaw. No full repair, workflow or learned success follows.
+
+A force-guided +5-degree tilt prefix was then preregistered in
+`20260911T053700-b64e366625cc`. Actual run `20260911T053710-429c53f79518` again
+completes all 2,761 controls/138,050 samples with no forbidden contacts, but the
+fixed jaw supports the plate through the entire three-second hold. Final load
+is 0.365 N, tilt 17.3 degrees, height +19.2 mm; longest transient force-free interval
+is only 1 ms. Analysis `20260911T053909-574e0b62c3ed` records that static gap
+prediction did not translate into sustained physical release. No repaired source
+or new skill-view profile follows.
+
+Read-only ordering analysis `20260911T054402-12a65c47f446` rejects plate-before-cup
+for the existing path: the cup source creates 64 plate-path failures and blocks
+both north10/20 mm prefixes from their beginning. No task order was changed.
+Design `20260911T054615-6660a468f379` explains that the tilt relieved one loaded
+jaw patch while pressing another. Lowering alone exhausts table clearance. The
+next hypothesis combines outward edge escape with downward unloading, requiring
+all loaded patches to clear. No numeric path or new physical success is validated.

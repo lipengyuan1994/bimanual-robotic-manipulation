@@ -94,6 +94,24 @@ def main(argv: list[str] | None = None) -> int:
         "workflow-check", help="Verify a pinned skill cohort without loading models"
     )
     workflow_check.add_argument("manifest", type=Path)
+    workflow_run = commands.add_parser(
+        "workflow-run", help="Execute a verified local seven-skill workflow; not a quality approval"
+    )
+    workflow_run.add_argument("manifest", type=Path)
+    workflow_run.add_argument("--planner-model", type=Path, required=True)
+    workflow_run.add_argument("--instruction", required=True)
+    workflow_run.add_argument("--policy-device", choices=["cpu", "mps"], default="cpu")
+    workflow_run.add_argument("--planner-device", choices=["cpu", "mps"], default="cpu")
+    workflow_run.add_argument(
+        "--camera-profile",
+        choices=["policy480_v1", "overhead1920_wrist480_v1"],
+        default="policy480_v1",
+    )
+    workflow_run.add_argument("--wall-timeout-seconds", type=float, default=1800)
+    workflow_run.add_argument("--max-actions-per-skill", type=int, default=2000)
+    workflow_run.add_argument("--max-tokens", type=int, default=384)
+    workflow_run.add_argument("--step-timeout-seconds", type=float, default=300)
+
     cup = commands.add_parser("cup", help="Physically carry and release a hollow cup upright")
     cup.add_argument("--no-render", action="store_true")
     cup.add_argument("--arm", choices=["left", "right"], default="left")
@@ -336,6 +354,28 @@ def main(argv: list[str] | None = None) -> int:
             from bimanual.workflow_manifest import load_workflow_manifest
 
             emit(load_workflow_manifest(args.manifest).report())
+        elif args.command == "workflow-run":
+            from bimanual.workflow_execution import WorkflowExecutionConfig, run_workflow_execution
+
+            result = invoke_with_diagnostics(
+                run_workflow_execution,
+                WorkflowExecutionConfig(
+                    workflow_manifest=args.manifest,
+                    planner_model_directory=args.planner_model,
+                    instruction=args.instruction,
+                    policy_device=args.policy_device,
+                    planner_device=args.planner_device,
+                    camera_profile=args.camera_profile,
+                    wall_timeout_seconds=args.wall_timeout_seconds,
+                    max_actions_per_skill=args.max_actions_per_skill,
+                    step_timeout_seconds=args.step_timeout_seconds,
+                    max_tokens=args.max_tokens,
+                ),
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
         elif args.command == "cup":
             from bimanual.cup import CupConfig, run_cup
 

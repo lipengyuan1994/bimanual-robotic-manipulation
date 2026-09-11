@@ -52,4 +52,5 @@ Measured skill termination: [learned executor and physical monitor](SKILL_EXECUT
 Learned skill transitions: [successor readiness](SUCCESSOR_READINESS.md).
 
 Complete learned workflow: [pinned checkpoint cohort](WORKFLOW_MANIFEST.md) and
-[serialized planning/execution runner](WORKFLOW_RUNNER.md).
+[serialized planning/execution runner](WORKFLOW_RUNNER.md), with a
+[local execution command](WORKFLOW_EXECUTION.md).
