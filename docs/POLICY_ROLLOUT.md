@@ -433,3 +433,80 @@ results themselves. Fixed object placement, one scene and eight chosen robot
 starts do not establish visual localization or generalization to dinner objects.
 Prototype scripts and data remain local artifacts pending reviewed integration;
 this experiment is not a reproducible production release.
+
+## Controlled temporal-sampling comparison
+
+Weighted training run `20260910T225506-3f5e98132b20` completed exactly 2,000 MPS
+updates in 413.30 seconds from clean commit
+`781556df04e6bb6eebe5e1e94320146838904b4f` (`git_dirty=false`). It used the same
+480-transition approach dataset, model architecture, initial weights, seed,
+optimizer and normalization as the uniform baseline. Initial parameter hashes
+match exactly. Only the explicit `approach_regions_v1` sampling profile changed.
+Checkpoint, normalization-processor and sampler-RNG reloads all passed.
+
+Realized draws were 684 start, 655 middle and 661 settled observations; the six
+episodes received 336, 323, 338, 329, 349 and 325 draws. These regions classify
+observation anchors: the normal ten-action training chunk may cross a region
+boundary or include episode-end padding. The full probability/source-frame plan
+is sealed with the checkpoint. Last-50 mean sampled loss was 0.5586; sampled loss
+is not directly comparable across different observation distributions.
+
+Comparison protocol `20260910T225601-e6e5c115c729` retained the same eight teacher
+cases and ten frame indices per case. CPU diagnosis
+`20260910T230212-7b5dbe7d1c2b` and verified comparison
+`20260910T230229-4797222025f2` found the following:
+
+| Selected teacher observations | Uniform mean FK target error | Weighted mean FK target error | Reduction |
+|---|---:|---:|---:|
+| Training starts | 14.12 mm | 9.50 mm | 32.7% |
+| Validation starts | 19.35 mm | 14.28 mm | 26.2% |
+| Training settled endpoints | 3.50 mm | 1.18 mm | 66.3% |
+| Validation settled endpoints | 3.51 mm | 1.18 mm | 66.3% |
+
+No selected forecast exceeded action bounds. Settled first-target error was now
+below the unchanged 2 mm position threshold, and start errors materially improved.
+This justified a bounded physical comparison; it did not establish physical
+success. Protocol `20260910T230315-a0d0a0ef081f` reused the same three starts, full
+forecast guards, two-second freshness, four-second deadline and 100-sample
+pregrasp predicate.
+
+| Case | Weighted physical run | Final position error | Final 100 samples passing | Outcome |
+|---|---|---:|---:|---|
+| 1000, training start | `20260910T230320-5ac4edc886e6` | 18.62 mm | 0/100 | Failed |
+| 2000, validation start | `20260910T230331-fc2ae284cf4b` | 6.70 mm | 0/100 | Failed |
+| 2001, validation start | `20260910T230339-1566b39a015c` | 1.27 mm | 24/100 | Failed |
+
+All three have 80 confirmed control steps, 800 checked physics samples and zero
+forbidden contacts, measured joint-limit violations or closed-hand samples. All
+seals verify, and all preceding uniform failures remain retained. The weighted
+checkpoint therefore still has **zero successful pregrasp trials in three
+attempts**, including zero in the two validation cases.
+
+Trace diagnosis `20260910T230619-9a1f1f4fea4d` explains the partial tolerance result.
+Case 2001 first entered the position tolerance at 3.535 seconds but repeatedly
+left the combined stable state. Among its last 100 samples, position failed 42
+and speed failed 69; orientation and open-hand checks passed throughout. Its
+longest uninterrupted passing stretch was only seven samples (35 ms), and only
+three passing samples ended the run. Thus 24/100 is a nonconsecutive count and
+cannot be read as a successful hold. The new forecast at 3.5 seconds changed its
+pan target by 0.0285 rad; the following trajectory was still moving toward the
+goal. Cases 1000 and 2000 never entered position tolerance before the deadline,
+and also failed orientation/speed checks while approaching.
+
+The weighted nominal first pan target still points backward (−0.0364 rad versus
+the teacher's +0.0006), although later forecasts now advance. Case 2000 starts
+forward and also progresses. During the final half-second, position error fell
+from about 26.3 to 18.6 mm, 8.7 to 6.7 mm and 2.1 to 1.3 mm respectively. The
+recorded evidence therefore shows remaining start bias, delayed convergence and
+forecast-boundary motion; it does not establish that the policy will settle if
+allowed to continue.
+
+**Proposed next single experiment, not yet run:** use this unchanged checkpoint
+and the same three starts, with a separately declared eight-second maximum and
+success only after 100 consecutive samples satisfy the original physical
+predicate. Change no model, sampler, action cadence, bounds, camera expiry or
+pose/velocity thresholds. Preserve the four-second failures as failures. This
+isolates whether the deadline cuts off converging motion or repeated forecast
+changes prevent sustained settling. It must be recorded as a new time-budget
+experiment, not a reinterpretation of these results. No further training is
+indicated before that distinction is measured.

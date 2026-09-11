@@ -87,10 +87,12 @@ product and M1's manipulation exit checks remain incomplete.
 
 ## Verification and checkpoint
 
-The latest `scripts/check.sh` passed **337 ordinary tests**, with three explicit
+The latest `scripts/check.sh` passed **366 ordinary tests**, with three explicit
 optional-training skips, Ruff, formatting, documentation links and README checks.
-The same turn's `--render` run passed **seven actual rendering tests** before the
-subsequent planner/sampler changes; physical/rendering code did not change. Native
+The preceding `--render` run passed **seven actual rendering tests**; the new
+sensor module additionally passed its actual-render integration test. Four real
+paired sensor bundles and four actual Qwen probes were separately executed and
+verified. The latest ordinary suite deselects eight rendering tests. Native
 ARM64 TypeScript checks and the portal production build also pass. The portal now
 links directly to recorded planner decisions from run history.
 
@@ -98,6 +100,7 @@ An actual one-step CPU ACT update, checkpoint reload and sampler RNG continuatio
 check passed in the isolated training environment after the sampler changes.
 Earlier optional LeRobot/ACT checks passed 30 together and the real dataset export
 check separately. Skips are not counted as passes. Logs for the latest work are
+`.artifacts/checks-planner-sensors.log`,
 `.artifacts/checks-planner-v2-final.log`,
 `.artifacts/checks-planner-supervisor.log`, and
 `.artifacts/checks-sampler-real-training.log`. Earlier physical integration logs
@@ -245,7 +248,30 @@ The subsequent plate/utensil, explicit-physics, scoring and action-prefix checkp
 `70fec2b` also passed [GitHub CI](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34536292665).
 [Draft PR #1](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/pull/1)
 tracks the development branch; no merge or production release is claimed. New
-planner/supervisor/sampling changes require their own committed CI result.
+planner/supervisor/sampling checkpoint `781556d` also passed
+[GitHub CI](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34539691869).
+The new sensor-profile implementation has its separate local checks above; its
+subsequent committed CI result must be checked independently.
+
+## Latest camera and continuous-scene checks
+
+The optional [planner sensor profiles](PLANNER_SENSORS.md) preserve ACT's original
+camera contract. All six baseline camera renders matched their original PNGs
+exactly before creating higher-resolution overhead views; state remained unchanged.
+Four sealed Qwen probes in protocol `20260910T230553-d67de55a7054` confirm actual
+processor grids. The 1920 profile correctly distinguishes the paired present and
+missing practice-block scenes, taking 91.01/95.12 seconds; the 960 missing case
+still contradicts itself and is rejected. All four outcomes are preserved in
+comparison `20260911T004313-10b11352cb3c`; no live-planner readiness is claimed.
+See [the results](PLANNER.md).
+
+Combined teacher attempt 22 completed 240,950 continuous physics samples and
+all movements with zero forbidden contacts, but independent full audit failed
+`plate/settled`: 23.58 mm final plate error against the unchanged 20 mm limit.
+All other objects passed final placement checks. This remains a failed full task;
+the next physical change must adjust the release trajectory, not its target or
+acceptance tolerance. The last agent ended after saving the completed trace;
+root independently ran the preserved full-audit script on attempt 22.
 
 ## External dependencies
 
@@ -263,16 +289,37 @@ hackathon submission has been sent.
 
 ## Next executable step
 
+Current source is the development branch HEAD with the sensor-profile changes
+recorded above; use `git rev-parse HEAD` for its exact revision. The preceding
+implementation checkpoint is `781556df04e6bb6eebe5e1e94320146838904b4f`,
+committed and pushed to the development branch / draft PR. The controlled
+`approach_regions_v1` training run `20260910T225506-3f5e98132b20` completed all
+2,000 MPS updates in 413.30 seconds from that clean checkpoint. Frozen comparison
+`20260910T230229-4797222025f2` found 26–33% lower starting prediction error and
+endpoint error reduced from 3.50 to 1.18 mm. All three unchanged four-second
+physical tests still failed: final errors 18.62, 6.70 and 1.27 mm. The closest
+case passed only seven consecutive physics samples, versus 100 required.
+All training/diagnostic/rollout processes for this experiment are terminal.
+See [the full comparison and next diagnostic](POLICY_ROLLOUT.md).
+
+The combined-scene teacher reached the end of every motion in attempt 15, but
+independent acceptance failed: plate position error was 38.446 mm against the
+unchanged 20 mm gate. All 238,950 physics samples were contiguous, with zero
+forbidden contacts; other ownership/placement gates passed. This is not full-task
+success. Preserve the failure and test newly declared waypoint/layout variants.
+
 Run `.venv/bin/bimanual utensils` and inspect the uninterrupted drawer-to-table
 replay. Run `.venv/bin/bimanual plate` and `.venv/bin/bimanual cup --arm right`
 for the other tableware skills. Next implement the [shared-scene sequence](DINNER_SCENE.md)
 with continuous physics and final checks of every placement.
-In parallel, validate explicit temporal sampling against the frozen approach
-dataset and collection protocol before one controlled ACT comparison. The first
-approach policy and both full-placement experiments failed; neither longer
-forecasts nor lower training error established learned task success. Continue
-camera-resolution diagnosis for the planner's nominal false negative; CPU and
-MPS inference both execute, but useful visual planning remains unproven. Integrate
+The temporal-sampling comparison improved prediction and physical proximity but
+still failed all three frozen tests. Diagnose delayed convergence versus ongoing
+replanning movement before any additional training; preserve those deadline failures.
+The first approach policy and both full-placement experiments also failed;
+neither longer forecasts nor lower training error established learned task success. The higher-resolution pair now distinguishes these two practice-block scenes,
+but 91–95-second inference, broader dinner-scene grounding and live observation
+handling remain unresolved. CPU and MPS inference execute; reliable live visual
+planning remains unproven. Integrate
 the supervisor only with real, registered skill executors and preserve the live
 observation freshness rules.
 M1 is complete only after the [roadmap](ROADMAP.md) exit checks pass.

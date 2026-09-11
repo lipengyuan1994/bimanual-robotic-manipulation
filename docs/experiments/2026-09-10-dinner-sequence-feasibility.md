@@ -166,3 +166,97 @@ All 131,850 executed physics samples were guarded; this is not a full-workflow
 success. The failed route and raw evidence are preserved.
 
 V6 frozen scene SHA-256: `b06f86fd640d13ea2de97919b0383f57e5d82f65cfd0c7f7027a90aac0994f3a`.
+
+## Complete motion loop, failed acceptance, and calibrated follow-up
+
+**Attempt 15** changed only the V6 ordering to hand-off/bar parking, plate, cup,
+then drawer/utensils. All motions finished in one 238.95-second episode
+(128.28 seconds wall time), but **full-task acceptance failed**. The independent
+scratch audit checked all 238,950 consecutive 1 kHz rows: zero forbidden contacts,
+1.830624 mm maximum overlap and 100.137 N maximum aggregated jaw normal force.
+All required ownership, drawer, airborne transport and released-placement gates
+passed except the plate's position. Its final `(0.09761,0.00375,0.37800)` is
+38.45 mm from the predeclared `(0.12,0.035,0.378)` destination, outside the unchanged
+20 mm tolerance. Spoon, fork, cup and parked bar stayed within their release gates
+through the rest of the episode. The plate result is never rescored against a
+new destination. Raw evidence and independent scoring are retained at
+`.artifacts/dinner-scene-exploration/attempt15/{physics.jsonl.gz,full-audit.json}`.
+
+**Attempt 16 (V7)** was an explicitly exploratory alternative: destination
+`(0.12,0,0.378)` and a fixed +22.4 mm X waypoint correction. The destination was
+frozen before running to increase clearance from the source cup. It failed at
+123.37 seconds when the right gripper touched the placed plate during cup descent.
+Its Y target was not regenerated through a target-to-tool calibration, so this
+variant is not adopted as a calibrated baseline even independently of that failure.
+
+**Attempt 17 (V8) failed at 126.65 seconds.** A scratch-only grid reconstructed the
+cup's settled pose, tested candidate plate release/withdrawal paths against every
+scene object, and found the V6 intended destination incompatible with the sampled
+cup-first wrist-camera clearance. V8 therefore declares plate destination
+`(0.14,-0.015,0.378)` before running, with the same 20 mm acceptance tolerance.
+The fixed measured plate-minus-tool XY offset from failed attempt 15 is
+`(0.007612912,-0.041254826)`. Both commanded carry/lower XY coordinates are computed
+as **declared destination minus this offset**; withdrawal and retreat are generated
+from that same target. This produces tool XY `(0.132387088,0.026254826)` and a
+west/up withdrawal delta `(-0.06,0,0.025)`, chosen by collision checking before the
+physical trial. Order returns to hand-off/bar parking, cup, plate, then utensils.
+The source scene shapes, contact settings, masses, other destinations and scoring
+tolerances are unchanged. These are authored-layout experiments, not arbitrary
+scene generalization. No full-task success or canonical V8 adoption is claimed.
+
+Scratch planning is separate `MjData`/environment state; no candidate placement is
+written into the live experiment. Frozen source/targets/calibration and raw traces
+remain under `layout-v8.json`, `layout-v8.xml`, `release-grid.json` and `attempt17/`.
+
+Attempt 17's diagonal plate carry was rejected before contact with the parked
+right fixed jaw. At rejection the plate centre was approximately
+`(0.0910,0.1013,0.4708)` and the right fixed jaw centre
+`(0.1631,0.1207,0.4984)`. All earlier executed steps remain retained.
+
+**Attempt 18 (V9) failed at 124.95 seconds.** It keeps V8's exact source geometry,
+destination, tool/object calibration and withdrawal path. A predeclared
+`(-0.03,0.025,0.48)` plate-tool clearance waypoint moves toward the front before
+the rightward carry, avoiding the parked right arm. This adds a separately
+audited two-second airborne transport phase; it does not relax any acceptance
+gate. The layout manifest and driver are frozen before execution.
+
+V9's front clearance point was too close to the left robot base for the required
+plate orientation: bounded IK rejected it before executing that segment.
+**Attempt 19 (V10) failed during the rightward carry.** The replacement clearance waypoint
+`(0.04,0.02,0.48)` passes 41 interpolated bounded IK poses from the actual plate
+hold. The V8 destination and all other calibration/withdrawal/scoring settings
+remain unchanged. Each failed attempt keeps its own frozen driver, scene and trace.
+
+Attempt 19 completed its frontward clearance but the carried plate still approached
+the north-parked right gripper. The carried-object checker rejected that segment.
+**Attempt 20 (V11) failed at 129.20 seconds.** It preserves V10's plate source, target,
+calibration and complete route, and changes the empty right arm's supervised
+plate-stage shoulder-pan parking angle from +1 to -1 rad. The arm moves there
+through its original actuator, before the left arm grasps the plate; no object is
+repositioned. This vacates the positive-Y carry volume. Its return to home remains
+a checked physical transition before drawer operation.
+
+At -1 rad parking, the right shoulder's collision geometry still obstructed the
+plate. A separate carried-transform grid reconstructed the actual held plate and
+checked 41 points per remaining carry/lower segment across five parking angles
+and three heights. The -1.8 rad candidate cleared all three tested heights;
+**V12** retains the original 0.48 m height and all V11 geometry, destinations and
+calibration, changing only that empty-arm parking angle. Grid results are retained
+in `park-carry-grid.json`; prediction is not itself contact-manipulation evidence.
+
+**Attempt 21** tried V12 with three-camera rendering but stopped at the first
+capture because the restricted process could not establish a macOS CoreGraphics
+connection. It is retained as an environment failure. **Attempt 22 is active and
+unscored**, repeating the identical V12 controller with native macOS graphics
+access. It captures all three cameras at 2 Hz for a replay labelled as 5x speed.
+No full-task acceptance has passed as of this register entry.
+
+Root follow-up: attempt 22 is terminal (`loop_completed_unscored`). Independent
+`audit_full.py attempt22` read all 240,950 physics samples and failed only the
+plate settled gate. Final plate position (0.117282, -0.021320, 0.377997) m is
+23.5808 mm from the unchanged (0.14, -0.015) m XY target. Zero forbidden samples,
+1.830624 mm maximum overlap, one continuous action episode and all other final
+placements passed. `terminal_all_placed_samples` remains zero. Preserve
+`attempt22/full-audit.json` and `attempt22-audit.log`; this is not full-task success.
+Next adjust the physical plate release trajectory with unchanged destination and
+20 mm acceptance, then rerun the whole workflow and audit.

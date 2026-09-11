@@ -21,6 +21,9 @@ SkillName = Literal["open_drawer", "pick", "place", "handoff", "stop", "clarify"
 
 class PlannerContext(Contract):
     observation: Observation
+    camera_profile: Literal[
+        "policy480_v1", "overhead960_wrist480_v1", "overhead1920_wrist480_v1"
+    ] = "policy480_v1"
     instruction: Annotated[str, Field(min_length=1, max_length=4096)]
     completed_steps: Annotated[
         tuple[Annotated[str, Field(min_length=1, max_length=512)], ...], Field(max_length=32)
@@ -83,6 +86,18 @@ def camera_images(context: PlannerContext, root: Path) -> tuple[Image.Image, ...
 def planner_messages(context: PlannerContext, images: tuple[Image.Image, ...]) -> list[dict]:
     if len(images) != 3:
         raise ValueError("All three camera views are required")
+    from bimanual.planner_sensors import PROFILES
+
+    dimensions = (
+        ((480, 270),) * 3
+        if context.camera_profile == "policy480_v1"
+        else PROFILES[context.camera_profile]
+    )
+    if any(
+        image.mode != "RGB" or image.size != size
+        for image, size in zip(images, dimensions, strict=True)
+    ):
+        raise ValueError("Planner image dimensions or mode do not match the camera profile")
     obs = context.observation
     system = (
         "You propose ONE supported next skill for two simulated SO-101 arms. "
@@ -178,6 +193,38 @@ def seal_model(directory: Path, revision: str) -> Path:
     return target
 
 
+def processor_image_metrics(
+    images: tuple[Image.Image, ...], grid: list, *, patch_size: int, merge_size: int
+) -> dict:
+    """Report actual processor grids; file resolution alone is not model resolution."""
+    if (
+        type(patch_size) is not int
+        or patch_size <= 0
+        or type(merge_size) is not int
+        or merge_size <= 0
+    ):
+        raise ValueError("Invalid vision processor patch configuration")
+    if len(grid) != len(images) or any(
+        len(row) != 3
+        or any(type(value) is not int or value <= 0 for value in row)
+        or row[0] != 1
+        or row[1] % merge_size
+        or row[2] % merge_size
+        for row in grid
+    ):
+        raise ValueError("Unexpected processor image grid")
+    return {
+        "source_image_dimensions_wh": [list(image.size) for image in images],
+        "image_grid_thw": grid,
+        "processor_patch_size": patch_size,
+        "processor_merge_size": merge_size,
+        "effective_image_dimensions_wh": [
+            [row[2] * patch_size, row[1] * patch_size] for row in grid
+        ],
+        "vision_tokens_per_image": [row[0] * row[1] * row[2] // merge_size**2 for row in grid],
+    }
+
+
 class LocalQwenPlanner:
     """Explicit CPU/MPS backend, local weights only, no automatic device fallback."""
 
@@ -235,6 +282,12 @@ class LocalQwenPlanner:
             return_dict=True,
             return_tensors="pt",
         ).to(self.device)
+        image_metrics = processor_image_metrics(
+            images,
+            inputs["image_grid_thw"].detach().cpu().tolist(),
+            patch_size=self.processor.image_processor.patch_size,
+            merge_size=self.processor.image_processor.merge_size,
+        )
         with torch.inference_mode():
             output = self.model.generate(**inputs, max_new_tokens=max_tokens, do_sample=False)
         if self.device == "mps":
@@ -242,6 +295,8 @@ class LocalQwenPlanner:
         tokens = output[0, inputs["input_ids"].shape[-1] :]
         text = self.processor.decode(tokens, skip_special_tokens=True)
         return text, {
+            **image_metrics,
+            "camera_profile": context.camera_profile,
             "requested_device": self.device,
             "actual_device": self.device,
             "precision": self.dtype,
@@ -264,6 +319,7 @@ def run_planner_probe(
     store: EvidenceStore,
     project_root: Path,
     max_tokens: int = 384,
+    sensor_bundle: Path | None = None,
 ) -> Manifest:
     """Evaluate a recorded view; output cannot be used as a live action authorization."""
     import importlib.metadata
@@ -273,6 +329,8 @@ def run_planner_probe(
     project_root = project_root.resolve()
     model_root = model_root if model_root.is_absolute() else project_root / model_root
     recording = recording if recording.is_absolute() else project_root / recording
+    if sensor_bundle is not None:
+        sensor_bundle = (project_root / sensor_bundle).resolve()
     directory = store.new_run()
     source_at_start = provenance(project_root)
     shutil.copyfile(Path(__file__), directory / "planner-source.py")
@@ -284,6 +342,7 @@ def run_planner_probe(
         "device": device,
         "max_new_tokens": max_tokens,
         "mode": "recorded_observation_only",
+        "sensor_bundle": str(sensor_bundle) if sensor_bundle is not None else None,
     }
     (directory / "config.json").write_bytes(canonical(config) + b"\n")
     metrics = {
@@ -317,6 +376,31 @@ def run_planner_probe(
             available_skills=("open_drawer", "pick", "place", "handoff"),
         )
         images = camera_images(context, recording)
+        if sensor_bundle is not None:
+            from bimanual.planner_sensors import SensorBundle, load_sensor_bundle
+
+            images = load_sensor_bundle(
+                sensor_bundle,
+                observation=observation,
+                source_run_id=source.run_id,
+                source_manifest_sha256=source.manifest_sha256,
+            )
+            bundle = SensorBundle.model_validate_json(
+                (sensor_bundle / "sensor-bundle.json").read_text()
+            )
+            context = context.model_copy(update={"camera_profile": bundle.profile})
+            # Preserve the sealed inputs before inference; never relabel the ACT camera artifacts.
+            shutil.copytree(sensor_bundle, directory / "sensor-input" / "runs" / sensor_bundle.name)
+            # Verify the copy, so concurrent source changes cannot change the recorded model input.
+            copied_images = load_sensor_bundle(
+                directory / "sensor-input" / "runs" / sensor_bundle.name,
+                observation=observation,
+                source_run_id=source.run_id,
+                source_manifest_sha256=source.manifest_sha256,
+            )
+            if any(a.tobytes() != b.tobytes() for a, b in zip(images, copied_images, strict=True)):
+                raise ValueError("Planner sensor inputs changed while copying")
+            images = copied_images
         for camera in observation.frames:
             target = directory / camera.artifact.path
             target.parent.mkdir(parents=True, exist_ok=True)

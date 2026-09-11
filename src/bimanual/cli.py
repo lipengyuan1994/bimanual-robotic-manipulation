@@ -120,10 +120,20 @@ def main(argv: list[str] | None = None) -> int:
     )
     planner.add_argument("--model-root", type=Path, required=True)
     planner.add_argument("--recording", type=Path, required=True)
+    planner.add_argument(
+        "--sensor-bundle", type=Path, help="Verified reset-only planner sensor run"
+    )
     planner.add_argument("--frame", type=int, default=0)
     planner.add_argument("--instruction", required=True)
     planner.add_argument("--device", choices=["cpu", "mps"], default="cpu")
     planner.add_argument("--max-tokens", type=int, default=384)
+    sensors = commands.add_parser(
+        "planner-sensors", help="Render verified reset-only higher-resolution planner cameras"
+    )
+    sensors.add_argument("--recording", type=Path, required=True)
+    sensors.add_argument(
+        "--profile", choices=["overhead960_wrist480_v1", "overhead1920_wrist480_v1"], required=True
+    )
     commands.add_parser("docs-check", help="Validate local documentation links and rubric weights")
     evidence = commands.add_parser("evidence", help="List or verify sealed preparation runs")
     evidence.add_argument("operation", choices=["list", "verify"])
@@ -342,6 +352,18 @@ def main(argv: list[str] | None = None) -> int:
             emit({"destination": str(result), "manifest": str(result / "export_manifest.json")})
         elif args.command == "status":
             emit(json.loads((root / "docs/project.json").read_text()))
+        elif args.command == "planner-sensors":
+            from bimanual.planner_sensors import create_sensor_bundle
+
+            result = invoke_with_diagnostics(
+                create_sensor_bundle,
+                recording=args.recording,
+                profile=args.profile,
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
         elif args.command == "planner-probe":
             from bimanual.planner import run_planner_probe
 
@@ -353,6 +375,7 @@ def main(argv: list[str] | None = None) -> int:
                 instruction=args.instruction,
                 device=args.device,
                 max_tokens=args.max_tokens,
+                sensor_bundle=args.sensor_bundle,
                 store=store,
                 project_root=root,
             )

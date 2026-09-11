@@ -30,6 +30,13 @@ is a lossless **480 × 270 RGB PNG**, interpreted as height × width × 3 uint8 
 decoded. Training-specific resizing or normalization belongs in a separately
 versioned model configuration; these records contain original sensor pixels.
 
+The separate [planner sensor bundle](PLANNER_SENSORS.md) adds optional 960×540
+or 1920×1080 overhead RGB for verified reset-only diagnostics. It never changes
+`Observation`, `CameraFrame`, ACT camera ordering or training dimensions. A
+`PlannerContext.camera_profile` declares the actual model-facing image sizes;
+source observation hashes and calibration bind the separate bundle. Reset replay
+images cannot be relabelled as fresh live observations.
+
 ## Policy-facing observations
 
 `Observation` contains episode identity, instruction revision, sequence, simulation

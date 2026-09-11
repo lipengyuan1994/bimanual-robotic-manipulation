@@ -424,3 +424,87 @@ def test_relative_probe_paths_resolve_against_project_root(tmp_path, monkeypatch
     assert result.config["model_root"] == str(tmp_path / "models/local")
     assert result.config["recording"] == str(sealed_recording)
     store.verify(result.run_id)
+
+
+@pytest.mark.parametrize(
+    "profile,overhead",
+    [
+        ("policy480_v1", (480, 270)),
+        ("overhead960_wrist480_v1", (960, 540)),
+        ("overhead1920_wrist480_v1", (1920, 1080)),
+    ],
+)
+def test_declared_camera_profile_matches_actual_pixels(profile, overhead):
+    ctx = context(camera_profile=profile)
+    images = (
+        Image.new("RGB", overhead),
+        Image.new("RGB", (480, 270)),
+        Image.new("RGB", (480, 270)),
+    )
+    assert planner_messages(ctx, images)[1]["content"][2]["image"] is images[0]
+    with pytest.raises(ValueError, match="camera profile"):
+        planner_messages(ctx, (images[0].convert("L"), *images[1:]))
+    with pytest.raises(ValueError, match="camera profile"):
+        planner_messages(ctx, (images[0].resize((32, 32)), *images[1:]))
+
+
+def test_processor_metrics_report_effective_resolution_not_file_size():
+    from bimanual.planner import processor_image_metrics
+
+    images = (
+        Image.new("RGB", (1920, 1080)),
+        Image.new("RGB", (480, 270)),
+        Image.new("RGB", (480, 270)),
+    )
+    metrics = processor_image_metrics(
+        images, [[1, 68, 120], [1, 16, 30], [1, 16, 30]], patch_size=16, merge_size=2
+    )
+    assert metrics["source_image_dimensions_wh"][0] == [1920, 1080]
+    assert metrics["effective_image_dimensions_wh"] == [[1920, 1088], [480, 256], [480, 256]]
+    assert metrics["vision_tokens_per_image"] == [2040, 120, 120]
+    assert "object_position" not in metrics
+
+
+@pytest.mark.parametrize(
+    "grid",
+    [
+        [],
+        [[1, 16, 30]],
+        [[1, 0, 30]] * 3,
+        [[2, 16, 30]] * 3,
+        [[1, 15, 30]] * 3,
+        [[True, 16, 30]] * 3,
+    ],
+)
+def test_processor_metrics_reject_missing_or_invalid_grids(grid):
+    from bimanual.planner import processor_image_metrics
+
+    with pytest.raises(ValueError, match="image grid"):
+        processor_image_metrics(
+            (Image.new("RGB", (480, 270)),) * 3, grid, patch_size=16, merge_size=2
+        )
+
+
+def test_wrong_sensor_bundle_fails_before_weights_load(tmp_path, monkeypatch, sealed_recording):
+    import bimanual.planner as module
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Weights must not load for unverified sensor inputs")
+
+    monkeypatch.setattr(module, "LocalQwenPlanner", forbidden)
+    store = EvidenceStore(tmp_path / "evidence")
+    result = run_planner_probe(
+        model_root=tmp_path / "model",
+        recording=sealed_recording,
+        frame=0,
+        instruction="Pick up the practice block.",
+        device="cpu",
+        store=store,
+        project_root=tmp_path,
+        sensor_bundle=tmp_path / "missing",
+    )
+    assert result.outcome == "failed"
+    assert "Weights must not load" not in result.metrics["error"]
+    assert result.metrics["live_dispatch_authorized"] is False
+    assert "response.txt" not in result.files
+    store.verify(result.run_id)

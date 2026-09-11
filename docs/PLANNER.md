@@ -11,7 +11,7 @@ that it can plan manipulation reliably.
 ## What is implemented
 
 `PlannerContext` contains a validated camera/joint observation, operator
-instruction, completed-step history and explicitly available skill names.
+instruction, completed-step history, an explicit camera profile and available skill names.
 There are no exact object positions, contact forces, teacher waypoints or
 independent success labels in this input. Original PNG images are checked by
 hash, format, dimensions and ordered camera identity before inference.
@@ -35,6 +35,19 @@ response. The artifact retains source hashes, three original images, exact text
 prompt, output, model manifest, timing, requested/actual device and precision.
 Malformed outputs and interrupted/failed attempts remain sealed records. A valid
 JSON response is not a correct decision, grasp or full-task success.
+
+Optional `--sensor-bundle` accepts a verified [planner sensor run](PLANNER_SENSORS.md)
+for a sequence-zero, time-zero observation. It changes only the overhead RGB
+resolution, retaining the original policy observation and wrist images. The probe
+copies and re-verifies the entire sensor run before inference, binding the exact
+source manifest and observation. It never labels these reset reconstructions as
+fresh live images. `PlannerContext.camera_profile` declares the dimensions; inputs
+that disagree are rejected before model execution.
+
+Every new model run records source image dimensions, the processor's actual
+`image_grid_thw`, patch and merge sizes, effective image dimensions and vision-token
+counts. This distinguishes a larger source PNG from the resolution actually fed
+into the model. Earlier probes lack this telemetry and remain unchanged.
 
 The planner does not yet dispatch live actions. The
 [task supervisor](SUPERVISOR.md) remains the execution authority, including
@@ -125,6 +138,37 @@ The block occupies very little of the overhead frame; the home-pose wrist views
 mostly show robot/table. A separate sensor-resolution diagnostic must determine
 whether more actual image detail helps before changing model/prompt assumptions.
 These are development cases, not a frozen accuracy or robustness suite.
+
+## Paired higher-resolution experiment
+
+Protocol `20260910T230553-d67de55a7054` fixed four development probes before
+execution: the same two reset scenes at two overhead resolutions, unchanged
+version-2 text prompt, model revision, MPS float16, instruction and wrists.
+Comparison `20260911T004313-10b11352cb3c` retains all four outcomes and source
+manifests. These are development cases, not a held-out accuracy estimate.
+
+| Scene / overhead | Probe | Decision | Inference |
+|---|---|---|---|
+| Present / 960×540 | `20260910T230553-a210a1fec870` | Visible block, pick left | 37.50 s |
+| Missing / 960×540 | `20260910T230707-f3dbfaa8db3b` | Uncertain but requests pick; guard rejects | 38.16 s |
+| Present / 1920×1080 | `20260910T230849-62fb2814efea` | Visible block, pick left | 91.01 s |
+| Missing / 1920×1080 | `20260910T231125-d7ab77db29e5` | Not visible, clarify, no arm/target | 95.12 s |
+
+The 960 profile produces an effective 960×544 overhead grid with 510 vision
+tokens; the 1920 profile produces 1920×1088 with 2,040 vision tokens. Both wrists
+become 480×256 with 120 tokens each. Total input tokens were 1,389 and 2,919,
+respectively. This confirms that the processor consumed additional image detail.
+Three of the four decisions matched the predeclared case check; the rejected
+contradiction remains a failure. The nominal explanations still claim reachability,
+which the images and proposal do not establish.
+
+The highest-resolution pair distinguishes these two scenes, but requires much
+longer inference. These measurements include preprocessing and generation, and
+other local checks/simulation ran concurrently; they are not isolated hardware
+benchmarks or warm latency distributions. No model dispatched actions. No sensor
+profile is promoted to live control or generalization readiness from this pair.
+The next integration must resolve planner latency and fresh execution observations
+explicitly, and validate dinner objects and changed scenes beyond this practice block.
 
 ## Small learning exercise
 

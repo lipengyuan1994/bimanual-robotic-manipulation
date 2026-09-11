@@ -254,3 +254,28 @@ checks sampler/checkpoint lineage when explicitly enabled. The planned controlle
 comparison keeps the approach dataset, model, seed and 2,000-update count fixed;
 per-region teacher-frame errors must be assessed before deciding on further
 physical attempts. The new profile has not yet demonstrated an improvement.
+
+## Temporal-sampling result: better fit, no completed learned skill
+
+The declared weighted run `20260910T225506-3f5e98132b20` completed 2,000 native MPS
+updates in 413.30 seconds from clean commit `781556df04e6bb6eebe5e1e94320146838904b4f`.
+Its initial parameter hash matched the uniform baseline; dataset, architecture,
+seed, optimizer and normalization were unchanged. Realized start/middle/settled
+anchor draws were 684/655/661. Checkpoint, processor and sampler-RNG reloads passed.
+Regions classify observation anchors; future action chunks may cross regions or
+include normal episode-end padding. Sampled loss is not a common evaluation metric
+when the sampling distribution changes.
+
+Frozen teacher-frame comparison `20260910T230229-4797222025f2` shows start FK error
+reductions of 32.7% on training observations and 26.2% on validation observations.
+Settled target error fell about 66.3%, from 3.50 mm to 1.18 mm. This justified the
+same three guarded physical checks, but **all three still failed**: final errors
+were 18.62, 6.70 and 1.27 mm, with 0/100, 0/100 and 24/100 final passing samples.
+The last case's longest continuous passing stretch was only seven samples, so
+its final position accuracy does not establish a stable pregrasp.
+
+The [full weighted comparison](POLICY_ROLLOUT.md) retains every protocol, run,
+physical outcome and trace diagnosis. It proposes a separate bounded time-budget
+experiment with unchanged weights and physical thresholds to distinguish delayed
+convergence from persistent forecast-boundary motion. That experiment has not
+been run, and no additional training or retries were performed.

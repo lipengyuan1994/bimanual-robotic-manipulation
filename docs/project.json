@@ -25,7 +25,7 @@
       "id": "M2",
       "title": "Learned workflow",
       "state": "in_progress",
-      "detail": "ACT training and guarded rollouts execute but learned grasps still fail. Local Qwen proposals and tested supervisor core exist; live integration and recovery remain."
+      "detail": "ACT predictions improved but physical tests still fail. High-resolution Qwen distinguishes two development scenes; live planning, learned workflow and recovery remain."
     },
     {
       "id": "M3",
