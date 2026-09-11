@@ -302,3 +302,16 @@ Fifteen focused actor/recording tests pass, including real PNG/episode-contract
 checks with a short synthetic environment and failed-step boundaries. Those
 tests do not establish physical dinner success; complete recorded reproduction
 and LeRobot export/read-back remain pending.
+
+## Long-episode timestamp precision
+
+LeRobot 0.6.1 generates frame timestamps as `frame_index / fps` and stores them
+as float32. Export read-back now requires exact equality to that float32 value.
+The previous fixed one-microsecond tolerance against a float64 division could
+reject correct later rows in a 240-second dinner episode. This change does not
+relax raw observation cadence or accept adjacent frame timestamps.
+
+Twenty-three native LeRobot export tests pass, including a real 4,819-frame
+numeric storage episode and rejection of one-ULP timestamp changes/nonfinite
+values. Log: `.artifacts/dataset-long-timestamp-real-tests.log`. The long numeric
+fixture validates timestamp storage, not image rendering or manipulation.

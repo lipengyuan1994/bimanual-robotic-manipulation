@@ -301,3 +301,17 @@ a partial folder is not a successful demonstration. After it finishes, verify
 the seal, independent score, episode/action/phase alignment and camera artifacts,
 then export/read back through the existing LeRobot path. All model training and
 assessment processes are terminal.
+
+
+Long-episode export timestamp verification now compares the exact LeRobot
+float32 storage value, replacing a tolerance that could reject correct late
+frames. All 23 native LeRobot dataset tests pass, including an actual 4,819-frame
+numeric timestamp fixture. Full checks are active under handle 26057, log
+`.artifacts/checks-long-timestamps.log`.
+
+Next model experiment is declared by `20260911T023056-6649c0803bb0`: same
+no-VAE/dropout-zero settings and frozen acceptance gates, fixed 20,000 updates
+from the same initialization. It has not started. Estimate about 62.5 minutes
+native MPS, zero spend; start only after physical capture ends. Prepared driver:
+`.artifacts/approach-fixed-20000.py`. Prepared post-capture recording audit:
+`.artifacts/verify-dinner-recording.py`; it requires the sealed successful run.

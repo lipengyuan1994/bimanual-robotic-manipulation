@@ -13,10 +13,54 @@ from bimanual.dataset_export import (
     iter_export_frames,
     lerobot_features,
     preflight_sources,
+    validate_export_timestamp,
 )
 from bimanual.demonstrations import DemonstrationRecorder
 from bimanual.dual_arm import CAMERAS, JOINT_ORDER
 from bimanual.evidence import EvidenceStore
+
+
+@pytest.mark.parametrize("index", [0, 1, 641, 2561, 4818, 99999])
+def test_timestamp_checks_storage_precision_without_accepting_wrong_frames(index):
+    stored = float(np.float32(index / 20))
+    validate_export_timestamp(stored, index)
+    with pytest.raises(ValueError, match="timestamp"):
+        validate_export_timestamp(float(np.float32((index + 1) / 20)), index)
+    with pytest.raises(ValueError, match="timestamp"):
+        validate_export_timestamp(
+            float(np.nextafter(np.float32(stored), np.float32(np.inf))), index
+        )
+
+
+@pytest.mark.parametrize("timestamp", [float("nan"), float("inf"), -float("inf")])
+def test_timestamp_rejects_nonfinite_values(timestamp):
+    with pytest.raises(ValueError, match="timestamp"):
+        validate_export_timestamp(timestamp, 4818)
+
+
+@pytest.mark.skipif(
+    os.environ.get("BIMANUAL_TEST_LEROBOT") != "1",
+    reason="Requires real native LeRobot timestamp storage",
+)
+def test_real_long_episode_timestamp_representation(tmp_path):
+    from lerobot.datasets.lerobot_dataset import LeRobotDataset
+
+    dataset = LeRobotDataset.create(
+        repo_id="local/long-timestamp-test",
+        root=tmp_path / "dataset",
+        fps=20,
+        robot_type="dual_so101_sim",
+        use_videos=False,
+        features={"action": {"dtype": "float32", "shape": (12,), "names": list(JOINT_ORDER)}},
+    )
+    for _ in range(4819):
+        dataset.add_frame({"action": np.zeros(12, dtype=np.float32), "task": "Storage test"})
+    dataset.save_episode()
+    dataset.finalize()
+    for index in (0, 1, 641, 2561, 4818):
+        actual = float(dataset[index]["timestamp"].item())
+        validate_export_timestamp(actual, index)
+    assert abs(float(dataset[4818]["timestamp"].item()) - 4818 / 20) > 1e-6
 
 
 @pytest.fixture

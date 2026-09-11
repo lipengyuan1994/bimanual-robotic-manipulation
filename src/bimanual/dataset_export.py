@@ -124,6 +124,13 @@ def iter_export_frames(source: ExportSource):
         yield result
 
 
+def validate_export_timestamp(timestamp: float, frame_index: int) -> None:
+    """Match LeRobot's float32 storage of frame_index/fps without a loose tolerance."""
+    expected = float(np.float32(frame_index / CONTROL_HZ))
+    if not np.isfinite(timestamp) or timestamp != expected:
+        raise ValueError("LeRobot timestamp differs from source transition cadence")
+
+
 def _load_lerobot():
     try:
         version = importlib.metadata.version("lerobot")
@@ -216,8 +223,7 @@ def export_lerobot_dataset(
                 actual = dataset[offset]
                 for feature in ("observation.state", "observation.velocity", "action"):
                     np.testing.assert_array_equal(actual[feature].numpy(), expected[feature])
-                if abs(float(actual["timestamp"].item()) - row_index / CONTROL_HZ) > 1e-6:
-                    raise ValueError("LeRobot timestamp differs from source transition cadence")
+                validate_export_timestamp(float(actual["timestamp"].item()), row_index)
                 for feature in CAMERA_FEATURES.values():
                     decoded = actual[feature].permute(1, 2, 0).numpy()
                     pixels = np.rint(decoded * 255).astype(np.uint8)

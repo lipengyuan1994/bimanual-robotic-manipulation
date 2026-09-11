@@ -447,3 +447,18 @@ mean joint error worsens 0.020952→0.031807 rad, beyond the allowed 20% increas
 the first nominal pan target is still negative. Four of six gates pass, but the
 candidate is not promoted and receives no physical rollout. Better average fit
 is insufficient to establish reliable learned control.
+
+### Fixed-duration follow-up
+
+Protocol `20260911T023056-6649c0803bb0` declares 20,000 updates from the same
+initialization, changing only duration from the dropout-zero run. An audit of
+actual sampled indices found 52/480 training observation anchors unseen at 2,000
+updates. Mean L1 over the final 250 updates was 0.04490 versus 0.05128 in the
+preceding 250, so fitting was still improving. These are training observations,
+not evidence of validation success.
+
+Use the final fixed-budget checkpoint, no intermediate quality-based selection,
+and retain the original offline gates. Estimated native MPS time is about 62.5
+minutes by linear extrapolation; this is not a guaranteed benchmark. Start only
+after the active dinner capture ends, avoiding competing GPU jobs. Spend remains
+zero. The protocol is not a completed training result.
