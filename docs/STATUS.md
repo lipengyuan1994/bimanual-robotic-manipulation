@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 11, 2026. Latest pushed checkpoint: `106ebea` on
+Updated September 11, 2026. Latest pushed checkpoint: `29465a8` on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -86,8 +86,8 @@ native-hang cleanup is still needed before it is a release runner.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `15467d5ccbf76c1b4729523509c4dbea64b60810a76dc742244a1911fedb2f1d`.
-It binds the training cohort and nine evaluator/control/scoring sources,
+seal `f822cbdda7c9936f5ffab18d37edfa89a3c02e4a9bc37b5b0ab7c7b4d9e35b2c`.
+It binds the training cohort and nineteen evaluator/runner/control/scoring/policy sources,
 final-update20,000 selection,
 MPS, execution prefix2, exact teacher preparation, fixed nominal-v2 scene,
 twice-nominal action budgets and1,200-second wall limits. Its runner accepts only a
@@ -99,7 +99,7 @@ Before the suite ran, review found the outcome monitor's redundant default budge
 still came from shorter v1 skill intervals. The executor now passes a guard one
 action beyond its explicit budget, leaving the executor as the single stopping
 authority and preventing premature v2 plate termination. The unused protocol was
-regenerated before any outcome with all nine transitive evaluator/control/scoring
+regenerated before any outcome with all nineteen transitive evaluator/control/scoring
 sources pinned. The combined executor/outcome/protocol/evaluator group passes61
 tests; the corrected protocol re-verifies.
 

@@ -83,6 +83,18 @@ def run_skill_physical_protocol(protocol_path: Path, skill_id: str, training_att
         expected = config.model_dump(mode="json")
         for manifest_path in (store.root / "runs").glob("*/manifest.json"):
             try:
+                with manifest_path.open() as stream:
+                    header = stream.read(131072)
+                if not all(
+                    token in header
+                    for token in (
+                        KIND,
+                        protocol.manifest_sha256,
+                        skill_id,
+                        str(training_run),
+                    )
+                ):
+                    continue
                 recorded = json.loads(manifest_path.read_text())
             except (OSError, ValueError):
                 continue

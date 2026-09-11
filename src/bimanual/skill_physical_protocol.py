@@ -25,6 +25,16 @@ _SOURCES = (
     "dinner_scoring.py",
     "dinner_teacher.py",
     "skill_registry.py",
+    "skill_physical_protocol.py",
+    "skill_physical_protocol_runner.py",
+    "skill_policy.py",
+    "policy_rollout.py",
+    "supervised_control.py",
+    "contracts.py",
+    "teacher.py",
+    "dual_arm.py",
+    "supervisor.py",
+    "training.py",
 )
 
 
