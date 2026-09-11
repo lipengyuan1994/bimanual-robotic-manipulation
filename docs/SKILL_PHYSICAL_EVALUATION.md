@@ -22,6 +22,28 @@ has sealed. It shares `.artifacts/.model-job.lock` with training and full workfl
 inference, so it stops before allocating an evaluation run while another model job
 is active.
 
+The six-skill suite was frozen before any of those checkpoints completed at
+[`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
+seal `03cfa2a145bee7086a4514a0391c4165ff0b46d716b768faf518bbb9067c862e`.
+It selects final-update20,000 checkpoints, MPS, a two-action execution prefix,
+the authored nominal-v2 scene, exact teacher preparation, per-skill action budgets
+equal to twice the nominal duration, and a1,200-second wall limit. It requires one
+attempt for every completed cohort checkpoint; observed outcomes cannot change the
+suite.
+
+Run a completed cohort attempt through the frozen path:
+
+```sh
+PYTORCH_ENABLE_MPS_FALLBACK=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+  .artifacts/training-venv/bin/bimanual skill-physical-protocol-run \
+  docs/experiments/six-skill-physical-evaluation-protocol-v1.json \
+  --skill bar_place_and_return --training-attempt COHORT_ATTEMPT
+```
+
+The protocol runner verifies the cohort, exact training child, checkpoint source
+and evaluator code. It returns an existing sealed result instead of retrying it;
+multiple matching results stop as ambiguous. A failed physical result stays failed.
+
 ```sh
 PYTORCH_ENABLE_MPS_FALLBACK=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
   .artifacts/training-venv/bin/bimanual skill-physical-eval \
@@ -36,4 +58,3 @@ This first command path runs in the calling process. The existing full-workflow
 runner has guardian-based native-hang cleanup; bringing the same process boundary
 to component evaluations remains an operational hardening task. Until then, a
 component evaluation is a development diagnostic rather than a release runner.
-

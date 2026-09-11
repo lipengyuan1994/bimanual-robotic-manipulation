@@ -1,0 +1,157 @@
+"""Protocol-runner lifecycle fixtures; no model, rendering, or physical execution."""
+
+from types import SimpleNamespace
+
+from bimanual import skill_physical_protocol_runner as module
+from bimanual.cli import main
+from bimanual.evidence import EvidenceStore
+from bimanual.training import ACTTrainingConfig
+from bimanual.training_cohort import COHORT_SKILLS
+from bimanual.training_cohort_runner import KIND as TRAINING_KIND
+
+
+def setup(tmp_path, monkeypatch, *, evaluation_outcome="failed"):
+    skill = COHORT_SKILLS[0]
+    documents = tmp_path / "docs"
+    documents.mkdir()
+    protocol_path = documents / "physical.json"
+    cohort_path = documents / "training.json"
+    protocol_path.write_text("physical")
+    cohort_path.write_text("training")
+    raw = ACTTrainingConfig(
+        dataset_path="../dataset",
+        skill_views_path="views.json",
+        skill_id=skill,
+        device="mps",
+    ).model_dump(mode="json")
+    cohort = SimpleNamespace(
+        manifest_sha256="a" * 64,
+        configs=tuple(raw for _ in COHORT_SKILLS),
+        evidence_root="../evidence",
+    )
+    physical_config = {
+        "skill_id": skill,
+        "device": "mps",
+        "execute_chunk_steps": 2,
+        "max_actions": 1900,
+        "wall_timeout_seconds": 1200.0,
+    }
+    protocol = SimpleNamespace(
+        manifest_sha256="b" * 64,
+        training_cohort_path="training.json",
+        configs=tuple(physical_config for _ in COHORT_SKILLS),
+    )
+    monkeypatch.setattr(module, "load_skill_physical_protocol", lambda path: protocol)
+    monkeypatch.setattr(module, "load_training_cohort_protocol", lambda path: cohort)
+
+    store = EvidenceStore(tmp_path / "evidence")
+    wrapper_directory = store.new_run()
+    child_store = EvidenceStore(wrapper_directory / "training-evidence")
+    child_directory = child_store.new_run()
+    (child_directory / "checkpoint.txt").write_text("CPU fixture")
+    resolved = ACTTrainingConfig.model_validate(
+        raw
+        | {
+            "dataset_path": (documents / raw["dataset_path"]).resolve(),
+            "skill_views_path": (documents / raw["skill_views_path"]).resolve(),
+        }
+    )
+    child = child_store.seal(
+        child_directory,
+        kind="act_training",
+        outcome="completed",
+        config=resolved.model_dump(mode="json"),
+        metrics={"training_completed": True},
+        source={},
+        claims=[],
+    )
+    wrapper = store.seal(
+        wrapper_directory,
+        kind=TRAINING_KIND,
+        outcome="completed",
+        config={
+            "skill_id": skill,
+            "protocol_sha256": cohort.manifest_sha256,
+            "training": resolved.model_dump(mode="json"),
+        },
+        metrics={
+            "training_complete": True,
+            "child_run_id": child.run_id,
+            "child_manifest_sha256": child.manifest_sha256,
+        },
+        source={},
+        claims=[],
+    )
+    calls = []
+
+    def evaluate(config, *, store, **kwargs):
+        calls.append(config)
+        directory = store.new_run()
+        (directory / "fixture.txt").write_text("No physical evaluation")
+        return store.seal(
+            directory,
+            kind=module.KIND,
+            outcome=evaluation_outcome,
+            config=config.model_dump(mode="json"),
+            metrics={"component_passed": False},
+            source={},
+            claims=[],
+        )
+
+    monkeypatch.setattr(module, "run_skill_physical_evaluation", evaluate)
+    return protocol_path, skill, wrapper, calls
+
+
+def test_runs_once_with_exact_protocol_and_training_binding(tmp_path, monkeypatch):
+    protocol_path, skill, wrapper, calls = setup(tmp_path, monkeypatch)
+    first = module.run_skill_physical_protocol(protocol_path, skill, wrapper.run_id)
+    second = module.run_skill_physical_protocol(protocol_path, skill, wrapper.run_id)
+    assert first == second and first.outcome == "failed"
+    assert len(calls) == 1
+    assert calls[0].evaluation_protocol_sha256 == "b" * 64
+    assert calls[0].skill_id == skill and calls[0].max_actions == 1900
+
+
+def test_rejects_wrong_training_skill_before_evaluation(tmp_path, monkeypatch):
+    protocol_path, skill, wrapper, calls = setup(tmp_path, monkeypatch)
+    store = EvidenceStore(tmp_path / "evidence")
+    directory = store.directory(wrapper.run_id)
+    # The wrapper seal makes this mutation detectable before any evaluator call.
+    import json
+
+    manifest = json.loads((directory / "manifest.json").read_text())
+    manifest["config"]["skill_id"] = COHORT_SKILLS[1]
+    (directory / "manifest.json").write_text(json.dumps(manifest))
+    try:
+        module.run_skill_physical_protocol(protocol_path, skill, wrapper.run_id)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Tampered training wrapper was accepted")
+    assert calls == []
+
+
+def test_protocol_run_cli_preserves_failed_component(tmp_path, monkeypatch, capsys):
+    seen = []
+    result = SimpleNamespace(outcome="failed", model_dump=lambda **kwargs: {"outcome": "failed"})
+    monkeypatch.setattr(
+        module,
+        "run_skill_physical_protocol",
+        lambda path, skill, attempt: seen.append((path, skill, attempt)) or result,
+    )
+    path = tmp_path / "protocol.json"
+    assert (
+        main(
+            [
+                "skill-physical-protocol-run",
+                str(path),
+                "--skill",
+                "bar_place_and_return",
+                "--training-attempt",
+                "attempt-1",
+            ]
+        )
+        == 1
+    )
+    assert seen == [(path, "bar_place_and_return", "attempt-1")]
+    assert '"outcome": "failed"' in capsys.readouterr().out

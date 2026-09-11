@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 11, 2026. Latest pushed checkpoint: `b33c4df` on
+Updated September 11, 2026. Latest pushed checkpoint: `f486ce3` on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -83,6 +83,16 @@ checkpoint has been run through this evaluator yet because the active training j
 owns the model slot. The first command path remains in-process; guardian-based
 native-hang cleanup is still needed before it is a release runner.
 [Evaluation contract and command](SKILL_PHYSICAL_EVALUATION.md).
+
+The six-skill component suite is frozen before any remaining checkpoint completes:
+[`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
+seal `03cfa2a145bee7086a4514a0391c4165ff0b46d716b768faf518bbb9067c862e`.
+It binds the training cohort and evaluator sources, final-update20,000 selection,
+MPS, execution prefix2, exact teacher preparation, fixed nominal-v2 scene,
+twice-nominal action budgets and1,200-second wall limits. Its runner accepts only a
+completed matching cohort wrapper/child, evaluates once, preserves failures and
+refuses ambiguous duplicates. The focused protocol/evaluator/CLI group passes18
+tests. No model or physical success is implied.
 
 CPU-only analysis run `20260911T210617-481ff0b6e8eb`, seal
 `6466ef3ce767e469ef58052d4832742a9b60c2f83c5ef8ca966014fc628ceb81`,

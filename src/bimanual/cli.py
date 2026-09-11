@@ -142,6 +142,24 @@ def main(argv: list[str] | None = None) -> int:
     skill_physical.add_argument("--max-actions", type=int, default=2000)
     skill_physical.add_argument("--execute-chunk-steps", type=int, default=2)
     skill_physical.add_argument("--wall-timeout-seconds", type=float, default=1200)
+    physical_protocol_create = commands.add_parser(
+        "skill-physical-protocol-create",
+        help="Freeze the six-skill teacher-prepared evaluation suite",
+    )
+    physical_protocol_create.add_argument("--training-cohort", type=Path, required=True)
+    physical_protocol_create.add_argument("--destination", type=Path, required=True)
+    physical_protocol_check = commands.add_parser(
+        "skill-physical-protocol-check",
+        help="Reverify the frozen teacher-prepared evaluation suite",
+    )
+    physical_protocol_check.add_argument("protocol", type=Path)
+    physical_protocol_run = commands.add_parser(
+        "skill-physical-protocol-run",
+        help="Evaluate one completed cohort checkpoint under the frozen suite",
+    )
+    physical_protocol_run.add_argument("protocol", type=Path)
+    physical_protocol_run.add_argument("--skill", required=True)
+    physical_protocol_run.add_argument("--training-attempt", required=True)
     handoff_analysis = commands.add_parser(
         "handoff-failure-analyze",
         help="Reproduce contact-stage findings from sealed learned hand-off failures",
@@ -536,6 +554,29 @@ def main(argv: list[str] | None = None) -> int:
                 ),
                 store=store,
                 project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
+        elif args.command == "skill-physical-protocol-create":
+            from bimanual.skill_physical_protocol import create_skill_physical_protocol
+
+            result = create_skill_physical_protocol(args.training_cohort, args.destination)
+            emit(result.model_dump(mode="json"))
+        elif args.command == "skill-physical-protocol-check":
+            from bimanual.skill_physical_protocol import load_skill_physical_protocol
+
+            result = load_skill_physical_protocol(args.protocol)
+            emit(result.model_dump(mode="json"))
+        elif args.command == "skill-physical-protocol-run":
+            from bimanual.skill_physical_protocol_runner import (
+                run_skill_physical_protocol,
+            )
+
+            result = invoke_with_diagnostics(
+                run_skill_physical_protocol,
+                args.protocol,
+                args.skill,
+                args.training_attempt,
             )
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1

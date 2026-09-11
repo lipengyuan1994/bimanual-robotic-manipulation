@@ -11,8 +11,9 @@ from pathlib import Path
 from typing import Literal
 
 import numpy as np
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from bimanual.contracts import Digest
 from bimanual.dataset_export import CAMERA_FEATURES
 from bimanual.dinner_control import DinnerControlWorker
 from bimanual.evidence import EvidenceStore, Manifest, canonical, provenance
@@ -38,6 +39,16 @@ class SkillPhysicalEvaluationConfig(BaseModel):
     max_actions: int = Field(default=2000, strict=True, ge=1, le=20000)
     execute_chunk_steps: int = Field(default=2, strict=True, ge=1, le=100)
     wall_timeout_seconds: float = Field(default=1200, gt=0, le=86400)
+    evaluation_protocol_sha256: Digest | None = None
+    evaluation_protocol_file_sha256: Digest | None = None
+
+    @model_validator(mode="after")
+    def paired_protocol_binding(self):
+        if (self.evaluation_protocol_sha256 is None) != (
+            self.evaluation_protocol_file_sha256 is None
+        ):
+            raise ValueError("Evaluation protocol body and file seals must be supplied together")
+        return self
 
 
 def _resolve(config: SkillPhysicalEvaluationConfig, root: Path) -> SkillPhysicalEvaluationConfig:
