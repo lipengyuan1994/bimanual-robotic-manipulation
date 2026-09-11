@@ -13,7 +13,8 @@ Readiness follows [ROADMAP](ROADMAP.md); original scope remains in [PLAN](PLAN.m
 - **M2 in progress:** real ACT training/inference, guarded actions, Qwen proposals
   and a supervisor core exist. Learned open-hand approach passes two validation
   starts but fails nominal. No learned grasp or complete learned dinner workflow
-  has passed; live visual planning/recovery remains unintegrated.
+  has passed. Live paused-scene planning is connected; learned skill termination
+  and recovery still need end-to-end validation.
 - **M3 incomplete:** no frozen release evaluation, Intel/OpenVINO execution or
   submission package. **M4 pending:** production reliability and operational gates.
 
@@ -96,8 +97,8 @@ The sensor bundle preserves original ACT observations and verifies reset identit
 calibration, baseline pixel equality and actual processor grids. It is explicitly
 reset-only, not a way to relabel old images as fresh. The [supervisor](SUPERVISOR.md)
 has tested prerequisites, ownership, deadlines, cancellation and at most two
-retries, but is not connected to live skill executors. Planner latency/fresh
-execution observations still need an explicit integration solution.
+retries. A continuous worker and live planner bridge are now connected; see the
+current handoff below for actual evidence and remaining recognition/skill gaps.
 
 ## Implemented foundation and references
 
@@ -127,9 +128,9 @@ and portal are committed at `bdcd4e4`. Use `git rev-parse HEAD` for the latest
 handoff commit; subsequent sampler changes do not alter the sealed teacher run. [Draft PR #1](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/pull/1)
 is open and unmerged.
 
-Latest `scripts/check.sh`: **612 passed, thirteen explicit optional-training skips,
+Latest `scripts/check.sh`: **689 passed, fourteen explicit optional-training skips,
 eight rendering tests deselected**, with Ruff, formatting, docs and README checks.
-Log: `.artifacts/checks-continuous-control.log`; all current auxiliary-arm,
+Log: `.artifacts/checks-live-planning-schedule-final.log`; all current auxiliary-arm,
 stationary transition, registry, policy adapter and worker cases are included.
 The preceding dinner-only
 checkpoint had 403 passing tests. The preceding seven actual
@@ -159,23 +160,51 @@ Verified submission deadline: September 16, 2:30 PM EDT; required presentation
 assets include application URL, cover, video and slides. No organizer message or
 hackathon submission has been sent.
 
-## Next executable work
+## Current handoff — live planning, independent scoring and training
 
-See the final handoff entry below for live process handles; do not restart jobs
-without checking their actual state.
+The continuous worker integration is committed at `1e9e1cb`. This follow-up adds
+an independent outcome evaluator, owned-pause planning, a background local model
+runner, and an optional terminal learning-rate schedule. Final checks pass; a clean checkpoint follows. The development diagnostics
+retain their recorded dirty-source lineage.
 
-1. Monitor the fixed 20,000-update ACT run listed below; do not duplicate it.
-   Apply its unchanged offline gates only after it seals.
-2. Keep the verified full export and seven skill views as one nominal training
-   scene. The data/trainer integration passes full checks and the actual CPU
-   test, but no learned dinner capability is available yet.
-3. Connect measured skill termination/recovery and live visual planning to the
-   incremental dinner worker. Train/evaluate the bounded dinner checkpoints before
-   advertising availability; the one-update fixture only tests integration.
-   Do not expose unsupported skills or silently substitute the teacher.
+- Fixed 20,000-update MPS training **`20260911T023624-0e2a88d90d4a`** completed
+  in 3,704.47 seconds from clean `c279611`. Checkpoint, processor, sampler and
+  seal verification pass. Handle 61071 is terminal.
+- Offline assessment `20260911T033850-4724772f122e` and frozen gate
+  **`20260911T033913-cf2f84439152`** pass five of six checks but fail initial
+  pan direction. Nominal launch tool error falls to 0.542 mm, yet the first pan
+  prediction is -0.002877 rad against +0.000564 rad. **No physical rollout or
+  promotion follows.** All prior failures and the acceptance thresholds remain.
+- Phase-free audit **`20260911T033217-cd9792a67e58`** passes the retained clean
+  teacher trajectory after replacing every stage label. It checks 4,819 actions
+  and 240,950 samples using physical outcomes. Instrumentation declarations are
+  source-inspected, not proof against unlogged edits. [Evaluator](DINNER_OUTCOMES.md).
+- First real paused-camera check `20260911T033645-856f3c6ca453` failed exact pixel
+  equality: 75 overhead channels differed by one level on cold initialization.
+  Repeat capture diagnostic `20260911T033750-b04cbcf18f9f` isolated this effect.
+  The bridge now retains a separate warm-up capture before the planning capture;
+  exact equality remains mandatory. Warmed actual-camera check
+  **`20260911T034215-002b8fea4b87`** passes a simulated 95-second planning delay,
+  rejecting direct stale dispatch and allowing only verified fresh revalidation.
+- Actual live Qwen MPS run **`20260911T034324-a1bda3e43bd4`** completed with
+  18.11 seconds load and 29.50 seconds inference, three 480-pixel cameras, and
+  verified recapture. It reported the bar not visible and requested clarification;
+  the supervisor applied **zero actions**. This is a functioning integration,
+  not successful object recognition or manipulation. All three completed new
+  diagnostic seals verify. [Live planner](PLANNER_LIVE_INTEGRATION.md).
 
-Verify the current teacher evidence with
-`.venv/bin/bimanual evidence verify 20260911T011032-a9fda4aee41f`.
+Next: validate and preregister the fixed 20,000-update terminal-decay comparison,
+then train from the same initialization with unchanged data and frozen gates.
+Only a fully passing final checkpoint may enter the existing physical protocol.
+Live high-resolution recognition and measured skill termination remain open.
+No model job is active after the completed Qwen diagnostic; check the final
+entry for any subsequently launched training handle.
+
+## Historical implementation entries
+
+The entries below preserve the implementation sequence and earlier process
+observations. Their “active” or “next” wording is historical; the current handoff
+above and final entry below determine present process state.
 
 ## Packaged teacher integration checkpoint
 
@@ -421,3 +450,31 @@ checkpoint. Full checks include the latest stationary and model-integrity guards
 The actual camera diagnostic and CPU inference evidence are separate from those
 base tests; neither establishes learned task quality. Next executable model work
 remains the unchanged final offline gate for 61071 once its 20,000 updates seal.
+
+## Latest verification and next training protocol
+
+The four-update actual CPU ACT schedule/reload check passes (6.44 seconds) with
+the repository-local Hugging Face cache. The first invocation failed before
+training because its default cache location was unwritable; both logs remain.
+The native base suite completed under terminal handle 4841: 689 passed,
+14 optional skips, eight render deselections in 287.04 seconds.
+Previous committed `1e9e1cb` GitHub CI is now verified successful.
+
+Preregistered comparison **`20260911T034840-1019934f5c06`** changes only the
+terminal learning-rate schedule: 1e-5 through update 15,000, linear decrease to
+1e-6 at update 20,000. Same initialization, data, sampler, seed and six gates.
+Final checkpoint only; zero spend. This protocol is sealed before training.
+Training has not started; start only after final checks and a clean commit.
+
+All eight actual rendering tests pass (71.75 seconds;
+`.artifacts/render-live-planning-checkpoint.log`). The updated documentation
+index checks 351 links and README synchronization passes. A short exercise in
+[learning](LEARNING.md) connects the failed prediction gate to lessons 4 and 6.
+
+Final checks pass with Ruff, formatting, 351 documentation links and README
+synchronization. Rendering handle 50703 and CPU schedule handle 79058 are terminal.
+Once the clean checkpoint is saved, launch `.artifacts/approach-terminal-decay.py`
+in the verified native training environment. Its final offline driver is
+`.artifacts/approach-terminal-decay-offline.py <training-run>`; apply
+`.artifacts/compare-terminal-decay-offline.py <offline-run>` afterward. Failed
+gates prohibit physical execution; the old failed candidate remains unpromoted.

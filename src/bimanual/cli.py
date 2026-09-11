@@ -128,6 +128,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     train.add_argument("--no-vae", action="store_true", help="Matched-initialization ACT ablation")
     train.add_argument("--dropout", type=float, default=0.1)
+    train.add_argument(
+        "--learning-rate-schedule", choices=["constant", "terminal_linear"], default="constant"
+    )
     train.add_argument("--skill-views", type=Path)
     train.add_argument("--skill-id")
     train.add_argument("--sampling-protocol-run", type=Path)
@@ -357,6 +360,7 @@ def main(argv: list[str] | None = None) -> int:
                     sampling_profile=args.sampling_profile,
                     use_vae=not args.no_vae,
                     dropout=args.dropout,
+                    learning_rate_schedule=args.learning_rate_schedule,
                     skill_views_path=args.skill_views,
                     skill_id=args.skill_id,
                     sampling_protocol_run=args.sampling_protocol_run,

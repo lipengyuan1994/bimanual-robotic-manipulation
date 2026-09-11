@@ -1,6 +1,7 @@
 # Live planner integration design
 
-Status: proposed implementation; no live dispatch is claimed. The current
+Status: lifecycle and actual local Qwen recapture verified in development;
+recognition and learned dinner execution remain incomplete. The current
 reset-only sensor bundle remains non-authorizing. This design addresses the
 measured 91–95 second Qwen inference time while preserving the two-second action
 freshness guard. See [planner](PLANNER.md), [sensors](PLANNER_SENSORS.md), and
@@ -32,12 +33,14 @@ own fresh observations and action guards.
 
 ## Required implementation boundaries
 
-- Introduce live capture/pause provenance separately from `recorded_reset_only`.
-- Add planner job lifecycle and cancellation, including rejection of late results.
-- Add an explicit supervisor revalidation entry point; existing direct dispatch
+- Live jobs retain capture/pause provenance separately from `recorded_reset_only`.
+- Planning jobs preserve original context, raw responses and revalidation records;
+  cancellation and late-result rejection remain explicit.
+- The worker dispatches through explicit revalidation; existing direct dispatch
   must continue rejecting an old proposal paired with a new observation.
 - Distinguish capture progress from physical progress. A paused recapture advances
-  wall time and sequence but not simulation time. Allow this only on the verified
+  wall capture time and artifact identity while retaining the control sequence
+  and simulation time. Allow this only on the verified
   pause path; same-time captures cannot prove task completion or recovery progress.
 - Register incremental skill executors sharing one environment. The continuous
   scripted dinner teacher does not establish learned skill availability.
@@ -54,3 +57,43 @@ Physical completion still requires independent outcome checks and actual physica
 progress. Qwen's apparent-completion statement is not task success. Recovery
 limits remain unchanged. Unsupported learned dinner skills stop with an explicit
 reason rather than falling back silently to the teacher.
+
+## Current API and execution boundaries
+
+`LivePlanningSession(worker)` exposes `begin`, `images`, `check_pending`,
+`complete`, `fail` and `cancel`. `begin` acquires an exclusive planning pause and
+records the original context. Model code receives verified image copies and the
+immutable context. `complete` parses the original response, rechecks unchanged
+worker/model/task identity, renders fresh images and records their link to the
+original proposal before dispatch. This initial implementation supports the
+480-pixel policy-camera profile. Live 1920-pixel reasoning remains separate work;
+the recorded-reset high-resolution bundle cannot authorize a live action.
+
+`LocalPlannerRunner(session, preloaded_planner)` provides `submit`, nonblocking
+`poll`, `cancel` and `close`. A single background thread invokes the already-loaded
+planner's `generate` method. All capture, expiry, cancellation and dispatch methods
+run on the serialized simulation actor. Poll regularly so expired jobs lose
+authority even while model computation continues. Running generation may not be
+interruptible; cancelled output is discarded and cannot dispatch later.
+
+Load the model before creating a live planning observation. Generation metadata
+and the loaded model-manifest digest are retained separately from the model's
+reasoning text. A stub without model provenance remains explicitly unidentified.
+The runner does not create a web UI, cross-thread lock or crash supervisor.
+
+## Actual camera and model evidence
+
+A cold renderer changed 75 overhead channels by one level on the second capture
+in failed run `20260911T033645-856f3c6ca453`. A six-capture diagnostic
+`20260911T033750-b04cbcf18f9f` found subsequent captures identical. `begin` now
+retains one explicit warm-up observation before its planning observation, both
+under the unchanged owned pause. It does not retry until images happen to match
+or relax exact pixel equality. Every original, warm-up and recaptured image remains.
+
+Actual camera run `20260911T034215-002b8fea4b87` passes the injected 95-second
+delay with a scripted model response and zero applied actions. Actual local Qwen
+MPS run `20260911T034324-a1bda3e43bd4` completes in 29.50 seconds inference after
+18.11 seconds model load. It requests clarification because it reports the bar
+not visible. Recapture verification passes and no movement occurs. This confirms
+the live model/supervisor path; it does not establish accurate recognition or
+learned hand-off success. Both evidence seals verify.

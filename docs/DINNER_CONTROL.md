@@ -95,3 +95,6 @@ complete product still needs trained skills with measured success, validated
 termination/recovery, live visual planning, a live operator UI, held-out task
 outcomes, and target Intel/OpenVINO execution. The fixed authored teacher remains
 the comparison baseline, not a fallback silently substituted for learned actions.
+
+The [phase-free physical evaluator](DINNER_OUTCOMES.md) checks complete dinner
+outcomes independently of the operating controller or teacher stage labels.

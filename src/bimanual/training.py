@@ -35,6 +35,7 @@ class ACTTrainingConfig(BaseModel):
     seed: int = Field(default=0, ge=0, le=2**32 - 1)
     cpu_threads: int = Field(default=4, ge=1, le=32)
     learning_rate: float = Field(default=1e-5, gt=0, le=0.1)
+    learning_rate_schedule: Literal["constant", "terminal_linear"] = "constant"
     normalization_std_floor: float = Field(default=1e-4, gt=0, le=1)
     sampling_profile: Literal["uniform", "approach_regions_v1", "approach_nominal_launch_v1"] = (
         "uniform"
@@ -48,6 +49,8 @@ class ACTTrainingConfig(BaseModel):
 
     @model_validator(mode="after")
     def sampling_configuration(self):
+        if self.learning_rate_schedule == "terminal_linear" and self.steps < 4:
+            raise ValueError("Terminal linear decay requires at least four updates")
         if (self.skill_views_path is None) != (self.skill_id is None):
             raise ValueError("Skill training requires both a verified view manifest and skill id")
         if self.skill_id is not None and self.sampling_profile != "uniform":
@@ -57,6 +60,47 @@ class ACTTrainingConfig(BaseModel):
                 "Nonuniform profiles require a sampling protocol run; uniform forbids it"
             )
         return self
+
+
+def learning_rate_for_step(config: ACTTrainingConfig, step: int) -> float:
+    """Learning rate used by this one-based optimizer update, before optimizer.step()."""
+    if type(step) is not int or not 1 <= step <= config.steps:
+        raise ValueError("Learning-rate step must be a one-based update within the budget")
+    if config.learning_rate_schedule == "constant":
+        return config.learning_rate
+    if config.learning_rate_schedule != "terminal_linear" or config.steps < 4:
+        raise ValueError("Unsupported learning-rate schedule")
+    hold = 3 * config.steps // 4
+    factor = 1.0 if step <= hold else 0.1 + 0.9 * (config.steps - step) / (config.steps - hold)
+    return config.learning_rate * factor
+
+
+def learning_rate_schedule_definition(config: ACTTrainingConfig) -> dict:
+    """Portable schedule metadata; optimizer group order matches saved optimizer state."""
+    learning_rate_for_step(config, 1)
+    hold = config.steps if config.learning_rate_schedule == "constant" else 3 * config.steps // 4
+    return dict(
+        schema_version=1,
+        profile=config.learning_rate_schedule,
+        total_updates=config.steps,
+        base_learning_rate=config.learning_rate,
+        hold_updates=hold,
+        first_decay_update=None if hold == config.steps else hold + 1,
+        final_factor=1.0 if hold == config.steps else 0.1,
+        indexing="one_based_before_optimizer_step",
+        applies_to="all_optimizer_parameter_groups",
+    )
+
+
+def apply_learning_rate(optimizer, config: ACTTrainingConfig, step: int) -> list[float]:
+    """Set every group, including the visual backbone, and return the actual rates."""
+    value = learning_rate_for_step(config, step)
+    groups = optimizer.param_groups
+    if not groups or any(not isinstance(group, dict) or "lr" not in group for group in groups):
+        raise ValueError("Optimizer must expose learning rates for every parameter group")
+    for group in groups:
+        group["lr"] = value
+    return [group["lr"] for group in groups]
 
 
 def build_sampling_plan(
@@ -385,6 +429,7 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
         "manipulation_success": None,
         "learned_policy_quality": None,
         "steps": [],
+        "learning_rate_schedule": learning_rate_schedule_definition(config),
     }
     started = time.perf_counter()
     torch = None
@@ -581,6 +626,7 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
             )
             if not np.isfinite(norm) or norm <= 0:
                 raise RuntimeError("Invalid ACT gradient norm")
+            actual_learning_rates = apply_learning_rate(optimizer, config, step + 1)
             optimizer.step()
             synchronize()
             item = dict(
@@ -590,6 +636,7 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
                 loss=float(loss.detach().cpu()),
                 loss_parts=parts,
                 gradient_norm=norm,
+                learning_rates=actual_learning_rates,
                 seconds=time.perf_counter() - step_start,
             )
             metrics["steps"].append(item)
@@ -601,6 +648,12 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
         checkpoint = directory / "checkpoint"
         policy.save_pretrained(checkpoint)
         (checkpoint / "training_sampling.json").write_bytes(canonical(sampling_plan))
+        schedule_metadata = dict(
+            definition=metrics["learning_rate_schedule"],
+            completed_updates=config.steps,
+            final_learning_rates=list(actual_learning_rates),
+        )
+        (checkpoint / "training_schedule.json").write_bytes(canonical(schedule_metadata))
         preprocessor.save_pretrained(checkpoint, config_filename="policy_preprocessor.json")
         postprocessor.save_pretrained(checkpoint, config_filename="policy_postprocessor.json")
         (directory / "normalization.json").write_text(
@@ -628,6 +681,7 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
             {
                 "step": config.steps,
                 "optimizer": optimizer.state_dict(),
+                "learning_rate_schedule": schedule_metadata,
                 "sampler_rng_state": sampler.get_state(),
                 "sampling_plan": sampling_plan,
                 "sampling_plan_sha256": sampling_digest,
@@ -653,6 +707,14 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
             or restored_state["sampling_plan_sha256"] != sampling_digest
         ):
             raise RuntimeError("Saved sampling plan differs from the training plan")
+        if (
+            restored_state["learning_rate_schedule"] != schedule_metadata
+            or [group["lr"] for group in restored_state["optimizer"]["param_groups"]]
+            != actual_learning_rates
+            or json.loads((checkpoint / "training_schedule.json").read_text()) != schedule_metadata
+        ):
+            raise RuntimeError("Saved optimizer learning rates or schedule metadata differ")
+        metrics["learning_rate_reload_verified"] = True
         restored_sampler = torch.Generator(device="cpu")
         restored_sampler.set_state(restored_state["sampler_rng_state"])
         saved_sampler_state = sampler.get_state()

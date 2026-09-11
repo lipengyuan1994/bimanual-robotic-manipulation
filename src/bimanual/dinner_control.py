@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import time
+import uuid
 from collections.abc import Callable, Iterable
 from pathlib import Path
 
@@ -59,6 +60,8 @@ class DinnerControlWorker:
         self._capture_count = self._applied = 0
         self._observation = self._raw = self._state = None
         self._terminal_observation = self._terminal_state = None
+        self._generation = uuid.uuid4().hex
+        self._planning_pause = None
         self.control = SupervisedPolicyControl(registry, clock_ns=clock_ns)
         self.supervisor = self.control.supervisor
         try:
@@ -101,6 +104,98 @@ class DinnerControlWorker:
     def _record(self, name: str, row: dict):
         with (self.directory / name).open("a") as stream:
             stream.write(json.dumps(row, allow_nan=False) + "\n")
+
+    def acquire_planning_pause(self) -> dict:
+        """Claim a ready boundary for externally executed reasoning; no physics advances."""
+        self._available()
+        snapshot = self.supervisor.snapshot()
+        if self._planning_pause is not None:
+            raise RuntimeError("A planning pause is already owned")
+        if snapshot.state != "ready" or snapshot.active is not None or snapshot.task is None:
+            raise RuntimeError("Planning requires a ready task with no active attempt")
+        if snapshot.completed_steps and (
+            self._terminal_observation is None
+            or self._terminal_state != self._token()
+            or snapshot.attempts[-1].outcome != "succeeded"
+            or snapshot.attempts[-1].observation != self._terminal_observation
+        ):
+            raise ValueError("Planning cannot replace recovery or an unverified terminal boundary")
+        self.control.clear()
+        pause = {
+            "pause_id": uuid.uuid4().hex,
+            "worker_generation": self._generation,
+            "state_sha256": self._token(),
+            "model_sha256": self._expected_model_digest,
+            "task_sha256": hashlib.sha256(
+                canonical(snapshot.task.model_dump(mode="json"))
+            ).hexdigest(),
+            "completed_steps": tuple(snapshot.completed_steps),
+            "camera_source": "live_mujoco"
+            if self._render_capture is None
+            else "injected_unverified",
+        }
+        self._planning_pause = pause
+        return pause.copy()
+
+    def check_planning_pause(self, pause_id: str) -> dict:
+        self._available()
+        pause = self._planning_pause
+        snapshot = self.supervisor.snapshot()
+        if (
+            pause is None
+            or pause["pause_id"] != pause_id
+            or pause["worker_generation"] != self._generation
+        ):
+            raise RuntimeError("Planning pause is no longer owned by this worker generation")
+        if (
+            snapshot.state != "ready"
+            or snapshot.active is not None
+            or snapshot.task is None
+            or hashlib.sha256(canonical(snapshot.task.model_dump(mode="json"))).hexdigest()
+            != pause["task_sha256"]
+            or tuple(snapshot.completed_steps) != pause["completed_steps"]
+            or self._token() != pause["state_sha256"]
+        ):
+            raise ValueError("Worker state or task changed during planning")
+        return pause.copy()
+
+    def capture_planning_pause(self, pause_id: str) -> Observation:
+        self.check_planning_pause(pause_id)
+        observation = self.capture()
+        self.check_planning_pause(pause_id)
+        return observation
+
+    def release_planning_pause(self, pause_id: str):
+        if self._planning_pause is None or self._planning_pause["pause_id"] != pause_id:
+            raise RuntimeError("Planning pause is no longer owned")
+        self._planning_pause = None
+
+    def dispatch_planning_pause(
+        self,
+        pause_id: str,
+        observation: Observation,
+        *,
+        proposal,
+        planning_deadline_ns: int | None = None,
+    ):
+        """Trusted revalidation bridge: dispatch the exact recapture under its owned pause."""
+        self.check_planning_pause(pause_id)
+        self._validate_capture(observation)
+        previous = (
+            self._terminal_observation if self.supervisor.snapshot().completed_steps else None
+        )
+        if planning_deadline_ns is not None and self._clock() >= planning_deadline_ns:
+            raise TimeoutError("Planning job expired before dispatch")
+        self.release_planning_pause(pause_id)
+        if previous is not None:
+            return self.supervisor.dispatch_stationary(
+                observation, previous_observation=previous, proposal=proposal
+            )
+        return self.supervisor.dispatch(observation, proposal=proposal)
+
+    def _require_unpaused(self):
+        if self._planning_pause is not None:
+            raise RuntimeError("Physical policy control is prohibited during owned planning pause")
 
     def _token(self) -> str:
         env = self._env
@@ -280,6 +375,7 @@ class DinnerControlWorker:
     def bind(self, attempt_id: str, **policy_configuration):
         observation = self._observation
         try:
+            self._require_unpaused()
             self._validate_capture(observation)
             _, allowed = self._permissions(attempt_id)
             result = self.control.bind(
@@ -297,6 +393,7 @@ class DinnerControlWorker:
 
     def offer(self, attempt_id: str, targets: np.ndarray, observation: Observation) -> dict:
         try:
+            self._require_unpaused()
             self._validate_capture(observation)
             self._permissions(attempt_id)
             result = self.control.offer(attempt_id, targets, observation)
@@ -318,6 +415,7 @@ class DinnerControlWorker:
         """Delegate verified checkpoint binding through the worker's physical guards."""
         observation = self._observation
         try:
+            self._require_unpaused()
             self._validate_capture(observation)
             _, allowed = self._permissions(attempt_id)
             binding = policy.bind_control(
@@ -360,6 +458,7 @@ class DinnerControlWorker:
 
     def step(self, attempt_id: str, observation: Observation) -> dict:
         action = dict(
+            episode_id=self._env.episode_id,
             attempt_id=attempt_id,
             observation_sequence=observation.sequence,
             applied=False,
@@ -367,6 +466,7 @@ class DinnerControlWorker:
         )
         before = float(self._env.data.time)
         try:
+            self._require_unpaused()
             self._validate_capture(observation)
             _, allowed = self._permissions(attempt_id)
             if self._env.active_contacts != allowed:
@@ -440,12 +540,14 @@ class DinnerControlWorker:
         try:
             return self.supervisor.cancel(reason)
         finally:
+            self._planning_pause = None
             self._env.stop()
 
     def close(self):
         if self._closed:
             return
         self._closed = True
+        self._planning_pause = None
         try:
             if self.supervisor.snapshot().active is not None:
                 self.supervisor.cancel("Physical worker closed before attempt termination")

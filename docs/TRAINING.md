@@ -462,3 +462,32 @@ and retain the original offline gates. Estimated native MPS time is about 62.5
 minutes by linear extrapolation; this is not a guaranteed benchmark. Start only
 after the active dinner capture ends, avoiding competing GPU jobs. Spend remains
 zero. The protocol is not a completed training result.
+
+## Fixed 20,000-update result and terminal learning-rate experiment
+
+Run `20260911T023624-0e2a88d90d4a` completed all 20,000 native MPS updates in
+3,704.47 seconds from clean `c279611`. Saved checkpoint, processor and sampler
+reloads verify. Offline run `20260911T033850-4724772f122e` preserves unchanged
+weights. Frozen comparison `20260911T033913-cf2f84439152` passes five of six
+checks: nominal launch tool error improves to 0.542 mm, but initial pan direction
+is still negative (-0.002877 rad). No physical validation or promotion follows.
+
+Nominal frame zero was sampled 689 times, including update 19,992, so sampling
+starvation is not supported by this trace. All final 2,000 updates exceeded the
+gradient-clipping threshold. Smaller terminal updates are a testable hypothesis,
+not an established explanation.
+
+The optional CLI `train --learning-rate-schedule terminal_linear` holds the
+configured learning rate through floor(3 * updates / 4), then decreases linearly
+to 10% on the final update. It requires at least four updates. Both optimizer
+groups use the recorded rate before each update. Constant remains the default.
+The checkpoint retains the schedule, completed-update count and actual rates;
+reload verification compares them to the saved optimizer.
+
+The next comparison must use the same initialization, data, sampler, seed and
+20,000-update budget, with only this schedule changed. Use the final checkpoint
+and the unchanged six offline gates before any physical validation.
+
+Protocol `20260911T034840-1019934f5c06` seals that comparison before training.
+An actual four-update CPU integration test passes and verifies both saved
+optimizer groups and schedule reload. This checks implementation, not quality.

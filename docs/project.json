@@ -25,7 +25,7 @@
       "id": "M2",
       "title": "Learned workflow",
       "state": "in_progress",
-      "detail": "Dinner data/views, verified ACT checkpoint loading, and continuous supervised control pass local integration checks. Learned approach still fails nominal; no learned grasp or complete dinner task has passed. Live visual execution remains."
+      "detail": "Dinner data/views, ACT loading, continuous control, independent outcomes and live Qwen recapture are connected. The 20000-update approach fails initial-direction gating; no learned grasp or complete dinner success. Recognition and skill termination remain."
     },
     {
       "id": "M3",

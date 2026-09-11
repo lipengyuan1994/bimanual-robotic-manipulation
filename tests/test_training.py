@@ -584,3 +584,126 @@ def test_initialization_reference_mismatch_stops_before_training(tmp_path):
     assert run["metrics"]["steps"] == []
     assert run["metrics"]["act_initialization"]["reference_initial_state_sha256"] != "0" * 64
     assert "checkpoint/model.safetensors" not in run["files"]
+
+
+def test_constant_learning_rate_default_preserves_every_update():
+    from bimanual.training import learning_rate_for_step, learning_rate_schedule_definition
+
+    config = ACTTrainingConfig(dataset_path=Path("unused"), steps=20, learning_rate=2e-5)
+    assert config.learning_rate_schedule == "constant"
+    assert [learning_rate_for_step(config, step) for step in range(1, 21)] == [2e-5] * 20
+    definition = learning_rate_schedule_definition(config)
+    assert definition["hold_updates"] == 20 and definition["first_decay_update"] is None
+    assert definition["final_factor"] == 1.0
+
+
+@pytest.mark.parametrize(
+    "step,expected", [(1, 1e-5), (15000, 1e-5), (15001, 9.9982e-6), (17500, 5.5e-6), (20000, 1e-6)]
+)
+def test_terminal_linear_one_based_boundaries(step, expected):
+    from bimanual.training import learning_rate_for_step
+
+    config = ACTTrainingConfig(
+        dataset_path=Path("unused"), steps=20000, learning_rate_schedule="terminal_linear"
+    )
+    assert learning_rate_for_step(config, step) == pytest.approx(expected, rel=1e-13)
+
+
+@pytest.mark.parametrize("steps", [4, 5, 6, 7, 20, 20000])
+def test_terminal_schedule_has_fixed_plateau_monotone_decay_and_endpoint(steps):
+    from bimanual.training import learning_rate_for_step, learning_rate_schedule_definition
+
+    config = ACTTrainingConfig(
+        dataset_path=Path("unused"), steps=steps, learning_rate_schedule="terminal_linear"
+    )
+    rates = [learning_rate_for_step(config, step) for step in range(1, steps + 1)]
+    hold = 3 * steps // 4
+    assert rates[:hold] == [config.learning_rate] * hold
+    assert all(a > b for a, b in zip(rates[hold - 1 : -1], rates[hold:], strict=True))
+    assert rates[-1] == config.learning_rate * 0.1
+    assert learning_rate_schedule_definition(config)["first_decay_update"] == hold + 1
+
+
+@pytest.mark.parametrize("step", [0, -1, 20001, True, 1.0, "1"])
+@pytest.mark.parametrize("profile", ["constant", "terminal_linear"])
+def test_learning_rate_rejects_invalid_update_indices(profile, step):
+    from bimanual.training import learning_rate_for_step
+
+    config = ACTTrainingConfig(
+        dataset_path=Path("unused"), steps=20000, learning_rate_schedule=profile
+    )
+    with pytest.raises(ValueError, match="one-based"):
+        learning_rate_for_step(config, step)
+
+
+@pytest.mark.parametrize("steps", [1, 2, 3])
+def test_terminal_linear_requires_at_least_four_updates(steps):
+    with pytest.raises(ValueError, match="four updates"):
+        ACTTrainingConfig(
+            dataset_path=Path("unused"), steps=steps, learning_rate_schedule="terminal_linear"
+        )
+    assert ACTTrainingConfig(dataset_path=Path("unused"), steps=steps).steps == steps
+
+
+def test_schedule_applies_to_all_optimizer_groups_before_update():
+    from types import SimpleNamespace
+
+    from bimanual.training import apply_learning_rate
+
+    config = ACTTrainingConfig(
+        dataset_path=Path("unused"), steps=4, learning_rate_schedule="terminal_linear"
+    )
+    optimizer = SimpleNamespace(
+        param_groups=[dict(lr=1e-5, params="model"), dict(lr=1e-5, params="backbone")]
+    )
+    assert apply_learning_rate(optimizer, config, 3) == [1e-5, 1e-5]
+    assert apply_learning_rate(optimizer, config, 4) == [1e-5 * 0.1, 1e-5 * 0.1]
+    assert [group["params"] for group in optimizer.param_groups] == ["model", "backbone"]
+    with pytest.raises(ValueError):
+        apply_learning_rate(optimizer, config, 5)
+    assert [group["lr"] for group in optimizer.param_groups] == [1e-5 * 0.1, 1e-5 * 0.1]
+    malformed = SimpleNamespace(param_groups=[dict(lr=1e-5), {}])
+    with pytest.raises(ValueError, match="every parameter group"):
+        apply_learning_rate(malformed, config, 4)
+    assert malformed.param_groups[0]["lr"] == 1e-5
+
+
+@pytest.mark.skipif(
+    not os.environ.get("BIMANUAL_TRAIN_TEST_DATASET"),
+    reason="Requires explicit real ACT dataset and native training environment",
+)
+def test_real_four_step_terminal_schedule_and_reload(tmp_path):
+    store = EvidenceStore(tmp_path / "evidence")
+    manifest = run_train(
+        ACTTrainingConfig(
+            dataset_path=Path(os.environ["BIMANUAL_TRAIN_TEST_DATASET"]),
+            steps=4,
+            device="cpu",
+            use_vae=False,
+            dropout=0.0,
+            learning_rate_schedule="terminal_linear",
+        ),
+        store=store,
+        project_root=Path.cwd(),
+    )
+    verified = store.verify(manifest.run_id)
+    assert verified.metrics["training_completed"] is True
+    assert verified.metrics["learning_rate_reload_verified"] is True
+    assert verified.metrics["checkpoint_reload_verified"] is True
+    assert verified.metrics["processor_reload_verified"] is True
+    assert verified.metrics["sampler_reload_verified"] is True
+    assert [step["learning_rates"] for step in verified.metrics["steps"]] == [
+        [1e-5, 1e-5],
+        [1e-5, 1e-5],
+        [1e-5, 1e-5],
+        [1e-5 * 0.1, 1e-5 * 0.1],
+    ]
+    definition = verified.metrics["learning_rate_schedule"]
+    assert definition["hold_updates"] == 3 and definition["final_factor"] == 0.1
+    saved = json.loads(
+        (store.directory(manifest.run_id) / "checkpoint/training_schedule.json").read_text()
+    )
+    assert saved == dict(
+        definition=definition, completed_updates=4, final_learning_rates=[1e-5 * 0.1, 1e-5 * 0.1]
+    )
+    assert verified.metrics["manipulation_success"] is None
