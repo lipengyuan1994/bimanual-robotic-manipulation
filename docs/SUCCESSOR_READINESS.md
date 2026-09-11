@@ -91,3 +91,36 @@ limits. This is a candidate for a separately versioned, preregistered teacher
 trial with regenerated tool goals and the ten bar holds. It is not proof of a
 collision-free path or stable release. The current scene and datasets remain
 unchanged; a complete physical trial must pass the existing thresholds first.
+
+## Destination-only repair attempts
+
+The first registered repair, protocol `20260911T042704-a6719c36b78d`, retains ten
+bar holds and moves the desired plate destination +20 mm Y. Tool targets are
+regenerated with joint-limited IK, preserving the controlled pinch axis and
+original gripper commands. This does not preserve full tool orientation on the
+five-axis arm. Failed candidate `20260911T042731-bfb18f06e6f0` stops at original
+control 2622, plate/lower: wrist camera versus placed cup, 0.212 mm overlap.
+Its tool orientation differs by 0.05183 rad despite micrometre position error.
+Diagnosis `20260911T043223-6583271ffaf0` preserves the exact scratch-pose checks.
+
+The east20 alternative improves sampled cabinet and camera/cup clearance, but
+full scratch preflight `20260911T043309-29dffffbd62f` fails at original control
+2590, plate/transport: `right/collision_or_visual_7` versus `plate/rim5`.
+Both preflights apply zero physics actions; neither is a manipulation success
+or a new validated demonstration. Original scene, trajectories and dataset remain
+unchanged. No collision predicate was relaxed.
+
+A scratch check also rejects holding the right arm at its original home posture:
+`20260911T043522-96f2ddd534c7` intersects its fixed jaw with the plate base at
+control 2525, plate/transport_clearance. The earlier east20 collision is with the
+right shoulder collision box at commanded joints `[1.8, -1, 0.8, 1.2, 0, 0.8]`.
+Neither constant posture is a viable replacement.
+
+Next candidate: coordinate a checked right-arm motion with the plate route. Preflight must cover the entire transition,
+previously placed objects, both arms and cameras. A separate protocol and a
+continuous contact-only run must pass before any new recording or dataset version.
+Static margins at the destination cannot certify the route or released dynamics.
+
+Sealed repair-design note `20260911T043714-e0cc9763cf19` retains exact measured
+and commanded right-arm posture, shoulder geometry, proposed search endpoints
+and required checks. It establishes no valid replacement posture or route.

@@ -74,6 +74,9 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Capture full-rate training cameras and actions independently of replay",
     )
+    evaluation = commands.add_parser("dinner-evaluate", help="Re-score sealed dinner evidence")
+    evaluation.add_argument("run_id")
+    evaluation.add_argument("--instrumentation-run", help="Sealed declarations linked to this run")
     cup = commands.add_parser("cup", help="Physically carry and release a hollow cup upright")
     cup.add_argument("--no-render", action="store_true")
     cup.add_argument("--arm", choices=["left", "right"], default="left")
@@ -280,6 +283,17 @@ def main(argv: list[str] | None = None) -> int:
                 ),
                 store=store,
                 project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
+        elif args.command == "dinner-evaluate":
+            from bimanual.dinner_evaluation import evaluate_dinner_run
+
+            result = evaluate_dinner_run(
+                args.run_id,
+                store=store,
+                project_root=root,
+                instrumentation_run=args.instrumentation_run,
             )
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1

@@ -128,9 +128,9 @@ and portal are committed at `bdcd4e4`. Use `git rev-parse HEAD` for the latest
 handoff commit; subsequent sampler changes do not alter the sealed teacher run. [Draft PR #1](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/pull/1)
 is open and unmerged.
 
-Latest `scripts/check.sh`: **767 passed, fourteen explicit optional-training skips,
+Latest `scripts/check.sh`: **777 passed, fourteen explicit optional-training skips,
 eight rendering tests deselected**, with Ruff, formatting, docs and README checks.
-Log: `.artifacts/checks-successor-readiness.log`; all current auxiliary-arm,
+Log: `.artifacts/checks-dinner-evaluation.log`; all current auxiliary-arm,
 stationary transition, registry, policy adapter and worker cases are included.
 The preceding dinner-only
 checkpoint had 403 passing tests. The preceding seven actual
@@ -581,3 +581,44 @@ skips and eight render deselections, 344.19 seconds; Ruff, formatting, 359 docum
 and README synchronization passed. Training 27780 is still active with 9507 updates
 observed; the final checkpoint and frozen offline gates remain pending. No
 additional GPU work started. Actual HD camera/Qwen validation remains pending.
+
+## Supported evidence evaluation and plate repair preflight
+
+`bimanual dinner-evaluate` now re-scores sealed runs and preserves source outcome,
+instrumentation provenance and full-trace diagnostics. Ten focused boundary tests
+pass. Actual CLI evaluation `20260911T043031-3fe61f7bd44b` passes the original
+teacher's 4,819 actions / 240,950 samples using its explicitly linked declaration
+audit. The failed hold probe stays failed in evaluation
+`20260911T043017-446d1af42961`: 2,732 confirmed actions, one partial action and one
+forbidden-contact sample among all 136,644 retained samples. No new manipulation
+or learned success is claimed. [Command and semantics](DINNER_OUTCOMES.md).
+
+The +20 mm Y plate candidate was preregistered in
+`20260911T042704-a6719c36b78d`. Candidate `20260911T042731-bfb18f06e6f0` fails
+preflight at original control 2622, plate/lower: left wrist camera versus placed
+cup. Zero physics actions ran. The candidate preserves pinch-axis orientation,
+not a full six-dimensional pose; the original scene/data remain unchanged.
+Diagnosis `20260911T043223-6583271ffaf0` identifies 0.05183 rad tool rotation
+change and 0.212 mm camera/cup overlap. East20 alternative preflight
+`20260911T043309-29dffffbd62f` also fails: control 2590, plate versus parked right
+arm. Neither executes physics. Next candidate needs coordinated right-arm parking
+and a separately recorded protocol; see [repair evidence](SUCCESSOR_READINESS.md).
+
+Training 27780 remains active, with 14,612 updates observed. Continue the same
+20,000-update protocol and evaluate only its final checkpoint. No GPU/rendering
+work overlaps it. Full checks pass: **777 tests**, fourteen optional skips, eight
+render deselections, 357.78 seconds; Ruff, formatting, 362 documentation links
+and README synchronization pass. Log: `.artifacts/checks-dinner-evaluation.log`.
+Next: preregister a coordinated arm/plate candidate after scratch path checks;
+run final ACT gates once training seals. Actual HD rendering remains pending.
+
+A diagnostic import added an unsealed Python cache to the failed north20 run.
+The integrity check rejected it. The exact cache was preserved outside the run,
+all original bytes and the manifest were left unchanged, and the original seal
+verifies again. Retained-source diagnostics now disable bytecode writes. Both
+failed preflights and the diagnosis were independently reverified afterward.
+
+Repair-design note `20260911T043714-e0cc9763cf19` records exact right-arm
+commanded/measured posture and required whole-route checks. Constant home also
+fails scratch preflight `20260911T043522-96f2ddd534c7`. No new valid endpoint or
+repaired trajectory has been established. Both additional seals verify.
