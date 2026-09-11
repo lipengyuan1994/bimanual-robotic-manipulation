@@ -78,6 +78,21 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Capture full-rate training cameras and actions independently of replay",
     )
+    feedback = commands.add_parser(
+        "feedback-approach", help="Collect training-only feedback approach evidence; no grasp"
+    )
+    feedback.add_argument("--record-demonstration", action="store_true")
+    feedback.add_argument("--variation-seed", type=int, default=0)
+    feedback.add_argument("--acquisition-offset-rad", type=float, default=0.0)
+    corrective_create = commands.add_parser(
+        "corrective-views-create", help="Pin verified approach correction intervals"
+    )
+    corrective_create.add_argument("--run-id", action="append", required=True)
+    corrective_create.add_argument("--destination", type=Path, required=True)
+    corrective_check = commands.add_parser(
+        "corrective-views-check", help="Verify corrective source recordings and boundaries"
+    )
+    corrective_check.add_argument("manifest", type=Path)
     evaluation = commands.add_parser("dinner-evaluate", help="Re-score sealed dinner evidence")
     evaluation.add_argument("run_id")
     evaluation.add_argument("--instrumentation-run", help="Sealed declarations linked to this run")
@@ -141,6 +156,16 @@ def main(argv: list[str] | None = None) -> int:
         "--repo-id", required=True, help="Local dataset identifier; nothing is uploaded"
     )
     dataset_export.add_argument("--comparison-run", type=Path, action="append", default=[])
+    corrective_export = commands.add_parser(
+        "corrective-export", help="Export verified correction intervals to local LeRobot"
+    )
+    corrective_export.add_argument("--views", type=Path, required=True)
+    corrective_export.add_argument("--destination", type=Path, required=True)
+    corrective_export.add_argument("--repo-id", required=True)
+    corrective_verify = commands.add_parser(
+        "corrective-export-check", help="Verify corrective export against original recordings"
+    )
+    corrective_verify.add_argument("dataset", type=Path)
     skill_views = commands.add_parser(
         "dataset-skill-views", help="Derive bounded training views from a verified dinner export"
     )
@@ -183,6 +208,11 @@ def main(argv: list[str] | None = None) -> int:
         choices=["uniform", "first_action_half_v1"],
         default="uniform",
         help="Experimental first-action weighting requires --no-vae and chunk size >=2",
+    )
+    train.add_argument(
+        "--corrective-dataset",
+        type=Path,
+        help="Optional verified approach corrections; handoff skill only",
     )
     train.add_argument("--skill-views", type=Path)
     train.add_argument("--skill-id")
@@ -344,6 +374,30 @@ def main(argv: list[str] | None = None) -> int:
             )
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1
+        elif args.command == "feedback-approach":
+            from bimanual.feedback_teacher import FeedbackApproachConfig, run_feedback_approach
+
+            result = run_feedback_approach(
+                FeedbackApproachConfig(
+                    record_demonstration=args.record_demonstration,
+                    variation_seed=args.variation_seed,
+                    acquisition_offset_rad=args.acquisition_offset_rad,
+                ),
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
+        elif args.command == "corrective-views-create":
+            from bimanual.corrective_views import create_corrective_views
+
+            result = create_corrective_views(store, args.run_id, args.destination)
+            emit(result.model_dump())
+        elif args.command == "corrective-views-check":
+            from bimanual.corrective_views import load_corrective_views
+
+            result = load_corrective_views(args.manifest, store)
+            emit(result.model_dump())
         elif args.command == "dinner-evaluate":
             from bimanual.dinner_evaluation import evaluate_dinner_run
 
@@ -475,6 +529,7 @@ def main(argv: list[str] | None = None) -> int:
                     dropout=args.dropout,
                     learning_rate_schedule=args.learning_rate_schedule,
                     temporal_loss_profile=args.temporal_loss_profile,
+                    corrective_dataset_path=args.corrective_dataset,
                     skill_views_path=args.skill_views,
                     skill_id=args.skill_id,
                     sampling_protocol_run=args.sampling_protocol_run,
@@ -512,6 +567,21 @@ def main(argv: list[str] | None = None) -> int:
                 comparison_run_roots=tuple(args.comparison_run),
             )
             emit({"destination": str(result), "manifest": str(result / "export_manifest.json")})
+        elif args.command == "corrective-export":
+            from bimanual.corrective_export import export_corrective_dataset
+
+            result = invoke_with_diagnostics(
+                export_corrective_dataset,
+                args.views,
+                store,
+                args.destination,
+                args.repo_id,
+            )
+            emit({"destination": str(result), "manifest": str(result / "export_manifest.json")})
+        elif args.command == "corrective-export-check":
+            from bimanual.corrective_export import verify_corrective_dataset
+
+            emit(invoke_with_diagnostics(verify_corrective_dataset, args.dataset))
         elif args.command == "dataset-skill-views":
             from bimanual.skill_views import create_skill_views
 

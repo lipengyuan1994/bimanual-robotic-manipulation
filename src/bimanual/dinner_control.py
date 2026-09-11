@@ -397,7 +397,7 @@ class DinnerControlWorker:
         if self._planning_pause is not None:
             raise RuntimeError("Physical policy control is prohibited during owned planning pause")
 
-    def _token(self) -> str:
+    def _token(self, *, verified_model_digest: str | None = None) -> str:
         env = self._env
         spec = mujoco.mjtState.mjSTATE_INTEGRATION
         state = np.empty(mujoco.mj_stateSize(env.model, spec))
@@ -408,7 +408,11 @@ class DinnerControlWorker:
                 {
                     "episode": env.episode_id,
                     "sequence": env.sequence,
-                    "model_sha256": self._model_digest(),
+                    "model_sha256": (
+                        self._model_digest()
+                        if verified_model_digest is None
+                        else verified_model_digest
+                    ),
                 }
             )
         ).hexdigest()
@@ -437,7 +441,9 @@ class DinnerControlWorker:
         self._available()
         env = self._env
         started_ns = self._clock()
-        before = self._token()
+        # _available just verified the model. Reuse that digest only for the
+        # pre-render token; the post-render token always hashes the model anew.
+        before = self._token(verified_model_digest=self._expected_model_digest)
         pixels = (
             env.observe(render=True)["rgb"]
             if self._render_capture is None
@@ -519,7 +525,9 @@ class DinnerControlWorker:
             task.instruction_revision,
         ):
             raise ValueError("Capture no longer matches the current task identity")
-        if self._token() != self._state:
+        # This synchronous validation already checked the model in _available;
+        # still read fresh integration state instead of caching a state token.
+        if self._token(verified_model_digest=self._expected_model_digest) != self._state:
             raise ValueError("Physical integration state differs from the captured boundary")
         if not 0 <= self._clock() - current.observed_monotonic_ns <= 2_000_000_000:
             raise ValueError("Physical action requires a fresh camera capture")

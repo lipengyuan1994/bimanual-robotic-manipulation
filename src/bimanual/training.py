@@ -28,6 +28,7 @@ from bimanual.training_probe import _tensor_digest
 class ACTTrainingConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, allow_inf_nan=False)
     dataset_path: Path
+    corrective_dataset_path: Path | None = None
     device: Literal["cpu", "mps"] = "cpu"
     architecture: Literal["small", "default"] = "small"
     steps: int = Field(default=3, ge=1, le=1_000_000)
@@ -61,6 +62,14 @@ class ACTTrainingConfig(BaseModel):
         if (self.sampling_profile == "uniform") != (self.sampling_protocol_run is None):
             raise ValueError(
                 "Nonuniform profiles require a sampling protocol run; uniform forbids it"
+            )
+        if self.corrective_dataset_path is not None and (
+            self.skill_id != "handoff_transfer"
+            or self.skill_views_path is None
+            or self.sampling_profile != "uniform"
+        ):
+            raise ValueError(
+                "Corrective training requires verified handoff_transfer views and uniform sampling"
             )
         return self
 
@@ -469,6 +478,38 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
                 raise ValueError("Skill view manifest changed during training setup")
             metrics["skill_view"] = skill_view.model_dump(mode="json")
             metrics["skill_views_file_sha256"] = view_digest
+        corrective_manifest = None
+        corrective_root = None
+        if config.corrective_dataset_path is not None:
+            from bimanual.corrective_dataset import compose_sampling_plan
+            from bimanual.corrective_export import verify_corrective_dataset
+
+            corrective_root = config.corrective_dataset_path
+            if not corrective_root.is_absolute():
+                corrective_root = project_root / corrective_root
+            corrective_root = corrective_root.resolve(strict=True)
+            if store.root.resolve().is_relative_to(corrective_root):
+                raise ValueError("Training evidence must be outside the corrective dataset")
+            corrective_manifest = verify_corrective_dataset(corrective_root)
+            (directory / "corrective_views.json").write_bytes(
+                (corrective_root / "corrective_views.json").read_bytes()
+            )
+            metrics["corrective_dataset_root"] = str(corrective_root)
+            metrics["corrective_config_base"] = str(project_root.resolve())
+            metrics["corrective_views_sha256"] = digest_file(
+                corrective_root / "corrective_views.json"
+            )
+            if (
+                digest_file(directory / "corrective_views.json")
+                != metrics["corrective_views_sha256"]
+            ):
+                raise ValueError("Corrective views changed during setup")
+            sampling_plan = compose_sampling_plan(
+                sampling_plan, corrective_root, corrective_manifest
+            )
+            (directory / "corrective_dataset_manifest.json").write_bytes(
+                (corrective_root / "export_manifest.json").read_bytes()
+            )
         (directory / "sampling-plan.json").write_bytes(canonical(sampling_plan))
         sampling_digest = digest_file(directory / "sampling-plan.json")
         metrics["sampling_profile"] = config.sampling_profile
@@ -518,6 +559,13 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
             from bimanual.skill_dataset import SkillDatasetView
 
             dataset = SkillDatasetView(dataset, skill_view, config.chunk_size)
+        if corrective_manifest is not None:
+            from bimanual.corrective_dataset import CorrectiveDataset
+
+            corrective = LeRobotDataset(
+                repo_id=corrective_manifest["repo_id"], root=corrective_root, delta_timestamps=None
+            )
+            dataset = CorrectiveDataset(dataset, corrective, corrective_manifest, config.chunk_size)
         architecture = (
             dict(
                 dim_model=128,
@@ -677,7 +725,13 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
                     "numeric_stats": numeric_stats,
                     "numeric_statistics_method": "float64 training rows; population std",
                     "numeric_std_floor_rad": config.normalization_std_floor,
-                    "numeric_scope": "selected_skill" if skill_view else "full_training_dataset",
+                    "numeric_scope": (
+                        "selected_skill_and_corrective"
+                        if corrective_manifest is not None
+                        else "selected_skill"
+                        if skill_view
+                        else "full_training_dataset"
+                    ),
                     "image_statistics_scope": "full_parent_training_dataset",
                 },
                 indent=2,
@@ -782,6 +836,17 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
             digest_file(dataset_root / "export_manifest.json") != dataset_digest
         ):
             raise ValueError("Dataset changed during training")
+        if corrective_manifest is not None:
+            if (
+                verify_corrective_dataset(corrective_root) != corrective_manifest
+                or (
+                    digest_file(corrective_root / "export_manifest.json")
+                    != sampling_plan["corrective_dataset"]["export_manifest_sha256"]
+                )
+                or digest_file(corrective_root / "corrective_views.json")
+                != metrics["corrective_views_sha256"]
+            ):
+                raise ValueError("Corrective dataset changed during training")
         metrics["checkpoint_reload_verified"] = True
         metrics["processor_reload_verified"] = True
         metrics["training_completed"] = True

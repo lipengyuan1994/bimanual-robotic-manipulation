@@ -24,6 +24,7 @@ Read [STATUS](STATUS.md) first when resuming work.
 | Combine all dinner skills | [Shared-scene integration](DINNER_SCENE.md) |
 | Score physical dinner outcomes | [Independent outcome evaluator](DINNER_OUTCOMES.md) |
 | Training datasets | [LeRobot export](DATASETS.md) |
+| Training-only corrective approach work | [Feedback teacher](FEEDBACK_TEACHER.md) |
 | Native ACT execution | [Training runtime probe](TRAINING.md) |
 | Learned actions in the simulator | [Policy rollout and failure evidence](POLICY_ROLLOUT.md) |
 | High-resolution reset camera evidence | [Planner sensor profiles](PLANNER_SENSORS.md) |

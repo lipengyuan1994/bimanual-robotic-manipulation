@@ -128,3 +128,41 @@ The CPU-only analysis verifies both run seals, checks that evaluation targets ma
 teacher actions, requires complete ordered forecast coverage, and recomputes
 first-action errors by phase and joint. Its sealed report is diagnostic evidence;
 phase labels never enter policy inputs and low error does not establish grasping.
+
+## Optional corrective approach data
+
+The nominal hand-off view can now include a separately verified
+[corrective LeRobot export](FEEDBACK_TEACHER.md). This is optional and currently
+limited to `handoff_transfer` with uniform sampling. It retains every nominal
+frame, including grasp and release, and adds only explicitly eligible corrective
+transitions. Acquisition actions remain in source evidence and are never sampled.
+
+Use the verified native training environment with offline Hugging Face caches and
+MPS fallback disabled. A short compatibility run is:
+
+```sh
+.artifacts/training-venv/bin/bimanual train \
+  --dataset .artifacts/datasets/dinner-nominal-v2 \
+  --skill-views .artifacts/dinner-skill-views-v2.json \
+  --skill-id handoff_transfer \
+  --corrective-dataset .artifacts/datasets/feedback-corrections-v1 \
+  --device mps --steps 3 --batch-size 4 --chunk-size 10 --no-vae --dropout 0
+```
+
+Each action chunk stays within its original source episode; padding repeats the
+last eligible target and is masked from loss. Numeric state/action statistics use
+the exact union once per row, excluding acquisition and padding. Image statistics
+remain those of the nominal parent dataset. Model inputs remain current joints
+and three images; source IDs, phases and acquisition metadata are evidence only.
+
+Training saves both corrective manifests, the complete sampling map, selected
+normalization and source hashes. It reverifies the secondary dataset after updates.
+Checkpoint loading independently reconstructs and checks these records. Corrective
+dataset relocation currently fails explicitly; portable relocation remains work
+for a later change and cannot be assumed from this local check.
+
+Actual run `20260911T183755-ab866d7b2e46` completed three MPS updates on818rows,
+with checkpoint/processor reload and external registry verification. Five focused
+tests passed in the native training environment, including tensor padding at each
+corrective boundary. These checks prove compatibility, not learned manipulation
+quality. The longer experiment and all physical outcomes belong in [status](STATUS.md).

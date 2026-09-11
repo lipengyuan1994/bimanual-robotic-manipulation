@@ -1,0 +1,119 @@
+from types import SimpleNamespace
+
+import pytest
+
+from bimanual.cli import main
+
+
+@pytest.mark.parametrize(
+    ("outcome", "exit_code"), [("completed", 0), ("failed", 1), ("interrupted", 1)]
+)
+def test_feedback_cli_preserves_outcome_and_recording(
+    tmp_path, monkeypatch, capsys, outcome, exit_code
+):
+    seen = []
+
+    def execute(config, **kwargs):
+        seen.append(config)
+        return SimpleNamespace(outcome=outcome, model_dump=lambda **kw: {"outcome": outcome})
+
+    monkeypatch.setattr("bimanual.feedback_teacher.run_feedback_approach", execute)
+    assert (
+        main(["--artifacts", str(tmp_path), "feedback-approach", "--record-demonstration"])
+        == exit_code
+    )
+    assert seen[0].record_demonstration is True
+    assert outcome in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("command", ["corrective-views-create", "corrective-views-check"])
+def test_corrective_cli_dispatch(tmp_path, monkeypatch, capsys, command):
+    from bimanual import corrective_views
+
+    calls = []
+    result = SimpleNamespace(model_dump=lambda: {"task_scope": "approach_only"})
+
+    def create(store, run_ids, destination):
+        calls.append((run_ids, destination))
+        return result
+
+    def check(path, store):
+        calls.append(path)
+        return result
+
+    monkeypatch.setattr(corrective_views, "create_corrective_views", create)
+    monkeypatch.setattr(corrective_views, "load_corrective_views", check)
+    destination = tmp_path / "views.json"
+    args = (
+        ["--run-id", "run-a", "--destination", str(destination)]
+        if command.endswith("create")
+        else [str(destination)]
+    )
+    assert main(["--artifacts", str(tmp_path), command, *args]) == 0
+    assert (
+        calls == [(["run-a"], destination)]
+        if command.endswith("create")
+        else calls == [destination]
+    )
+    assert "approach_only" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("command", ["corrective-export", "corrective-export-check"])
+def test_corrective_export_cli_dispatch(tmp_path, monkeypatch, capsys, command):
+    from bimanual import corrective_export
+
+    destination = tmp_path / "dataset"
+    views = tmp_path / "views.json"
+    calls = []
+
+    def export(path, store, root, repo_id):
+        calls.append((path, root, repo_id))
+        return root
+
+    def verify(root):
+        calls.append(root)
+        return {"profile": "feedback_approach_corrective_lerobot_v1"}
+
+    monkeypatch.setattr(corrective_export, "export_corrective_dataset", export)
+    monkeypatch.setattr(corrective_export, "verify_corrective_dataset", verify)
+    if command == "corrective-export":
+        args = ["--views", str(views), "--destination", str(destination), "--repo-id", "local/test"]
+        expected = [(views, destination, "local/test")]
+    else:
+        args = [str(destination)]
+        expected = [destination]
+    assert main(["--artifacts", str(tmp_path), command, *args]) == 0
+    assert calls == expected
+    assert capsys.readouterr().out
+
+
+def test_train_cli_forwards_correction_path(tmp_path, monkeypatch, capsys):
+    from bimanual import training
+
+    seen = []
+
+    def train(config, **kwargs):
+        seen.append(config)
+        return SimpleNamespace(
+            outcome="completed", model_dump=lambda **kwargs: {"outcome": "completed"}
+        )
+
+    monkeypatch.setattr(training, "run_train", train)
+    assert (
+        main(
+            [
+                "train",
+                "--dataset",
+                str(tmp_path / "nominal"),
+                "--skill-views",
+                str(tmp_path / "views.json"),
+                "--skill-id",
+                "handoff_transfer",
+                "--corrective-dataset",
+                str(tmp_path / "corrections"),
+            ]
+        )
+        == 0
+    )
+    assert seen[0].corrective_dataset_path == tmp_path / "corrections"
+    assert "completed" in capsys.readouterr().out

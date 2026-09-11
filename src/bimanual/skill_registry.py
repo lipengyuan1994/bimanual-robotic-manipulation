@@ -221,6 +221,31 @@ def load_skill_checkpoint(
     plan = restrict_sampling_plan(
         build_sampling_plan(dataset_root, dataset, config, project_root=root), view, view_digest
     )
+    corrective_manifest = None
+    corrective_root = None
+    if config.corrective_dataset_path is not None:
+        from bimanual.corrective_dataset import compose_sampling_plan
+        from bimanual.corrective_export import verify_corrective_dataset
+
+        recorded = _read(root / "sampling-plan.json").get("corrective_dataset", {})
+        corrective_root = Path(recorded["root"]).resolve(strict=True)
+        configured_root = config.corrective_dataset_path
+        if not configured_root.is_absolute():
+            configured_root = Path(metrics["corrective_config_base"]) / configured_root
+        if configured_root.resolve(strict=True) != corrective_root or metrics.get(
+            "corrective_dataset_root"
+        ) != str(corrective_root):
+            raise ValueError("Corrective dataset path/config mismatch; relocation is not supported")
+        corrective_manifest = verify_corrective_dataset(corrective_root)
+        views_sha = digest_file(corrective_root / "corrective_views.json")
+        if (
+            digest_file(root / "corrective_views.json") != views_sha
+            or metrics.get("corrective_views_sha256") != views_sha
+        ):
+            raise ValueError("Corrective view identity mismatch")
+        if _read(root / "corrective_dataset_manifest.json") != corrective_manifest:
+            raise ValueError("Corrective dataset identity mismatch")
+        plan = compose_sampling_plan(plan, corrective_root, corrective_manifest)
     if (
         _read(root / "sampling-plan.json") != plan
         or _read(root / "checkpoint/training_sampling.json") != plan
@@ -244,7 +269,10 @@ def load_skill_checkpoint(
     normalization = _read(root / "normalization.json")
     if (
         normalization.get("mapping") != _MAPPING
-        or normalization.get("numeric_scope") != "selected_skill"
+        or normalization.get("numeric_scope")
+        != (
+            "selected_skill_and_corrective" if corrective_manifest is not None else "selected_skill"
+        )
         or normalization.get("image_statistics_scope") != "full_parent_training_dataset"
         or normalization.get("resize") is not None
         or normalization.get("numeric_std_floor_rad") != config.normalization_std_floor
@@ -252,6 +280,34 @@ def load_skill_checkpoint(
         != digest_file(dataset_root / "meta/stats.json")
     ):
         raise ValueError("Normalization lineage or scope mismatch")
+    if corrective_manifest is not None:
+        import numpy as np
+        from lerobot.datasets.lerobot_dataset import LeRobotDataset
+
+        from bimanual.corrective_dataset import CorrectiveDataset
+        from bimanual.skill_dataset import SkillDatasetView
+        from bimanual.training import stable_numeric_stats
+
+        nominal = LeRobotDataset(
+            repo_id=dataset["repo_id"], root=dataset_root, delta_timestamps=None
+        )
+        corrections = LeRobotDataset(
+            repo_id=corrective_manifest["repo_id"], root=corrective_root, delta_timestamps=None
+        )
+        combined = CorrectiveDataset(
+            SkillDatasetView(nominal, view, config.chunk_size),
+            corrections,
+            corrective_manifest,
+            config.chunk_size,
+        )
+        expected = {}
+        for key in ("observation.state", "action"):
+            values = np.asarray(
+                [row[key] for row in combined.hf_dataset.select_columns([key])], dtype=np.float64
+            )
+            expected[key] = stable_numeric_stats(values, std_floor=config.normalization_std_floor)
+        if normalization.get("numeric_stats") != expected:
+            raise ValueError("Corrective union numeric normalization mismatch")
     _processors(checkpoint, normalization, dataset_root)
     required = {"checkpoint/model.safetensors", "trainer_state.pt"}
     if not required <= manifest.files.keys() or any(

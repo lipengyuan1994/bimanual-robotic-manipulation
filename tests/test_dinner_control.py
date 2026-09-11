@@ -444,3 +444,46 @@ def test_camera_preview_rejects_invalid_artifacts(worker, tmp_path, failure):
         ).hexdigest()
         path.write_text(json.dumps(payload))
     assert read_camera_preview(instance.directory) is None
+
+
+@pytest.mark.parametrize("during_render", [False, True])
+def test_capture_rejects_model_mutation_before_or_during_render(worker, during_render):
+    instance, _, _, _ = worker
+    if during_render:
+        original = instance._render_capture
+
+        def changed_render(env):
+            pixels = original(env)
+            env.model.cam_pos[0, 0] += 0.1
+            return pixels
+
+        instance._render_capture = changed_render
+    else:
+        instance._env.model.cam_pos[0, 0] += 0.1
+    with pytest.raises(ValueError, match="changed"):
+        instance.capture()
+    assert not instance._env.active
+    assert instance._capture_count == 0
+
+
+@pytest.mark.parametrize("operation", ["inputs", "offer", "step"])
+@pytest.mark.parametrize("field", ["friction", "camera", "limits"])
+def test_each_policy_boundary_rejects_model_mutation(worker, operation, field):
+    instance, _, _, _ = worker
+    attempt, observation, forecast = start(worker)
+    model = instance._env.model
+    if field == "friction":
+        model.geom_friction[0, 0] += 0.1
+    elif field == "camera":
+        model.cam_pos[0, 0] += 0.1
+    else:
+        model.actuator_ctrlrange[0, 1] += 0.1
+    with pytest.raises(ValueError, match="model changed"):
+        if operation == "inputs":
+            instance.policy_inputs(observation)
+        elif operation == "offer":
+            instance.offer(attempt.attempt_id, forecast, observation)
+        else:
+            instance.step(attempt.attempt_id, observation)
+    assert not instance._env.active
+    assert instance._env.data.time == 0
