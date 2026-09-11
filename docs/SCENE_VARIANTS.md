@@ -36,6 +36,8 @@ Verify the allocation and prepare a scene with:
 .venv/bin/bimanual scene-variant-prepare \
   docs/experiments/dinner-perturbation-protocol-v1.json \
   --family combined --seed 30001
+.venv/bin/bimanual scene-variant-suite-prepare \
+  docs/experiments/dinner-perturbation-protocol-v1.json
 ```
 
 `scene-variant-prepare` only seals a compilable XML bundle. Its outcome is
@@ -51,3 +53,9 @@ Evaluation must retain every attempt and report learned task outcomes separately
 We will run the one-factor diagnostics first
 to classify failures, then all ten combined seeds without replacing difficult
 cases.
+
+The suite command prepares all sixteen allocated inputs in order and seals a
+separate index containing every child run, manifest, scene and layout digest. It
+can resume missing children after interruption. If more than one verified child
+matches a case, it stops instead of selecting the newest result; an already
+verified complete index is returned unchanged.

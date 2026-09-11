@@ -120,6 +120,11 @@ def main(argv: list[str] | None = None) -> int:
         required=True,
     )
     scene_variant_prepare.add_argument("--seed", type=int, required=True)
+    scene_variant_suite = commands.add_parser(
+        "scene-variant-suite-prepare",
+        help="Resume and index all sixteen frozen dinner perturbation scenes",
+    )
+    scene_variant_suite.add_argument("protocol", type=Path)
     cohort_create = commands.add_parser(
         "training-cohort-create", help="Freeze the remaining six ACT training configurations"
     )
@@ -565,6 +570,15 @@ def main(argv: list[str] | None = None) -> int:
                 protocol_path=args.protocol,
                 family=args.family,
                 seed=args.seed,
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+        elif args.command == "scene-variant-suite-prepare":
+            from bimanual.scene_variant_suite import prepare_scene_variant_suite
+
+            result = prepare_scene_variant_suite(
+                protocol_path=args.protocol,
                 store=store,
                 project_root=root,
             )

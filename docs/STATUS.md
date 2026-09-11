@@ -123,6 +123,13 @@ family, seed, scene and layout hashes to the sealed worker files. Nominal execut
 is unchanged. The scene-bundle, worker, orchestration and learned-audit group passes
 121 CPU/physics fixtures; no trained perturbed workflow has executed.
 
+A resumable perturbation-input suite now materializes the six one-factor and ten
+combined scenes in frozen order, then seals an index of each child run, manifest,
+scene and layout digest. It reuses a unique verified child after interruption,
+returns an existing complete suite unchanged, and rejects ambiguous duplicates
+instead of selecting the newest. Four suite fixtures pass. No model or evaluation
+is invoked by preparation.
+
 The next seven-checkpoint manifest version now seals the per-skill execution
 profile alongside checkpoint lineage: all seven ordered skill/capability IDs,
 checkpoint digests, exact twice-nominal-v2 action budgets, prefix2 and no temporal
@@ -175,8 +182,8 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `af83b0f1d85e54f7b29a56fdf482e875f9eecb90fe31828c3116358ae90ed281`.
-It binds the training cohort and 102 package/runtime and authored-scene/SO-101 asset
+seal `dbda38d1c309ae1e29df4c074e59c9a9df5a28ae589513e4d761b1ca2508788c`.
+It binds the training cohort and 103 package/runtime and authored-scene/SO-101 asset
 files,
 final-update20,000 selection,
 MPS, execution prefix2, exact teacher preparation, fixed nominal-v2 scene,
@@ -216,7 +223,7 @@ action beyond its explicit budget, leaving the executor as the single stopping
 authority and preventing premature v2 plate termination. The unused protocol was
 regenerated before any outcome with all then-current transitive evaluator/control/scoring
 sources pinned. The later guardian hardening and step-report addition produced the current
-102-source-and-asset
+103-source-and-asset
 seal before any component evaluation. The combined executor/outcome/protocol/evaluator group passes61
 tests; the corrected protocol re-verifies.
 
