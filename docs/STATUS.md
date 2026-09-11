@@ -2,7 +2,7 @@
 
 Updated: 2026-09-11. Branch: `codex/preparation-foundation`.
 Use `git rev-parse HEAD` for the current checkpoint. The previous pushed checkpoint
-is `fbcd3f7`; current work adds an opt-in, versioned ACT temporal loss.
+is `1f7c0a0`; a preregistered first-action ACT training run is now active.
 [Roadmap](ROADMAP.md), [original plan](PLAN.md),
 [historical status and evidence](STATUS_HISTORY.md).
 
@@ -23,7 +23,13 @@ integrity check, synthetic fixture or teacher episode with learned task quality.
 
 ## Latest learned-model results
 
-**ACT training is finished; no training job is active.** Terminal-decay run
+**ACT first-action weighting is training locally.** Run
+`20260911T053104-2b24b508ff79` started from clean `1f7c0a0` on native MPS, with
+fallback disabled and the same 20,000-update budget. Handle **61437** is active;
+do not restart it on an observation timeout. Log `.artifacts/approach-first-action-loss.log`.
+Only its final checkpoint will be evaluated against the unchanged six gates.
+
+The most recently completed terminal-decay run
 `20260911T035236-64462d013810` completed 20,000 native MPS updates in 3,672.98
 seconds from clean `9ca38d1`. Its checkpoint, processor, sampler and seal verify.
 Handle 27780 is terminal; do not restart it.
@@ -107,7 +113,7 @@ manufactures missing zero counters. [Evaluation command](DINNER_OUTCOMES.md).
 - All eight actual native rendering tests passed separately in 72.45 seconds,
   `.artifacts/render-workflow-cohort.log`. No rendering overlapped ACT training.
 - ACT training 27780, final offline inference 68644 and HD Qwen 56295 are terminal.
-  No model job is active. All newly cited experiment seals verify.
+  Those previous jobs are terminal. The current first-action run is listed above.
 - Previous checkpoint [b793460 CI](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34562948517)
   passed. New workflow checkpoint CI is not yet claimed. The [draft PR](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/pull/1)
   remains unmerged.
@@ -164,8 +170,8 @@ planner response and declared fixture failure, not a learned recovery demonstrat
 Log `.artifacts/render-owned-recovery.log`. Ruff, formatting, 382 documentation
 links and README synchronization pass. All current test/model processes are terminal.
 
-Next command: `scripts/check.sh` for a clean aggregate verification of the final
-checkpoint, then implement the separately declared first-action loss experiment.
+The clean recovery check now passes below. The new first-action implementation
+and active training run supersede this earlier next-command note.
 
 ## First-action objective implementation
 
@@ -182,7 +188,8 @@ and model/processor/sampler/loss metadata reload. Runtime smoke
 `20260911T052831-698fee235767` is under `.artifacts/weighted-loss-test-20260911/`.
 The separate actual native MPS test passes in 11.51s with fallback disabled,
 `.artifacts/first-action-loss-mps-check.log`. This checks implementation, not policy
-quality. The 20,000-update experiment has not started at this documentation point.
+quality. The 20,000-update experiment is now active as run
+`20260911T053104-2b24b508ff79`, handle 61437, from clean `1f7c0a0`.
 [Objective and learning exercise](TRAINING.md).
 
 Clean recovery regression handle 68236 is terminal: **822 passed**, fourteen
@@ -196,3 +203,21 @@ rejected an intentional grasp; actual physics had zero forbidden contacts and
 0.640 mm maximum overlap. No release conclusion follows. A separately declared
 replacement diagnostic must preserve the existing live guards and scope new
 trajectory preflight correctly; the failed experiment remains retained.
+
+## Current live handles
+
+- Training **61437**, run `20260911T053104-2b24b508ff79`: actual optimizer updates
+  observed; 20,000-update final-only experiment, no quality outcome yet.
+- Final full check **1206**: `.artifacts/checks-first-action-loss-final.log`,
+  864 tests collected, including the new loss tests. This follows the clean
+  822-pass recovery checkpoint check; its result is not yet claimed.
+- Plate diagnostic **89905**: protocol `20260911T053053-f0e666b0363f`,
+  `.artifacts/unseat-prefix-existing-guards/run.log`. Retains previous failed
+  diagnostic, scopes new-motion preflight correctly, preserves live 1kHz guards,
+  and stops after separation plus three seconds of hold. No full repair claim.
+
+Next: poll these exact handles. After training seals successfully, use
+`.artifacts/approach-first-action-loss-offline.py` with its run ID, then
+`.artifacts/compare-first-action-loss-offline.py` with the offline run ID. Only
+passing all six gates permits the already frozen conditional physical evaluation.
+No model inference/render job may share the GPU with this training run.
