@@ -1239,3 +1239,106 @@ Stop was exercised; isolated browser and fixture server were shut down. This
 verifies browser display of saved captures, not a live learned workflow.
 Prepared post-training evaluator now explicitly limits CPU threads to4; syntax
 checked only, no inference launched. Training95347 remains active.
+
+
+## Archived September 11 session notes (superseded by current STATUS)
+
+Final camera regression handle: **22054**, `.artifacts/checks-camera-final.log`.
+No further production source changes are planned during this check. Poll it and
+training95347 rather than restarting either process. Next commit should include
+the progress/camera code, focused tests, README and this consolidated handoff.
+
+Prepared next physical diagnostic (not executed):
+`.artifacts/evaluate-handoff-physical-v2.py TRAINING_RUN` in the native training
+runtime with fallback disabled and project HF caches. It preloads/verifies the
+handoff policy and measured successor reference, performs one dummy warm-up before
+capture, then runs at most900 learned actions in the authored seed0 scene with
+unchanged control/contact/readiness gates and no retry/teacher fallback. A parent
+process enforces900s and kills/reaps before sealing partial evidence on timeout
+or interruption. The following bar step is declared only to require the correct
+handoff successor boundary; it is not executed. All outcomes remain single-skill
+training-scene diagnostics, never full dinner success. Driver is syntax-checked
+only; inspect/review and execute after training95347 and recorded-input evaluation
+are terminal. Final camera regression22054 continues with production source unchanged.
+
+Frozen evaluation protocol **20260911T125848-12e6816cc83b**, seal
+`29feb15a3c14ca80372ce48c70092b3f112b0c8fb276d9b8fd1c75da68adc795`,
+contains exact recorded/physical evaluator drivers and settings before final
+checkpoint inspection. Final20k checkpoint only;630 recorded inputs, authored
+seed0 physical handoff,900-action budget, unchanged contact/readiness gates,
+no retries, no teacher actions. This is development data, not a frozen release suite.
+Before execution compare driver hashes against this protocol; retain deviations
+as a new declared protocol rather than overwriting it.
+CPU watchdog harness passes real timeout, KeyboardInterrupt and missing-result
+cases. Isolated fixture runs under `.artifacts/physical-driver-watchdog-fixtures`:
+125811-d1a669d4cb40,125811-0b09f22d8d96,125811-69305b8e8147. Timeout/interruption
+children exited-9 after kill/reap; all failure records verify. These checks do not
+load ACT or MuJoCo. Physical driver additionally checks actual MPS model devices.
+
+Draft PR#1 description now reflects pushed5430df7 (operator controls, paginated
+history,936-test baseline and32-test delta). Unpushed camera/progress changes are
+explicitly excluded from that PR checkpoint until their final check and commit.
+GitHub CI34600233738 was still in progress on the latest check. No merge occurred.
+
+CPU preview-read diagnostic `20260911T130137-323d8f628eca`:100 reads of the
+saved three-camera fixture, median0.545ms,p95 0.936ms,max13.653ms,payload94,990bytes.
+ACT training was active, so this is not an isolated benchmark. It measures only
+bounded PNG validation/encoding, not model inference, rendering or Intel behavior.
+
+Final camera checkpoint: regression22054 passed964 tests,18 optional skips,9 render
+deselections;416 documentation links and README synchronization pass. Native UI
+build and saved-image browser fixture pass. Training95347 remains active (last
+observed step15,848/20,000). No live rendering or learned physical result is claimed.
+
+Operator terminal-outcome fix (newer than pushedb4e141d): timeout, clarification,
+recovery-required, replaced and closed outcomes now retain their verified run IDs
+instead of being rejected as unsupported. Clarification has a distinct UI state;
+failed jobs show bounded reasons propagated only from verified child manifests,
+with a time-limit explanation taking precedence for timeout. No outcome grants
+physical success.43 targeted operator/process/API tests pass; native frontend and
+lint pass. Initial failed assertion expected no error text for a failed job; it
+was updated to require the new explicit fallback explanation, while retaining the
+independent-success assertion. Full final check will run before the next commit.
+
+Learning update: Lesson04 now connects the current630-frame experiment to an
+interactive question about training loss versus physical success. New printable
+reference `reference/training-evidence.html` separates fitting, recorded-input,
+physical-skill and held-out task evidence. Primary ACT sources were checked; no
+mastery record changed. Static learning-site build/check passes and423 repository
+links pass. Public Pages remains main-based; this draft-branch material is not
+claimed published. Final operator-reason regression44969 remains active.
+
+Learning packaging correction: the first build omitted the new reference because
+reference pages were explicitly listed. The builder now copies it, links it from
+the homepage and rewrites its repository-document links; the site checker now
+requires12 files and checks reference navigation too. Rebuild/check passes. This
+supersedes the earlier11-file check as evidence for the new learning material.
+
+Pre-evaluation verification: recorded evaluator, physical evaluator and watchdog
+harness byte hashes all match sealed protocol125848-12e6816cc83b; skill-view file
+hash also matches. No diagnostic has been executed against the active checkpoint.
+Training95347 remains live, step18,036/20,000 last observed. Full operator-reason
+regression44969 remains live; no new production Python changes during that run.
+
+Training95347 and regression44969 are terminal. Final operator-reason regression:
+969 passed,18 skipped,9 render deselected in515.40s. Learning build/check requires
+12 files and passes. The training record verifies actual MPS,20kupdates, checkpoint/
+processor/sampler reloads, and no manipulation-quality claim. Next: run the frozen
+recorded-input evaluator, then guarded physical handoff; all other learned skills
+and continuous dinner evaluation remain unfinished. Intel setup remains deferred
+until local training work is complete, not merely this first skill checkpoint.
+
+Recorded evaluation41247 completed and seal verified: run
+`20260911T131631-11ba2033068e`, seal
+`de89e050951dc6e30ed615a6723a3874e296631e8d821f2ea9fcee4165113bd5`.
+All630 forecasts finite/in joint limits. First-action mean absolute error0.003354rad,
+p95 0.006405rad,max0.188550rad; valid chunk mean0.004936rad,max0.401384rad.
+These are training-scene recorded-input errors, not manipulation success.
+
+**82105: physical hand-off diagnostic now active**, parent run
+`20260911T131735-2cd345d50623`, log `.artifacts/handoff-physical-v2.log`.
+Uses frozen protocol125848 drivers and completed checkpoint122319. No other GPU
+job is active. Parent timeout900s, maximum900 learned actions, no teacher fallback,
+unchanged contact/action/readiness guards. Poll this handle; preserve its outcome
+rather than restarting it. Training95347, recorded evaluator41247 and regression
+44969 are all terminal. Latest local commit60e4f17; last pushedb4e141d.

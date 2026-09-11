@@ -61,7 +61,14 @@ class DinnerSkillExecutor:
         self._successor_ready = None
         self._final_parking_ready = None
 
-    def start(self, attempt_id, observation, *, temporal_ensemble_coefficient=None):
+    def start(
+        self,
+        attempt_id,
+        observation,
+        *,
+        temporal_ensemble_coefficient=None,
+        execute_chunk_steps: int = 1,
+    ):
         if self._attempt is not None:
             raise RuntimeError("Executor is single-attempt; create another for a supervisor retry")
         active = self.worker.supervisor.snapshot().active
@@ -112,7 +119,7 @@ class DinnerSkillExecutor:
         self.worker.bind_skill(
             self.policy,
             attempt_id,
-            execute_chunk_steps=1,
+            execute_chunk_steps=execute_chunk_steps,
             temporal_ensemble_coefficient=temporal_ensemble_coefficient,
         )
         self._attempt = attempt_id
@@ -132,6 +139,7 @@ class DinnerSkillExecutor:
                 {
                     "skill_id": self.policy.binding.view.skill_id,
                     "max_actions": self.max_actions,
+                    "execution_prefix_limit": execute_chunk_steps,
                     "successor_reference": self._reference.report() if self._reference else None,
                     "physical_truth_consumer": "independent_skill_outcome_monitor",
                 },

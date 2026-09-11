@@ -6,7 +6,8 @@ eligible university account. A free-access request has been submitted and is
 and no separate organizer message was sent.
 
 The user confirmed that the rejection has no explanation. Intel setup is deferred
-until local training is complete, then will be handled as a separate step. No
+until local training for the planned skills is complete, not merely the first
+skill checkpoint, then will be handled as a separate step. No
 replacement application, support message or dismissal has been submitted.
 Local development continues; actual Intel execution remains unverified.
 
@@ -35,10 +36,10 @@ hyphens, periods and commas. The longer draft below was not submitted.
 No secondary owner or Intel co-development access was added. No new agreement
 acceptance was presented during the instance request.
 
-The signed-in portal says email review notification is expected within **3 days**,
-superseding the shorter public-guide estimate for planning. Approval is not
-guaranteed. Wait for the user's approval email or a Ready state before attempting
-host access; inspect the actual expiry because pending review already shows dates.
+Before rejection, the signed-in portal advertised email review notification within
+**3 days**, superseding the shorter public-guide estimate. That request is now
+rejected, not pending. Revisit a zero-cost allocation or borrowed eligible host
+after local training; verify explicit access and actual expiry before connecting.
 
 Both BM-LNL and BM-PTL were visible in this account's catalog. BM-LNL lists 32 GB
 RAM; BM-PTL lists 32–64 GB. Both request forms offered only Windows 11 with the

@@ -26,7 +26,7 @@ class FixturePolicy:
 
 
 @pytest.fixture
-def setup(tmp_path):
+def setup(tmp_path, request):
     capability = dinner_capability("handoff_transfer")
     worker = DinnerControlWorker(
         tmp_path / "worker",
@@ -45,8 +45,11 @@ def setup(tmp_path):
     observation = worker.capture()
     attempt = worker.supervisor.dispatch(observation)
     policy = FixturePolicy()
-    executor = DinnerSkillExecutor(worker, policy, max_actions=1)
-    executor.start(attempt.attempt_id, observation)
+    options = getattr(request, "param", {})
+    executor = DinnerSkillExecutor(worker, policy, max_actions=options.get("max_actions", 1))
+    executor.start(
+        attempt.attempt_id, observation, execute_chunk_steps=options.get("execute_chunk_steps", 1)
+    )
     yield worker, executor, policy
     worker.close()
 
@@ -331,3 +334,19 @@ def test_cancel_after_physical_success_preserves_milestone(setup, monkeypatch):
     assert final.applied_actions == 1 and len(policy.inputs) == 1
     assert worker.supervisor.snapshot().state == "cancelled"
     assert worker.supervisor.snapshot().completed_steps == ()
+
+
+@pytest.mark.parametrize("setup", [{"max_actions": 4, "execute_chunk_steps": 2}], indirect=True)
+def test_chunk_prefix_reuses_forecast_but_advances_checked_actions(setup):
+    worker, executor, policy = setup
+    assert executor.tick().applied_actions == 1
+    assert len(policy.inputs) == 1 and worker.control.pending
+    assert executor.tick().applied_actions == 2
+    assert len(policy.inputs) == 1 and not worker.control.pending
+    assert executor.tick().applied_actions == 3
+    assert len(policy.inputs) == 2
+    worker.cancel("Stop fixture with queued action")
+    before = worker._env.data.time
+    assert not worker.control.pending
+    assert executor.tick().state == "failed"
+    assert worker._env.data.time == before

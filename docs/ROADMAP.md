@@ -31,7 +31,11 @@ learned execution remain M2–M4 work.
 
 Exit: joint/action/camera mapping tests, stable scene stepping, drawer/placement/
 hand-off evidence from the teacher, explicit failure cases, no artificial attachment.
-Run Intel rendering and a tiny OpenVINO conversion probe as soon as B2 resolves.
+Per the user's September 11 direction, defer Intel access and setup until the
+local training work is complete, not merely the first skill checkpoint. Then
+arrange a zero-cost eligible host and run Intel rendering and an OpenVINO
+conversion probe. The rejected request had no explanation; do not wait on an
+assumed pending allocation or investigate the rejection during local training.
 
 ## M2 — Learned workflow (M1 required)
 
