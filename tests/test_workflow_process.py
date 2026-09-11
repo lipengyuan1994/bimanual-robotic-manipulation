@@ -245,7 +245,13 @@ def test_invalid_config_rejected_before_outputs(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "root", ["model", "dataset/evidence", "training/handoff_transfer/checkpoint/evidence"]
+    "root",
+    [
+        "model",
+        "dataset/evidence",
+        "training/handoff_transfer/checkpoint/evidence",
+        "corrections/evidence",
+    ],
 )
 def test_immutable_source_output_confinement_before_allocation(tmp_path, root):
     body = dict(
@@ -266,6 +272,11 @@ def test_immutable_source_output_confinement_before_allocation(tmp_path, root):
             for skill in SKILLS
         ],
     )
+    if root.startswith("corrections/"):
+        body["profile"] = "dinner_development_workflow_v2"
+        body["checkpoints"][0].update(
+            corrective_dataset_root="corrections", corrective_export_file_sha256="e" * 64
+        )
     body["manifest_sha256"] = hashlib.sha256(canonical(body)).hexdigest()
     (tmp_path / "cohort.json").write_bytes(canonical(body))
     with pytest.raises(ValueError, match="outside immutable"):
@@ -327,3 +338,204 @@ def test_spawned_progress_is_display_only(tmp_path):
     assert result.outcome == "failed"
     assert result.metrics["independent_task_success"] is None
     assert result.metrics["child_reason"] == "Fixture could not grasp the object"
+
+
+def guardian_crash(config, *, store, **kwargs):
+    store.root.mkdir(parents=True)
+    (store.root / "started.json").write_text("{}")
+    os.kill(os.getppid(), signal.SIGKILL)
+    while True:
+        with (store.root / "writer.txt").open("a") as stream:
+            stream.write("live\n")
+        time.sleep(0.01)
+
+
+def test_guardian_crash_kills_owned_group_before_parent_seal(tmp_path):
+    from bimanual.worker_lease import WorkerLease
+
+    store = EvidenceStore(tmp_path / "evidence")
+    result = run_workflow_process(
+        settings(), store=store, project_root=tmp_path, _entrypoint=guardian_crash
+    )
+    assert result.outcome == "failed"
+    assert result.metrics["guardian_group_cleanup"]
+    assert result.metrics["guardian_reaped"]
+    assert not result.metrics["child_reaped"]  # Orphan group cleanup is not waitpid certification.
+    assert not result.metrics["execution_complete"]
+    assert result.metrics["guardian_exitcode"] == -signal.SIGKILL
+    with WorkerLease.acquire(store.root / ".workflow-worker.lock"):
+        time.sleep(0.05)
+        assert store.verify(result.run_id) == result
+
+
+def test_normal_reports_actual_worker_separately_from_guardian(tmp_path):
+    _, result = run(tmp_path, normal)
+    assert result.metrics["guardian_pid"] != result.metrics["child_pid"]
+    assert result.metrics["guardian_terminal_verified"]
+    assert result.metrics["guardian_reaped"] and result.metrics["child_reaped"]
+    assert result.metrics["guardian_exitcode"] == result.metrics["child_exitcode"] == 0
+
+
+def test_group_cleanup_lease_released_after_publication_error(tmp_path, monkeypatch):
+    from bimanual.worker_lease import WorkerLease
+
+    store = EvidenceStore(tmp_path / "evidence")
+
+    def fail_seal(*args, **kwargs):
+        raise OSError("parent publication failure")
+
+    monkeypatch.setattr(store, "seal", fail_seal)
+    with pytest.raises(OSError, match="publication failure"):
+        run_workflow_process(
+            settings(), store=store, project_root=tmp_path, _entrypoint=guardian_crash
+        )
+    with WorkerLease.acquire(store.root / ".workflow-worker.lock"):
+        assert not list((store.root / "runs").glob("*/manifest.json"))
+
+
+def malformed_guardian(config_data, child_root, guardian_root, project_root, *args):
+    from pathlib import Path
+
+    from bimanual.workflow_guardian import _atomic
+
+    os.setsid()
+    root = Path(guardian_root)
+    root.mkdir()
+    _atomic(
+        root / "ready.json",
+        dict(guardian_pid=os.getpid(), process_group=os.getpgrp(), session=os.getsid(0)),
+    )
+    child = _seal_fixture(
+        WorkflowExecutionConfig.model_validate(config_data), EvidenceStore(Path(child_root))
+    )
+    _atomic(
+        root / "terminal.json",
+        dict(
+            guardian_pid=os.getpid(),
+            worker_pid=None,
+            worker_exitcode=0,
+            worker_reaped="true",
+            forced_interruption=False,
+            terminate_sent=False,
+            kill_sent=False,
+            reason="worker_exited",
+            child_message={"run_id": child.run_id},
+        ),
+    )
+
+
+def test_malformed_terminal_cannot_certify_success(tmp_path, monkeypatch):
+    from bimanual import workflow_guardian
+
+    monkeypatch.setattr(workflow_guardian, "guardian_entry", malformed_guardian)
+    store = EvidenceStore(tmp_path / "evidence")
+    result = run_workflow_process(
+        settings(), store=store, project_root=tmp_path, _entrypoint=normal
+    )
+    assert result.outcome == "failed"
+    assert not result.metrics["guardian_terminal_verified"]
+    assert result.metrics["guardian_group_cleanup"]
+    assert not result.metrics["execution_complete"]
+
+
+def exit_immediately():
+    return
+
+
+def test_guardian_pid_pin_survives_global_multiprocessing_cleanup():
+    from multiprocessing.connection import wait
+
+    from bimanual.workflow_process import _PinnedGuardian
+
+    process = _PinnedGuardian(target=exit_immediately)
+    process.start()
+    try:
+        assert wait([process.sentinel], timeout=5)
+        assert process not in mp.process._children
+        # Simulate an automatic cleanup snapshot which predates detachment.
+        mp.process._children.add(process)
+        mp.process._cleanup()
+        mp.active_children()
+        assert process._popen.returncode is None
+        assert process._popen.poll() is None
+        assert process in mp.process._children
+        os.kill(process.pid, 0)  # Direct-child zombie remains PID-pinned.
+    finally:
+        mp.process._children.discard(process)
+        process.authorize_reap()
+        process.join(5)
+        assert process.exitcode == 0
+        process.close()
+
+
+def native_gil_hung(config, *, store, **kwargs):
+    import ctypes
+
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+    store.root.mkdir(parents=True, exist_ok=True)
+    (store.root / "native-ready").write_text("GIL-held native call")
+    ctypes.PyDLL(None).sleep(60)
+
+
+def original_process_owner(root):
+    from pathlib import Path
+
+    root = Path(root)
+    run_workflow_process(
+        settings(wall=10),
+        store=EvidenceStore(root / "evidence"),
+        project_root=root,
+        _entrypoint=native_gil_hung,
+    )
+
+
+def test_integrated_parent_death_reaps_native_worker_and_allows_restart(tmp_path):
+    import json
+
+    from bimanual.worker_lease import WorkerLease
+
+    owner = mp.get_context("spawn").Process(target=original_process_owner, args=(str(tmp_path),))
+    owner.start()
+    try:
+        deadline = time.monotonic() + 8
+        ready = []
+        while not ready and time.monotonic() < deadline:
+            ready = list((tmp_path / "evidence/runs").glob("*/child-evidence/native-ready"))
+            time.sleep(0.01)
+        assert len(ready) == 1, "Native worker did not start within bounded fixture budget"
+        parent_run = ready[0].parent.parent
+        lease_path = tmp_path / "evidence/.workflow-worker.lock"
+        with pytest.raises(RuntimeError, match="still holds"):
+            WorkerLease.acquire(lease_path)
+        owner.kill()  # Owned process handle; no raw worker/guardian PID signaling.
+        owner.join(3)
+        assert owner.exitcode == -signal.SIGKILL
+        terminal_path = parent_run / "guardian/terminal.json"
+        deadline = time.monotonic() + 5
+        while not terminal_path.exists() and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert terminal_path.exists(), "Guardian did not finish parent-loss cleanup"
+        terminal = json.loads(terminal_path.read_text())
+        assert terminal["reason"] == "parent_lost"
+        assert terminal["worker_reaped"] and terminal["forced_interruption"]
+        assert terminal["terminate_sent"] and terminal["kill_sent"]
+        assert terminal["worker_exitcode"] == -signal.SIGKILL
+        assert terminal["execution_complete"] is False
+        with pytest.raises(ProcessLookupError):
+            os.kill(terminal["worker_pid"], 0)
+        with WorkerLease.acquire(lease_path):
+            pass
+        assert not (parent_run / "manifest.json").exists()
+        store = EvidenceStore(tmp_path / "evidence")
+        restarted = run_workflow_process(
+            settings(), store=store, project_root=tmp_path, _entrypoint=normal
+        )
+        assert restarted.outcome == "completed"
+        assert restarted.metrics["child_reaped"]
+        assert store.verify(restarted.run_id) == restarted
+        assert not (parent_run / "manifest.json").exists()  # Never invent a lost root's seal.
+    finally:
+        if owner.is_alive():
+            owner.kill()
+        owner.join(3)
+        owner.close()

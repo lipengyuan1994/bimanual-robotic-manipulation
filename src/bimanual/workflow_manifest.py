@@ -27,19 +27,41 @@ class WorkflowCheckpoint(Contract):
     checkpoint_sha256: Digest
 
 
+class CorrectiveWorkflowCheckpoint(WorkflowCheckpoint):
+    corrective_dataset_root: str = Field(min_length=1)
+    corrective_export_file_sha256: Digest
+
+    @model_validator(mode="after")
+    def handoff_only(self):
+        if self.skill_id != "handoff_transfer":
+            raise ValueError("Corrective workflow checkpoint must be handoff_transfer")
+        if Path(self.corrective_dataset_root).is_absolute():
+            raise ValueError("Corrective workflow path must be relative")
+        return self
+
+
 class WorkflowManifest(Contract):
-    profile: Literal["dinner_development_workflow_v1"] = "dinner_development_workflow_v1"
+    profile: Literal["dinner_development_workflow_v1", "dinner_development_workflow_v2"] = (
+        "dinner_development_workflow_v1"
+    )
     dataset_root: str = Field(min_length=1)
     export_file_sha256: Digest
     skill_views_path: str = Field(min_length=1)
     skill_views_file_sha256: Digest
-    checkpoints: tuple[WorkflowCheckpoint, ...] = Field(min_length=7, max_length=7)
+    checkpoints: tuple[CorrectiveWorkflowCheckpoint | WorkflowCheckpoint, ...] = Field(
+        min_length=7, max_length=7
+    )
     manifest_sha256: Digest
 
     @model_validator(mode="after")
     def complete_order(self):
         if tuple(item.skill_id for item in self.checkpoints) != SKILLS:
             raise ValueError("Workflow requires all seven skills in their fixed order")
+        has_corrections = any(
+            isinstance(item, CorrectiveWorkflowCheckpoint) for item in self.checkpoints
+        )
+        if has_corrections != (self.profile == "dinner_development_workflow_v2"):
+            raise ValueError("Workflow profile and corrective entries disagree")
         body = self.model_dump(mode="json", exclude={"manifest_sha256"})
         if hashlib.sha256(canonical(body)).hexdigest() != self.manifest_sha256:
             raise ValueError("Workflow manifest body seal mismatch")
@@ -86,12 +108,24 @@ def load_workflow_manifest(path: Path) -> VerifiedWorkflow:
         raise ValueError("Workflow skill views file digest mismatch")
     views = load_skill_views(views_path, dataset_root=dataset)
     bindings = []
+    corrective_hashes = []
     for entry, view in zip(manifest.checkpoints, views.views, strict=True):
+        overrides = {}
+        if isinstance(entry, CorrectiveWorkflowCheckpoint):
+            corrective_root = (path.parent / entry.corrective_dataset_root).resolve()
+            export_path = corrective_root / "export_manifest.json"
+            if digest_file(export_path) != entry.corrective_export_file_sha256:
+                raise ValueError("Workflow corrective export digest mismatch")
+            corrective_hashes.append((export_path, entry.corrective_export_file_sha256))
+            overrides["corrective_dataset_root"] = corrective_root
         binding = load_skill_checkpoint(
             (path.parent / entry.training_run).resolve(),
             skill_id=entry.skill_id,
             dataset_root=dataset,
+            **overrides,
         )
+        if overrides and getattr(binding, "corrective_dataset_root", None) != corrective_root:
+            raise ValueError("Workflow corrective path differs from binding")
         if (
             binding.training_manifest_sha256 != entry.training_manifest_sha256
             or binding.checkpoint_sha256 != entry.checkpoint_sha256
@@ -113,7 +147,8 @@ def load_workflow_manifest(path: Path) -> VerifiedWorkflow:
     ):
         raise ValueError("Workflow reference dataset lineage mismatch")
     if (
-        digest_file(path) != file_hash
+        any(digest_file(p) != sha for p, sha in corrective_hashes)
+        or digest_file(path) != file_hash
         or digest_file(dataset / "export_manifest.json") != manifest.export_file_sha256
         or digest_file(views_path) != manifest.skill_views_file_sha256
     ):
@@ -122,11 +157,19 @@ def load_workflow_manifest(path: Path) -> VerifiedWorkflow:
 
 
 def create_workflow_manifest(
-    dataset_root: Path, skill_views_path: Path, training_runs: dict[str, Path], destination: Path
+    dataset_root: Path,
+    skill_views_path: Path,
+    training_runs: dict[str, Path],
+    destination: Path,
+    *,
+    corrective_dataset_roots: dict[str, Path] | None = None,
 ) -> VerifiedWorkflow:
     """Pin explicitly selected runs; never discover or promote a latest checkpoint."""
     if set(training_runs) != set(SKILLS):
         raise ValueError("Explicit training runs for all seven skills are required")
+    corrective_dataset_roots = corrective_dataset_roots or {}
+    if set(corrective_dataset_roots) - {"handoff_transfer"}:
+        raise ValueError("Only the handoff checkpoint supports corrective datasets")
     destination = Path(destination).resolve()
     if destination.exists():
         raise FileExistsError("Workflow manifest already exists; choose a new version")
@@ -134,22 +177,39 @@ def create_workflow_manifest(
     views = load_skill_views(skill_views_path, dataset_root=dataset_root)
     entries = []
     for skill, view in zip(SKILLS, views.views, strict=True):
+        overrides = (
+            {"corrective_dataset_root": corrective_dataset_roots[skill]}
+            if skill in corrective_dataset_roots
+            else {}
+        )
         binding = load_skill_checkpoint(
-            training_runs[skill], skill_id=skill, dataset_root=dataset_root
+            training_runs[skill], skill_id=skill, dataset_root=dataset_root, **overrides
         )
         if binding.view != view:
             raise ValueError("Checkpoint view differs from cohort view")
-        entries.append(
-            WorkflowCheckpoint(
-                skill_id=skill,
-                training_run=os.path.relpath(binding.training_run, destination.parent),
-                training_manifest_sha256=binding.training_manifest_sha256,
-                checkpoint_sha256=binding.checkpoint_sha256,
-            ).model_dump(mode="json")
+        fields = dict(
+            skill_id=skill,
+            training_run=os.path.relpath(binding.training_run, destination.parent),
+            training_manifest_sha256=binding.training_manifest_sha256,
+            checkpoint_sha256=binding.checkpoint_sha256,
         )
+        corrective_root = getattr(binding, "corrective_dataset_root", None)
+        if corrective_root is not None:
+            entry = CorrectiveWorkflowCheckpoint(
+                **fields,
+                corrective_dataset_root=os.path.relpath(corrective_root, destination.parent),
+                corrective_export_file_sha256=digest_file(corrective_root / "export_manifest.json"),
+            )
+        else:
+            entry = WorkflowCheckpoint(**fields)
+        entries.append(entry.model_dump(mode="json"))
     body = dict(
         schema_version=1,
-        profile="dinner_development_workflow_v1",
+        profile=(
+            "dinner_development_workflow_v2"
+            if any("corrective_dataset_root" in e for e in entries)
+            else "dinner_development_workflow_v1"
+        ),
         dataset_root=os.path.relpath(dataset_root, destination.parent),
         export_file_sha256=digest_file(dataset_root / "export_manifest.json"),
         skill_views_path=os.path.relpath(skill_views_path, destination.parent),
@@ -231,6 +291,11 @@ def preload_workflow(verified: VerifiedWorkflow, *, device="cpu") -> LoadedWorkf
             skill_id=binding.view.skill_id,
             dataset_root=binding.dataset_root,
             device=device,
+            **(
+                {"corrective_dataset_root": binding.corrective_dataset_root}
+                if getattr(binding, "corrective_dataset_root", None) is not None
+                else {}
+            ),
         )
         if policy.binding != binding:
             raise ValueError("Loaded policy differs from pinned workflow binding")

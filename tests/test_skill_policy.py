@@ -56,3 +56,27 @@ def test_policy_binding_requires_the_registered_skill_before_reset():
     )
     with pytest.raises(ValueError, match="registered attempt"):
         policy.bind_control(control, "attempt", hold_targets=np.zeros(12), limits=None)
+
+
+def test_policy_forwards_explicit_corrective_location(tmp_path, monkeypatch):
+    from bimanual import skill_policy
+
+    seen = []
+    binding = SimpleNamespace(checkpoint_path=tmp_path / "checkpoint")
+    binding.reverify = lambda: seen.append("reverified")
+
+    def load(training_run, **kwargs):
+        seen.append(kwargs)
+        return binding
+
+    monkeypatch.setattr(skill_policy, "load_skill_checkpoint", load)
+    monkeypatch.setattr(skill_policy, "_load_policy", lambda *args: (None, None, None, None))
+    policy = DinnerSkillPolicy(
+        tmp_path / "run",
+        skill_id="handoff_transfer",
+        dataset_root=tmp_path / "nominal",
+        corrective_dataset_root=tmp_path / "copy",
+    )
+    assert seen[0]["corrective_dataset_root"] == tmp_path / "copy"
+    assert seen[-1] == "reverified"
+    assert policy.binding is binding

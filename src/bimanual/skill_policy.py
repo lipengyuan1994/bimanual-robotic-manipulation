@@ -20,11 +20,24 @@ class DinnerSkillPolicy:
     a step nor reports success, and provides no teacher or remote fallback.
     """
 
-    def __init__(self, training_run: Path, *, skill_id: str, dataset_root: Path, device="cpu"):
+    def __init__(
+        self,
+        training_run: Path,
+        *,
+        skill_id: str,
+        dataset_root: Path,
+        device="cpu",
+        corrective_dataset_root: Path | None = None,
+    ):
         if device not in {"cpu", "mps"}:
             raise ValueError("Supported local policy devices are cpu and mps")
+        relocation = (
+            {}
+            if corrective_dataset_root is None
+            else {"corrective_dataset_root": corrective_dataset_root}
+        )
         self.binding = load_skill_checkpoint(
-            training_run, skill_id=skill_id, dataset_root=dataset_root
+            training_run, skill_id=skill_id, dataset_root=dataset_root, **relocation
         )
         self._torch, self._policy, self._pre, self._post = _load_policy(
             self.binding.checkpoint_path, device

@@ -70,12 +70,17 @@ stop events and verified child manifest identity. The child evidence store is
 `RUN_DIRECTORY/child-evidence`; its run ID is recorded as `child_run_id`.
 Only a verified completed `dinner_workflow_execution` child with matching config
 can establish execution completion. This still does not establish physical task
-success. One spawned child owns the simulation. Its cooperative cancellation
-checks also inspect the spawning parent's process handle, so parent exit revokes
-continued execution at the next checkpoint. A reused numeric PID cannot retain
-authority. This does not interrupt a hung native call after parent loss, rebuild
-the parent run record, or manage independently launched subprocess trees; full
-OS-crash recovery remains incomplete. The operator UI uses this same worker path.
+success. One spawned worker owns the simulation, supervised by a separate guardian.
+The guardian monitors the original parent's process handle and can terminate a
+worker stuck in a native call after parent loss. A common filesystem lease prevents
+another supported worker from starting in the same evidence store until cleanup.
+Guardian failure triggers dedicated process-group cleanup while its PID is pinned
+against automatic reaping; unconfirmed cleanup leaves evidence unsealed.
+
+This path is validated on POSIX with Python3.12 and supports one worker with threads.
+It does not reconstruct an interrupted parent's run record or manage independently
+launched subprocess trees. Original-parent loss therefore does not fabricate a
+sealed parent outcome. The operator UI uses this same worker path.
 
 For direct debugging, `--in-process` preserves the original cooperative runner.
 That mode checks cancellation between blocking operations and cannot forcibly
@@ -97,9 +102,13 @@ source-bound audit is supplied. The execution command itself continues to report
 the separate scorer's result.
 
 
-Validation: nineteen native CPU tests exercise actual spawned processes, including
-cooperative stop, ignored termination followed by kill/reap, parent interruption,
-corrupt/missing child results and completed child evidence with a hung thread.
+Current combined validation:57 native CPU process, guardian, lease and operator
+tests pass. These include cooperative stop, ignored termination followed by
+kill/reap, corrupt/missing child results, completed child evidence with a hung
+thread, guardian crash and original-parent death during a GIL-held native call.
+The parent-death case also verifies restart on the same evidence store without
+inventing a seal for the interrupted parent. Log:
+`.artifacts/checks-guardian-process-final.log`.
 Actual CLI run `20260911T061251-260718b9a590` with an absent cohort fails as expected,
 verifies its failed child manifest and reaps the child without loading models.
 This verifies the failure path, not full learned execution or GPU interruption.

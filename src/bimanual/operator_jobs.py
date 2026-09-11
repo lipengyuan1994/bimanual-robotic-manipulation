@@ -32,8 +32,8 @@ class OperatorJobs:
 
     The background thread owns the existing bounded process runner. Stop requests
     are acknowledged as stopping until that runner returns and its evidence is
-    verified. Closing permanently prevents new work. An OS/parent crash remains
-    outside the existing runner's guarantees; this is not a durable scheduler.
+    verified. Closing permanently prevents new work. Guardian cleanup covers parent
+    loss; reconstructing interrupted jobs and OS crashes remains unsupported.
     """
 
     def __init__(
@@ -156,7 +156,8 @@ class OperatorJobs:
             if timeout is None:
                 timeout = (
                     self._config.cancellation_grace_seconds
-                    + 2 * self._config.terminate_grace_seconds
+                    # Guardian cancellation, then possible group exit and lease release.
+                    + 4 * self._config.terminate_grace_seconds
                     + 10
                 )
             thread.join(timeout)

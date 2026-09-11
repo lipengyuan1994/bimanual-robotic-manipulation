@@ -106,6 +106,11 @@ def run_workflow_execution(
         source_roots = [(base / declared.dataset_root).resolve()] + [
             (base / checkpoint.training_run).resolve() for checkpoint in declared.checkpoints
         ]
+        source_roots += [
+            (base / checkpoint.corrective_dataset_root).resolve()
+            for checkpoint in declared.checkpoints
+            if getattr(checkpoint, "corrective_dataset_root", None) is not None
+        ]
         if any(store.root.is_relative_to(path) for path in source_roots):
             raise ValueError("Evidence store must be outside immutable cohort sources")
     directory = store.new_run()
@@ -172,7 +177,12 @@ def run_workflow_execution(
         for binding in verified.bindings:
             if any(
                 store.root.is_relative_to(path)
-                for path in (binding.dataset_root, binding.training_run)
+                for path in (
+                    binding.dataset_root,
+                    binding.training_run,
+                    getattr(binding, "corrective_dataset_root", None),
+                )
+                if path is not None
             ):
                 raise ValueError("Evidence store must be outside immutable cohort sources")
         (directory / "cohort.json").write_bytes(canonical(verified.report()))

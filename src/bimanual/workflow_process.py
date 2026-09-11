@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+import json
 import multiprocessing as mp
 import multiprocessing.spawn
 import os
 import platform
+import signal
 import sys
 import time
 import traceback
 from collections.abc import Callable
+from multiprocessing.connection import wait
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -18,6 +21,32 @@ from bimanual.evidence import EvidenceStore, Manifest, canonical, provenance
 from bimanual.workflow_execution import WorkflowExecutionConfig, run_workflow_execution
 from bimanual.workflow_manifest import WorkflowManifest
 from bimanual.workflow_progress import read_progress
+
+
+class _PinnedGuardian(mp.context.SpawnProcess):
+    """Python 3.12 spawn owner immune to multiprocessing's implicit child reaping.
+
+    Install suppression before BaseProcess.start registers the child. Detachment
+    alone has a race with another thread's already-created _cleanup iterator.
+    """
+
+    @staticmethod
+    def _Popen(process_obj):
+        if sys.version_info[:2] != (3, 12):
+            raise RuntimeError("Guardian PID pin requires validated Python 3.12 multiprocessing")
+        popen = mp.context.SpawnProcess._Popen(process_obj)
+        if not callable(getattr(popen, "poll", None)):
+            raise RuntimeError("Unsupported spawn process handle")
+        popen._guardian_original_poll = popen.poll
+        popen.poll = lambda flag=os.WNOHANG: None
+        return popen
+
+    def start(self):
+        super().start()
+        mp.process._children.discard(self)
+
+    def authorize_reap(self):
+        self._popen.poll = self._popen._guardian_original_poll
 
 
 class WorkflowProcessConfig(BaseModel):
@@ -78,6 +107,11 @@ def _confine(execution: WorkflowExecutionConfig, root: Path):
         base = execution.workflow_manifest.parent
         roots += [(base / manifest.dataset_root).resolve()]
         roots += [(base / item.training_run).resolve() for item in manifest.checkpoints]
+        roots += [
+            (base / item.corrective_dataset_root).resolve()
+            for item in manifest.checkpoints
+            if getattr(item, "corrective_dataset_root", None) is not None
+        ]
     if any(root.is_relative_to(path) for path in roots):
         raise ValueError(
             "Process evidence store must be outside immutable model/dataset/checkpoint sources"
@@ -99,8 +133,8 @@ def run_workflow_process(
     wall budget; parent evidence hashing/sealing occurs after the child is reaped.
     A killed native call cannot finish worker cleanup, so partial files are retained
     as interrupted evidence. The parent never edits a child manifest or artifacts.
-    This is not an OS-crash supervisor or a process-tree manager. Entry points may
-    use threads but must not create independently owned subprocesses.
+    A separate guardian handles root loss; independent process trees remain unsupported.
+    Entry points may use threads but must not create independently owned subprocesses.
     """
     # Revalidate even model_construct/model_copy inputs before any child/output.
     config = WorkflowProcessConfig.model_validate(config.model_dump(mode="json"))
@@ -128,7 +162,10 @@ def run_workflow_process(
     started = time.monotonic()
     deadline = started + execution.wall_timeout_seconds
     child_store = EvidenceStore(directory / "child-evidence")
-    process = receiver = sender = None
+    process = None
+    guardian_root = directory / "guardian"
+    lease_path = store.root / ".workflow-worker.lock"
+    cleanup_lease = None
     cancellation = None
     message = None
     reason = None
@@ -152,7 +189,12 @@ def run_workflow_process(
         backend="workflow_execution"
         if _entrypoint is run_workflow_execution
         else "injected_test_entrypoint",
-        limits="Parent OS crash and independent subprocess trees are outside this supervisor",
+        guardian_pid=None,
+        guardian_exitcode=None,
+        guardian_reaped=False,
+        guardian_terminal_verified=False,
+        guardian_group_cleanup=False,
+        limits="POSIX guardian covers root loss; independent subprocess trees are unsupported",
     )
 
     def record(kind, **details):
@@ -164,52 +206,181 @@ def run_workflow_process(
             stream.flush()
             os.fsync(stream.fileno())
 
-    def stop_child():
-        if process is None or process.pid is None:
-            return
+    def exited(timeout=0):
+        # Process.is_alive/exitcode/join can reap the guardian and release its PID.
+        # Keep it unreaped until fallback process-group cleanup is complete.
+        return bool(wait([process.sentinel], timeout=timeout))
+
+    def read_json(path):
+        with path.open("rb") as stream:
+            payload = stream.read(65537)
+        if len(payload) > 65536:
+            raise ValueError("Oversized guardian journal")
+        value = json.loads(payload)
+        if not isinstance(value, dict):
+            raise ValueError("Guardian journal must be an object")
+        canonical(value)
+        return value
+
+    def group_owned():
+        try:
+            return os.getpgid(process.pid) == process.pid and os.getsid(process.pid) == process.pid
+        except ProcessLookupError:
+            # Unreaped direct-child PID cannot have been reused. Readiness was
+            # written only after setsid, before any worker could be started.
+            try:
+                ready = read_json(guardian_root / "ready.json")
+                return ready == dict(
+                    guardian_pid=process.pid, process_group=process.pid, session=process.pid
+                )
+            except (OSError, ValueError):
+                return False
+
+    def settle_guardian():
+        nonlocal cleanup_lease, message, reason
         cancellation.set()
-        process.join(config.cancellation_grace_seconds)
-        if process.is_alive():
-            metrics.update(forced_interruption=True, terminate_sent=True)
-            process.terminate()
-            process.join(config.terminate_grace_seconds)
-        if process.is_alive():
-            metrics["kill_sent"] = True
-            process.kill()
-            process.join(config.terminate_grace_seconds)
-        if process.is_alive():
-            # Never publish a seal while a surviving child could still mutate it.
-            raise RuntimeError("OS did not reap the killed child; parent evidence remains unsealed")
+        grace = config.cancellation_grace_seconds + 2 * config.terminate_grace_seconds + 1.0
+        exited(grace)
+        terminal = None
+        if exited():
+            try:
+                terminal = read_json(guardian_root / "terminal.json")
+                worker_pid = terminal.get("worker_pid")
+                if (
+                    type(terminal.get("guardian_pid")) is not int
+                    or terminal["guardian_pid"] != process.pid
+                    or any(
+                        type(terminal.get(key)) is not bool
+                        for key in (
+                            "worker_reaped",
+                            "forced_interruption",
+                            "terminate_sent",
+                            "kill_sent",
+                        )
+                    )
+                    or terminal.get("reason")
+                    not in {"worker_exited", "cancelled", "timed_out", "parent_lost", "failed"}
+                    or (
+                        worker_pid is not None
+                        and (
+                            type(worker_pid) is not int
+                            or worker_pid <= 0
+                            or terminal.get("worker_reaped") is not True
+                            or type(terminal.get("worker_exitcode")) is not int
+                            or read_json(guardian_root / "worker.json").get("worker_pid")
+                            != worker_pid
+                        )
+                    )
+                ):
+                    raise ValueError("Guardian did not certify worker reap")
+            except (OSError, ValueError):
+                terminal = None
+        if terminal is None:
+            # A crash or stuck guardian must not strand its native worker. Group
+            # signal is safe only while this direct-child leader is unreaped.
+            if not group_owned():
+                if not exited():
+                    # Before setsid there is no worker; signal only our direct child.
+                    process.kill()
+                    if not exited(config.terminate_grace_seconds):
+                        raise RuntimeError(
+                            "Guardian cleanup unconfirmed; evidence remains unsealed"
+                        )
+                # Without proven dedicated group ownership, readiness absence
+                # does not prove that a worker was never started.
+                raise RuntimeError(
+                    "Guardian group ownership unconfirmed; evidence remains unsealed"
+                )
+            metrics.update(forced_interruption=True, kill_sent=True)
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            except PermissionError as error:
+                # Some kernels/sandboxes reject signaling an already-dead group.
+                # This is not cleanup proof: require the guardian sentinel and
+                # exclusive worker lease below, or leave the run unsealed.
+                metrics["group_signal_error"] = str(error)
+            if not exited(config.terminate_grace_seconds):
+                raise RuntimeError("Guardian group exit unconfirmed; evidence remains unsealed")
+            until = time.monotonic() + config.terminate_grace_seconds
+            while True:
+                try:
+                    cleanup_lease = WorkerLease.acquire(lease_path)
+                    break
+                except RuntimeError:
+                    if time.monotonic() >= until:
+                        raise RuntimeError(
+                            "Worker lease remains held; evidence remains unsealed"
+                        ) from None
+                    time.sleep(config.poll_interval_seconds)
+            metrics["guardian_group_cleanup"] = True
+            reason = reason or "failed"
+            try:
+                metrics["child_pid"] = read_json(guardian_root / "worker.json").get("worker_pid")
+            except (OSError, ValueError):
+                pass
+            try:
+                message = read_json(guardian_root / "worker-result.json")
+            except (OSError, ValueError):
+                pass
+        else:
+            metrics.update(
+                guardian_terminal_verified=True,
+                child_pid=terminal.get("worker_pid"),
+                child_reaped=terminal.get("worker_reaped") is True,
+                child_exitcode=terminal.get("worker_exitcode"),
+                forced_interruption=terminal.get("forced_interruption") is True,
+                terminate_sent=terminal.get("terminate_sent") is True,
+                kill_sent=terminal.get("kill_sent") is True,
+            )
+            message = terminal.get("child_message")
+            if terminal.get("reason") != "worker_exited":
+                reason = reason or terminal.get("reason", "failed")
+        process.authorize_reap()
+        process.join()
+        metrics.update(guardian_reaped=True, guardian_exitcode=process.exitcode)
+        if process.exitcode != 0:
+            reason = reason or "failed"
+        process.close()
+
+    from bimanual.worker_lease import WorkerLease
+    from bimanual.workflow_guardian import guardian_entry
 
     try:
+        if os.name != "posix":
+            raise RuntimeError("Workflow guardian requires POSIX")
         (directory / "config.json").write_bytes(canonical(config.model_dump(mode="json")))
         if cancelled():
             reason = "cancelled"
         else:
             context = mp.get_context("spawn")
             cancellation = context.Event()
-            receiver, sender = context.Pipe(duplex=False)
-            process = context.Process(
-                target=_child,
+            process = _PinnedGuardian(
+                target=guardian_entry,
                 args=(
                     execution.model_dump(mode="json"),
                     str(child_store.root),
+                    str(guardian_root),
                     str(project_root),
                     cancellation,
-                    sender,
                     str(interpreter),
                     _entrypoint,
+                    deadline,
+                    config.cancellation_grace_seconds,
+                    config.terminate_grace_seconds,
+                    config.poll_interval_seconds,
+                    str(lease_path),
                 ),
-                name="bimanual-workflow",
-                daemon=True,
+                name="bimanual-workflow-guardian",
+                daemon=False,
             )
             record("spawn_requested")
             process.start()
-            sender.close()
-            metrics["child_pid"] = process.pid
-            record("child_started", pid=process.pid)
+            metrics["guardian_pid"] = process.pid
+            record("guardian_started", pid=process.pid)
             next_progress = 0.0
-            while process.is_alive():
+            while not exited(config.poll_interval_seconds):
                 if cancelled():
                     reason = "cancelled"
                     break
@@ -221,103 +392,87 @@ def run_workflow_process(
                     progress = read_progress(child_store.root)
                     if progress is not None:
                         on_progress(progress)
-                # Read while the child is alive to avoid blocking its small result send.
-                if receiver.poll():
-                    try:
-                        incoming = receiver.recv()
-                    except EOFError:
-                        incoming = None
-                    if incoming is not None:
-                        if message is not None:
-                            raise ValueError("Child sent multiple result messages")
-                        message = incoming
-                process.join(min(config.poll_interval_seconds, max(0, deadline - time.monotonic())))
             if reason is not None:
-                cancellation.set()
                 record("stop_requested", reason=reason)
-                stop_child()
-            else:
-                process.join()
-                if time.monotonic() >= deadline:
-                    reason = "timed_out"
-            if message is None and receiver.poll():
-                try:
-                    message = receiver.recv()
-                except EOFError:
-                    pass
     except (Exception, KeyboardInterrupt) as error:
         reason = "cancelled" if isinstance(error, KeyboardInterrupt) else "failed"
         metrics["error"] = f"{type(error).__name__}: {error}"
         (directory / "parent-error.txt").write_text(traceback.format_exc())
     finally:
-        # Even persistence/IPC exceptions cannot leave the simulation running.
         if process is not None and process.pid is not None:
-            if process.is_alive():
-                stop_child()
-            process.join()
-            metrics.update(child_reaped=True, child_exitcode=process.exitcode)
-            process.close()
-        for connection in (receiver, sender):
-            if connection is not None:
-                connection.close()
+            settle_guardian()
 
-    # No child or model thread can write after this point. Only read child artifacts.
-    if message is not None:
-        (directory / "child-result.json").write_bytes(canonical(message))
-    if isinstance(message, dict) and isinstance(message.get("run_id"), str):
-        metrics["child_run_id"] = message["run_id"]
-        try:
-            child = child_store.verify(message["run_id"])
-            if child.kind != "dinner_workflow_execution" or child.config != execution.model_dump(
-                mode="json"
-            ):
-                raise ValueError("Child manifest kind/config does not match requested workflow")
-            if child.metrics.get("independent_task_success", "missing") is not None:
-                raise ValueError("Child cannot supply independent task certification")
-            metrics.update(
-                child_manifest_verified=True,
-                child_manifest_sha256=child.manifest_sha256,
-                child_outcome=child.outcome,
-            )
-            child_reason = child.metrics.get("reason")
-            if isinstance(child_reason, str):
-                metrics["child_reason"] = child_reason[:2048]
-            if reason is None and metrics["child_exitcode"] == 0:
-                complete = (
-                    child.outcome == "completed"
-                    and child.metrics.get("execution_complete") is True
-                    and child.metrics.get("state") == "execution_complete"
-                )
-                if child.outcome == "completed" and not complete:
-                    raise ValueError("Child completion contradicts execution state")
+    try:
+        # No child or model thread can write after this point. Only read child artifacts.
+        if message is not None:
+            (directory / "child-result.json").write_bytes(canonical(message))
+        if isinstance(message, dict) and isinstance(message.get("run_id"), str):
+            metrics["child_run_id"] = message["run_id"]
+            try:
+                child = child_store.verify(message["run_id"])
+                if (
+                    child.kind != "dinner_workflow_execution"
+                    or child.config != execution.model_dump(mode="json")
+                ):
+                    raise ValueError("Child manifest kind/config does not match requested workflow")
+                if child.metrics.get("independent_task_success", "missing") is not None:
+                    raise ValueError("Child cannot supply independent task certification")
                 metrics.update(
-                    state="execution_complete" if complete else child.outcome,
-                    execution_complete=complete,
+                    child_manifest_verified=True,
+                    child_manifest_sha256=child.manifest_sha256,
+                    child_outcome=child.outcome,
                 )
-        except (ValueError, OSError, KeyError, TypeError) as error:
+                child_reason = child.metrics.get("reason")
+                if isinstance(child_reason, str):
+                    metrics["child_reason"] = child_reason[:2048]
+                if (
+                    reason is None
+                    and metrics["child_exitcode"] == 0
+                    and metrics["guardian_terminal_verified"]
+                    and metrics["guardian_reaped"]
+                    and metrics["guardian_exitcode"] == 0
+                    and metrics["child_reaped"]
+                    and not metrics["forced_interruption"]
+                ):
+                    complete = (
+                        child.outcome == "completed"
+                        and child.metrics.get("execution_complete") is True
+                        and child.metrics.get("state") == "execution_complete"
+                    )
+                    if child.outcome == "completed" and not complete:
+                        raise ValueError("Child completion contradicts execution state")
+                    metrics.update(
+                        state="execution_complete" if complete else child.outcome,
+                        execution_complete=complete,
+                    )
+            except (ValueError, OSError, KeyError, TypeError) as error:
+                reason = reason or "failed"
+                metrics["child_verification_error"] = f"{type(error).__name__}: {error}"
+        else:
             reason = reason or "failed"
-            metrics["child_verification_error"] = f"{type(error).__name__}: {error}"
-    else:
-        reason = reason or "failed"
-    if reason is not None or metrics["child_exitcode"] not in (None, 0):
-        metrics.update(state=reason or "failed", execution_complete=False)
-    if metrics["forced_interruption"]:
-        metrics["execution_complete"] = False
-    metrics["total_seconds"] = time.monotonic() - started
-    record(
-        "parent_terminal",
-        state=metrics["state"],
-        forced_interruption=metrics["forced_interruption"],
-    )
-    (directory / "metrics.json").write_bytes(canonical(metrics))
-    return store.seal(
-        directory,
-        kind="dinner_workflow_process",
-        outcome="completed" if metrics["execution_complete"] else metrics["state"],
-        config=config.model_dump(mode="json"),
-        metrics=metrics,
-        source=source,
-        claims=["Verified child execution completion; independent dinner task scoring not run"]
-        if metrics["execution_complete"]
-        else [],
-    )
+        if reason is not None or metrics["child_exitcode"] not in (None, 0):
+            metrics.update(state=reason or "failed", execution_complete=False)
+        if metrics["forced_interruption"]:
+            metrics["execution_complete"] = False
+        metrics["total_seconds"] = time.monotonic() - started
+        record(
+            "parent_terminal",
+            state=metrics["state"],
+            forced_interruption=metrics["forced_interruption"],
+        )
+        (directory / "metrics.json").write_bytes(canonical(metrics))
+        result = store.seal(
+            directory,
+            kind="dinner_workflow_process",
+            outcome="completed" if metrics["execution_complete"] else metrics["state"],
+            config=config.model_dump(mode="json"),
+            metrics=metrics,
+            source=source,
+            claims=["Verified child execution completion; independent dinner task scoring not run"]
+            if metrics["execution_complete"]
+            else [],
+        )
+        return result
+    finally:
+        if cleanup_lease is not None:
+            cleanup_lease.close()

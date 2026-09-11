@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 11, 2026. Latest pushed checkpoint: `cb1c9e3` on
+Updated September 11, 2026. Latest pushed checkpoint: `2399b2f` on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -75,7 +75,19 @@ AVFoundation-class warnings without export failure; installed libraries were not
 modified. [Collector, boundaries and commands](FEEDBACK_TEACHER.md).
 
 Separate review found no actionable composition/normalization/registry defect.
-Corrective dataset relocation is currently rejected; portability remains unfinished.
+Explicit corrective-dataset relocation is under validation: registry and policy
+can accept a copied dataset only after full source/hash/statistics checks, while
+preserving original sealed sampling identity. Six relocation tests pass. Actual read-only registry check15849 exited0 against
+a local copy (no model inference); log `.artifacts/corrective-relocation-check.log`.
+Workflow v2 pins relative corrective paths and export hashes, passing resolved
+locations through policy preload. Six targeted compatibility tests pass; the prior
+combined workflow suite passed21tests. Parent combined regression83708 exited0:50tests passed in71.53seconds.
+Required fullcheck11603 exited0:1,073passed,18optional skips,9render deselections,
+487.52seconds; log
+`.artifacts/checks-corrective-relocation.log`. V1 body seals are preserved.
+The active training experiment is untouched. A subsequent source-confinement fix
+rejects output nested in corrective datasets before allocating files in both
+execution paths; all9confinement tests pass. Guardian integration now passes targeted process tests; full regression is running.
 The ordinary dataset intake still rejects intervened episodes.
 
 Horizon50 training completed20,000updates, but both physical comparisons failed:
@@ -114,18 +126,29 @@ skill views explicitly reject variants; a separate validated view/data path is
 still needed. Physical placement/mass/friction/shape variation remains unfinished.
 [Scene](DINNER_SCENE.md).
 
+The separate [visual-training allocation](experiments/visual-training-protocol-v1.json)
+is frozen before visual-data training: training seeds7–10, validation1001–1002,
+test2001–2010. Seal `8c3755c717cbb1a213e3523353df4d2d8ba1e155af756be8685e2657a6f9ec7c`.
+Known development seeds0/7 cannot enter held-out sets. Protocol validation passes
+24CPU tests and binds the current v2 assets and visual generator. This is an
+internal visual-only experiment on one physical layout, not the final production
+or organizer evaluation suite. No visual recordings have entered training;
+verified export/view/composition integration remains the next data step after
+the active model job frees the rendering slot.
+
 The opt-in operator supports one worker, start/stop, verified history, progress
 and three-camera previews. History pages omit large training-update arrays while
-retaining the complete trace. Cooperative parent loss now cancels the worker and
-preserves its sealed result; hung native calls and parent-record reconstruction
-remain unresolved. The original portal service was not restarted.
+retaining the complete trace. Guardian-based native-hang cleanup now passes
+component tests and an integrated original-parent-loss/restart test.
+Parent-record reconstruction remains unresolved. The original portal service was not restarted.
 [Execution](WORKFLOW_EXECUTION.md).
 
 ## Verification and delivery
 
-- Latest full regression:1,058passed,18optional skips,9render deselections in472.02s,
-  `.artifacts/checks-corrective-integration.log`. Subsequent CLI-only option tests8/8
-  pass; native corrective tensor tests5/5pass. Lint and formatting pass.
+- Latest full regression:1,093passed,18optional skips,9render deselections in504.38s,
+  `.artifacts/checks-guardian-integration.log`. Additional parent-loss and24visual
+  protocol tests pass separately; combined process/operator suite57/57passes.
+  Native corrective tensor tests5/5pass. Lint and formatting pass.
 - Documentation447links and README synchronization pass in that check. Earlier
   12-file learning-site checks pass.
   Native frontend build and prior isolated browser fixtures pass; no current
@@ -134,8 +157,10 @@ remain unresolved. The original portal service was not restarted.
   against hashed lockfile requirements:ARM64,68compiled extensions, CPU arithmetic
   and MuJoCo stepping. It predates visual variants and excludes ML extras/rendering.
   [Repeatable installation](SETUP.md).
-- Latest known CI for prior checkpointcadebbe:run34608198429 was in progress.
-  Inspect current-commit CI before asserting it passes. No merge is authorized here.
+- Checkpoint2399b2f is pushed; draft PR#1 description updated. Its GitHub Actions
+  runs34635313597 and34635303088 now have successful portal and Python/render jobs.
+  These checks cover pushed2399b2f, not the subsequent working-tree changes.
+  No merge is authorized here.
 
 ## External dependencies and learning
 
@@ -148,3 +173,27 @@ Organizer assets/seeds, prior-code eligibility and hosting details remain provis
 User reports completion of lessons1–2. Lessons3–7 are available; the training-evidence
 reference now includes actual failed physical attempts. No additional mastery has
 been recorded. [Learning](LEARNING.md), [questions](ORGANIZER_QUESTIONS.md).
+
+
+## Pending operational hardening
+
+The standalone guardian is now wired into workflow execution. Its eight real-process
+component tests include original-parent death during a GIL-held native call with
+SIGTERM ignored. The integrated process suite passes26tests, including guardian
+crash cleanup, malformed terminal records, lease release after publication failure,
+and protection against multiprocessing automatic PID reaping. The worker lease
+passes five tests. These are CPU fixtures, not learned manipulation evidence.
+The additional integrated parent-loss test passes in2.26seconds: it kills the
+actual workflow owner during a GIL-held native call, verifies TERM/KILL and worker
+reap, then completes a replacement fixture on the same evidence store. The old
+parent remains unsealed. Session21074 exited0; no model was loaded.
+Combined process/guardian/lease/operator verification22842 exited0:57passed
+in30.09seconds, log `.artifacts/checks-guardian-process-final.log`.
+
+The operator shutdown budget now includes guardian escalation, group exit and
+worker-lease release. Required full regression52845 exited0:1,093passed,18optional skips,9render
+deselections,2warnings in504.38seconds; log
+`.artifacts/checks-guardian-integration.log`. It predates the additional parent-loss
+test and24visual-protocol tests, which passed separately. Scope is POSIX/Python3.12, one worker with threads;
+independently launched subprocess trees and parent-record reconstruction remain
+unsupported. The portal was not restarted, and MPS training61470 continues unchanged.

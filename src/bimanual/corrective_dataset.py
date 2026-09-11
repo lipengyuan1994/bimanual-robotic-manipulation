@@ -92,17 +92,21 @@ class CorrectiveDataset:
         return result
 
 
-def compose_sampling_plan(plan: dict, root: Path, manifest: dict) -> dict:
+def compose_sampling_plan(
+    plan: dict, root: Path, manifest: dict, *, recorded_root: str | None = None
+) -> dict:
     """Bind every uniformly sampled row to its immutable source and original index."""
     if (
         plan["profile"] != "uniform"
         or plan.get("skill_view", {}).get("skill_id") != "handoff_transfer"
     ):
         raise ValueError("Corrections require the complete verified handoff skill")
+    if recorded_root is not None and not Path(recorded_root).is_absolute():
+        raise ValueError("Recorded corrective identity must be an absolute path")
     result = copy.deepcopy(plan)
     identity = digest_file(root / "export_manifest.json")
     result["corrective_dataset"] = {
-        "root": str(root.resolve()),
+        "root": str(root.resolve()) if recorded_root is None else recorded_root,
         "export_manifest_sha256": identity,
         "manifest": manifest,
     }

@@ -60,3 +60,30 @@ def test_workflow_cli_forwards_limits_and_preserves_failure(
     assert config.camera_profile == "overhead1920_wrist480_v1"
     assert config.wall_timeout_seconds == 900 and config.step_timeout_seconds == 120
     assert config.max_actions_per_skill == 800 and config.max_tokens == 200
+
+
+def test_workflow_create_forwards_corrective_location(tmp_path, monkeypatch):
+    from bimanual import workflow_manifest
+
+    seen = []
+
+    def create(*args, **kwargs):
+        seen.append(kwargs)
+        return SimpleNamespace(report=lambda: {"profile": "dinner_development_workflow_v2"})
+
+    monkeypatch.setattr(workflow_manifest, "create_workflow_manifest", create)
+    args = [
+        "workflow-create",
+        "--dataset",
+        str(tmp_path / "data"),
+        "--skill-views",
+        str(tmp_path / "views"),
+        "--destination",
+        str(tmp_path / "workflow"),
+        "--handoff-corrective-dataset",
+        str(tmp_path / "copy"),
+    ]
+    for index in range(7):
+        args += ["--training-run", str(tmp_path / f"run-{index}")]
+    assert main(args) == 0
+    assert seen == [{"corrective_dataset_roots": {"handoff_transfer": tmp_path / "copy"}}]

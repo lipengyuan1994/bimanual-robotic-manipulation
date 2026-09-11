@@ -12,7 +12,17 @@
 | Port already in use | Select another port; do not terminate unrelated processes. |
 | Run integrity failed | Preserve original files and inspect digests; never reseal changed files as the original run. |
 | A process died mid-run | Inspect the unsealed run directory; do not count it as successful. |
-| No ACT/VLM commands | They are pending M2, not hidden behind another runtime option. |
+| ACT/VLM runtime unavailable | Follow [skill training](SKILL_TRAINING.md) and [planner setup](PLANNER_LIVE_INTEGRATION.md); the base environment does not include every ML dependency or model. Runtime availability does not establish learned task success. |
+| `A workflow worker still holds this lease` | A supported worker or guardian still owns the evidence store. Allow bounded cleanup to finish; do not delete `.workflow-worker.lock` or launch against a different store to bypass ownership. Inspect the run's guardian journal and terminal record. |
+| `cleanup unconfirmed` or `group ownership unconfirmed` | Preserve the unsealed parent directory and partial child evidence. Do not infer success from a child completion message or signal an old numeric PID. Investigate the recorded guardian state before restarting. |
+| `Guardian PID pin requires validated Python 3.12` | Use the verified Python3.12 project runtime. Guardian process ownership relies on that validated multiprocessing implementation. |
 | Intel result missing | A Mac runtime check cannot substitute for the required Intel machine. |
 
 Capture command, versions, run ID and error in an [experiment record](experiments/TEMPLATE.md).
+
+After an application crash, `guardian/terminal.json` can certify that the supported
+worker was reaped. It cannot certify dinner-task success or replace the missing
+parent manifest. Retain the entire interrupted run; the next supported workflow
+must acquire the same evidence store's lease normally. Guardian handling covers
+one worker with threads on POSIX, not independent subprocess trees or OS failure.
+See [execution ownership](WORKFLOW_EXECUTION.md) for the evidence boundaries.

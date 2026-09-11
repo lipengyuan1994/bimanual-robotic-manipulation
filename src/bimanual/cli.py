@@ -103,6 +103,11 @@ def main(argv: list[str] | None = None) -> int:
     workflow_create.add_argument("--skill-views", type=Path, required=True)
     workflow_create.add_argument("--destination", type=Path, required=True)
     workflow_create.add_argument(
+        "--handoff-corrective-dataset",
+        type=Path,
+        help="Verified corrective dataset location to pin for handoff",
+    )
+    workflow_create.add_argument(
         "--training-run",
         type=Path,
         action="append",
@@ -177,6 +182,11 @@ def main(argv: list[str] | None = None) -> int:
     checkpoint.add_argument("training_run", type=Path)
     checkpoint.add_argument("--skill-id", required=True)
     checkpoint.add_argument("--dataset", type=Path, required=True)
+    checkpoint.add_argument(
+        "--corrective-dataset",
+        type=Path,
+        help="Explicit relocated copy of the same verified corrective dataset",
+    )
     probe = commands.add_parser(
         "training-probe", help="ACT optimizer/inference runtime check, not task training"
     )
@@ -419,6 +429,15 @@ def main(argv: list[str] | None = None) -> int:
                 args.skill_views,
                 dict(zip(SKILLS, args.training_run, strict=True)),
                 args.destination,
+                **(
+                    {
+                        "corrective_dataset_roots": {
+                            "handoff_transfer": args.handoff_corrective_dataset
+                        }
+                    }
+                    if args.handoff_corrective_dataset is not None
+                    else {}
+                ),
             )
             emit(result.report())
         elif args.command == "workflow-check":
@@ -591,7 +610,14 @@ def main(argv: list[str] | None = None) -> int:
             from bimanual.skill_registry import load_skill_checkpoint
 
             binding = load_skill_checkpoint(
-                args.training_run, skill_id=args.skill_id, dataset_root=args.dataset
+                args.training_run,
+                skill_id=args.skill_id,
+                dataset_root=args.dataset,
+                **(
+                    {"corrective_dataset_root": args.corrective_dataset}
+                    if args.corrective_dataset is not None
+                    else {}
+                ),
             )
             emit(binding.report())
         elif args.command == "status":

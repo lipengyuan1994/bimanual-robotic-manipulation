@@ -59,6 +59,7 @@ class SkillCheckpointBinding:
     policy_sha256: str
     checkpoint_sha256: str
     chunk_size: int
+    corrective_dataset_root: Path | None = None
     profile: Literal["dinner_development_registry_v1"] = "dinner_development_registry_v1"
     release_available: Literal[False] = False
     learned_quality: None = None
@@ -73,6 +74,9 @@ class SkillCheckpointBinding:
             "view": self.view.model_dump(mode="json"),
             "training_run": str(self.training_run),
             "dataset_root": str(self.dataset_root),
+            "corrective_dataset_root": str(self.corrective_dataset_root)
+            if self.corrective_dataset_root is not None
+            else None,
             "training_manifest_sha256": self.training_manifest_sha256,
             "checkpoint_path": str(self.checkpoint_path),
             "policy_sha256": self.policy_sha256,
@@ -82,7 +86,10 @@ class SkillCheckpointBinding:
 
     def reverify(self) -> SkillCheckpointBinding:
         current = load_skill_checkpoint(
-            self.training_run, skill_id=self.view.skill_id, dataset_root=self.dataset_root
+            self.training_run,
+            skill_id=self.view.skill_id,
+            dataset_root=self.dataset_root,
+            corrective_dataset_root=self.corrective_dataset_root,
         )
         if current != self:
             raise ValueError("Checkpoint binding changed after registration")
@@ -171,8 +178,30 @@ def _processors(root: Path, normalization: dict, dataset_root: Path):
         _stats(root / filename, expected)
 
 
+def _resolve_corrective_root(config, metrics, recorded, override: Path | None) -> Path:
+    """Validate historical path identity without requiring the source host to exist."""
+    recorded_path = Path(recorded["root"])
+    if not recorded_path.is_absolute():
+        raise ValueError("Recorded corrective root must be absolute")
+    configured = config.corrective_dataset_path
+    if not configured.is_absolute():
+        base = Path(metrics["corrective_config_base"])
+        if not base.is_absolute():
+            raise ValueError("Recorded corrective base must be absolute")
+        configured = base / configured
+    if configured.resolve(strict=False) != recorded_path.resolve(strict=False) or metrics.get(
+        "corrective_dataset_root"
+    ) != str(recorded_path):
+        raise ValueError("Corrective dataset path/config mismatch")
+    return (recorded_path if override is None else override).resolve(strict=True)
+
+
 def load_skill_checkpoint(
-    training_run: Path, *, skill_id: str, dataset_root: Path
+    training_run: Path,
+    *,
+    skill_id: str,
+    dataset_root: Path,
+    corrective_dataset_root: Path | None = None,
 ) -> SkillCheckpointBinding:
     """Reverify sealed training, full source dataset, selection and local ACT artifacts.
 
@@ -187,6 +216,8 @@ def load_skill_checkpoint(
         raise ValueError("Registry requires completed ACT training evidence")
     config = ACTTrainingConfig.model_validate(manifest.config)
     metrics = manifest.metrics
+    if corrective_dataset_root is not None and config.corrective_dataset_path is None:
+        raise ValueError("Corrective root override requires a corrective checkpoint")
     if config.skill_id != skill_id or config.skill_views_path is None:
         raise ValueError("Training selected a different or absent skill")
     if _read(root / "training_config.json") != manifest.config:
@@ -228,14 +259,9 @@ def load_skill_checkpoint(
         from bimanual.corrective_export import verify_corrective_dataset
 
         recorded = _read(root / "sampling-plan.json").get("corrective_dataset", {})
-        corrective_root = Path(recorded["root"]).resolve(strict=True)
-        configured_root = config.corrective_dataset_path
-        if not configured_root.is_absolute():
-            configured_root = Path(metrics["corrective_config_base"]) / configured_root
-        if configured_root.resolve(strict=True) != corrective_root or metrics.get(
-            "corrective_dataset_root"
-        ) != str(corrective_root):
-            raise ValueError("Corrective dataset path/config mismatch; relocation is not supported")
+        corrective_root = _resolve_corrective_root(
+            config, metrics, recorded, corrective_dataset_root
+        )
         corrective_manifest = verify_corrective_dataset(corrective_root)
         views_sha = digest_file(corrective_root / "corrective_views.json")
         if (
@@ -245,7 +271,9 @@ def load_skill_checkpoint(
             raise ValueError("Corrective view identity mismatch")
         if _read(root / "corrective_dataset_manifest.json") != corrective_manifest:
             raise ValueError("Corrective dataset identity mismatch")
-        plan = compose_sampling_plan(plan, corrective_root, corrective_manifest)
+        plan = compose_sampling_plan(
+            plan, corrective_root, corrective_manifest, recorded_root=recorded["root"]
+        )
     if (
         _read(root / "sampling-plan.json") != plan
         or _read(root / "checkpoint/training_sampling.json") != plan
@@ -327,4 +355,5 @@ def load_skill_checkpoint(
         policy_sha256=manifest.files["checkpoint/model.safetensors"],
         checkpoint_sha256=hashlib.sha256(canonical(checkpoint_files)).hexdigest(),
         chunk_size=config.chunk_size,
+        corrective_dataset_root=corrective_root,
     )

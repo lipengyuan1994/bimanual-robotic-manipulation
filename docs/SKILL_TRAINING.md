@@ -157,9 +157,20 @@ and three images; source IDs, phases and acquisition metadata are evidence only.
 
 Training saves both corrective manifests, the complete sampling map, selected
 normalization and source hashes. It reverifies the secondary dataset after updates.
-Checkpoint loading independently reconstructs and checks these records. Corrective
-dataset relocation currently fails explicitly; portable relocation remains work
-for a later change and cannot be assumed from this local check.
+Checkpoint loading independently reconstructs and checks these records. Corrective dataset relocation requires an explicit override and the exact same
+export, raw sources and normalization. The original sealed sampling identity is
+preserved even when the original directory no longer exists. For a copied dataset:
+
+```sh
+.artifacts/training-venv/bin/bimanual skill-checkpoint .artifacts/runs/20260911T183755-ab866d7b2e46 --skill-id handoff_transfer --dataset .artifacts/datasets/dinner-nominal-v2 --corrective-dataset .artifacts/relocation-check/corrections
+```
+
+That actual copied-dataset registry check passed locally (session15849); it loads
+no action policy and makes no manipulation-quality claim. For a complete
+seven-checkpoint cohort, `workflow-create --handoff-corrective-dataset <copy>` pins
+a relative path plus export hash in the v2 workflow profile. Existing nominal v1
+workflow manifests retain their original serialization and seals. Model loading
+receives the verified copied location and rechecks its binding.
 
 Actual run `20260911T183755-ab866d7b2e46` completed three MPS updates on818rows,
 with checkpoint/processor reload and external registry verification. Five focused

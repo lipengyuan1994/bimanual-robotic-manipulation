@@ -386,6 +386,7 @@ def test_invalid_config_rejected(field, value):
     [
         "dataset",
         "dataset/nested/evidence",
+        "corrections/evidence",
         "training/handoff_transfer",
         "training/handoff_transfer/checkpoint/evidence",
     ],
@@ -410,6 +411,11 @@ def test_immutable_source_store_rejected_before_any_output(harness, relative_sto
             for skill in SKILLS
         ],
     )
+    if relative_store.startswith("corrections/"):
+        body["profile"] = "dinner_development_workflow_v2"
+        body["checkpoints"][0].update(
+            corrective_dataset_root="corrections", corrective_export_file_sha256="e" * 64
+        )
     body["manifest_sha256"] = hashlib.sha256(canonical(body)).hexdigest()
     execution.WorkflowManifest.model_validate(body)
     (h.root / "cohort.json").write_bytes(canonical(body))
