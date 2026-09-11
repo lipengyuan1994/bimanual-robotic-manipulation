@@ -225,6 +225,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     workflow_run.add_argument("manifest", type=Path)
     workflow_run.add_argument("--planner-model", type=Path, required=True)
+    workflow_run.add_argument(
+        "--scene-variant", type=Path, help="Optional verified prepared perturbation run"
+    )
     workflow_run.add_argument("--instruction", required=True)
     workflow_run.add_argument("--policy-device", choices=["cpu", "mps"], default="cpu")
     workflow_run.add_argument("--planner-device", choices=["cpu", "mps"], default="cpu")
@@ -717,6 +720,7 @@ def main(argv: list[str] | None = None) -> int:
             execution = WorkflowExecutionConfig(
                 workflow_manifest=args.manifest,
                 planner_model_directory=args.planner_model,
+                scene_variant_run=args.scene_variant,
                 instruction=args.instruction,
                 policy_device=args.policy_device,
                 planner_device=args.planner_device,

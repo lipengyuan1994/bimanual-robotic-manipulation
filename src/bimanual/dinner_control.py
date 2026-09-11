@@ -77,6 +77,7 @@ class DinnerControlWorker:
         cancelled: Callable[[], bool] = lambda: False,
         render_capture: Callable[[DinnerEnvironment], dict[str, np.ndarray]] | None = None,
         planner_render_capture: Callable[[DinnerEnvironment], np.ndarray] | None = None,
+        scene_variant_root: Path | None = None,
     ):
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=False)
@@ -97,17 +98,41 @@ class DinnerControlWorker:
         self.supervisor = self.control.supervisor
         try:
             verify_assets()
-            manifest = json.loads((ASSETS / "manifest.json").read_text())
-            if digest_file(ASSETS / "scene.xml") != manifest["files"]["scene.xml"]:
-                raise ValueError("Authored dinner scene integrity mismatch")
-            # Evaluation provenance only; layout is never passed to planner/policy inputs.
-            layout_bytes = (ASSETS / "layout.json").read_bytes()
-            if hashlib.sha256(layout_bytes).hexdigest() != manifest["files"]["layout.json"]:
-                raise ValueError("Authored dinner layout integrity mismatch")
-            layout = json.loads(layout_bytes)
-            if layout.get("scene_sha256") != manifest["files"]["scene.xml"]:
-                raise ValueError("Authored dinner layout/scene mismatch")
-            xml = (ASSETS / "scene.xml").read_text()
+            scene_variant = None
+            if scene_variant_root is None:
+                manifest = json.loads((ASSETS / "manifest.json").read_text())
+                if digest_file(ASSETS / "scene.xml") != manifest["files"]["scene.xml"]:
+                    raise ValueError("Authored dinner scene integrity mismatch")
+                # Evaluation provenance only; layout is never passed to planner/policy inputs.
+                layout_bytes = (ASSETS / "layout.json").read_bytes()
+                if hashlib.sha256(layout_bytes).hexdigest() != manifest["files"]["layout.json"]:
+                    raise ValueError("Authored dinner layout integrity mismatch")
+                layout = json.loads(layout_bytes)
+                if layout.get("scene_sha256") != manifest["files"]["scene.xml"]:
+                    raise ValueError("Authored dinner layout/scene mismatch")
+                xml = (ASSETS / "scene.xml").read_text()
+            else:
+                from bimanual.scene_variant_protocol import load_scene_variant_bundle
+
+                verified_variant = load_scene_variant_bundle(Path(scene_variant_root))
+                xml = (verified_variant.root / "scene.xml").read_text()
+                layout_bytes = (verified_variant.root / "layout.json").read_bytes()
+                layout = json.loads(layout_bytes)
+                if (
+                    digest_file(verified_variant.root / "scene.xml")
+                    != verified_variant.scene_sha256
+                    or digest_file(verified_variant.root / "layout.json")
+                    != verified_variant.layout_sha256
+                    or layout.get("scene_sha256") != verified_variant.scene_sha256
+                ):
+                    raise ValueError("Dinner scene variant changed during worker initialization")
+                scene_variant = {
+                    "run_id": verified_variant.manifest.run_id,
+                    "manifest_sha256": verified_variant.manifest.manifest_sha256,
+                    "protocol_manifest_sha256": verified_variant.protocol.manifest_sha256,
+                    "family": verified_variant.family,
+                    "seed": verified_variant.seed,
+                }
             (self.directory / "scene.xml").write_text(xml)
             (self.directory / "layout.json").write_bytes(layout_bytes)
             self._env = _PolicyDinnerEnvironment(xml, self._trace, cancelled)
@@ -132,6 +157,7 @@ class DinnerControlWorker:
                         "manipulation_success": None,
                         "operating_inputs": ["three RGB cameras", "twelve joint positions"],
                         "safety_guard_uses_simulator_state": True,
+                        "scene_variant": scene_variant,
                     }
                 )
             )

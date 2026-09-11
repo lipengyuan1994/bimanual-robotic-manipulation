@@ -12,6 +12,7 @@ from bimanual.scene_variant_protocol import (
     create_dinner_perturbation_protocol,
     create_scene_variant_bundle,
     load_dinner_perturbation_protocol,
+    load_scene_variant_bundle,
 )
 from bimanual.scene_variants import FAMILIES
 
@@ -82,6 +83,12 @@ def test_bundle_materializes_only_frozen_scene_and_keeps_success_unknown(tmp_pat
     report = json.loads((directory / "variant.json").read_text())
     assert report["requested_family"] == family
     assert (directory / "scene.xml").read_bytes() != (directory / "base-scene.xml").read_bytes()
+    assert (
+        json.loads((directory / "layout.json").read_text())["scene_sha256"]
+        == result.metrics["scene_sha256"]
+    )
+    verified = load_scene_variant_bundle(directory)
+    assert verified.family == family and verified.seed == seed
     store.verify(result.run_id)
 
 
@@ -99,3 +106,36 @@ def test_bundle_rejects_unallocated_seed_and_family_without_allocating_run(tmp_p
                 project_root=tmp_path,
             )
     assert not (store.root / "runs").exists()
+
+
+def test_real_worker_reverifies_and_declares_scene_variant(tmp_path):
+    from bimanual.dinner_control import DinnerControlWorker
+    from bimanual.skill_registry import dinner_capability
+    from bimanual.workflow_manifest import SKILLS
+
+    protocol_path = tmp_path / "protocol.json"
+    protocol = create_dinner_perturbation_protocol(protocol_path)
+    store = EvidenceStore(tmp_path / "variants")
+    result = create_scene_variant_bundle(
+        protocol_path=protocol_path,
+        family="combined",
+        seed=protocol.combined_test_seeds[0],
+        store=store,
+        project_root=tmp_path,
+    )
+    worker = DinnerControlWorker(
+        tmp_path / "worker",
+        tuple(dinner_capability(skill) for skill in SKILLS),
+        scene_variant_root=store.directory(result.run_id),
+    )
+    worker.close()
+    declaration = json.loads((tmp_path / "worker/worker.json").read_text())
+    assert declaration["scene_sha256"] == result.metrics["scene_sha256"]
+    assert declaration["layout_sha256"] == result.metrics["layout_sha256"]
+    assert declaration["scene_variant"] == {
+        "run_id": result.run_id,
+        "manifest_sha256": result.manifest_sha256,
+        "protocol_manifest_sha256": protocol.manifest_sha256,
+        "family": "combined",
+        "seed": protocol.combined_test_seeds[0],
+    }

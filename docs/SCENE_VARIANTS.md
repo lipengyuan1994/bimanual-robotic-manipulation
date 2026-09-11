@@ -40,7 +40,14 @@ Verify the allocation and prepare a scene with:
 
 `scene-variant-prepare` only seals a compilable XML bundle. Its outcome is
 `prepared`, `evaluation_attempted=false`, and `task_success=null`. Later workflow
-evaluation must consume these exact bundles, retain every attempt and report
-learned task outcomes separately. We will run the one-factor diagnostics first
+execution accepts one of these exact runs through `workflow-run --scene-variant`.
+It verifies the bundle before model loading, and the simulation worker re-verifies
+it before copying the scene and scoring layout into its own sealed evidence. The
+independent learned-execution audit then binds the variant run, protocol, seed,
+family, scene and layout digests to those worker files. Nominal execution remains
+the default when the option is absent.
+
+Evaluation must retain every attempt and report learned task outcomes separately.
+We will run the one-factor diagnostics first
 to classify failures, then all ten combined seeds without replacing difficult
 cases.

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
+from dataclasses import dataclass
 from importlib.resources import files
 from pathlib import Path
 from typing import Annotated, Literal
@@ -118,6 +119,71 @@ def load_dinner_perturbation_protocol(path: Path) -> DinnerPerturbationProtocol:
     return protocol
 
 
+@dataclass(frozen=True)
+class VerifiedSceneVariant:
+    root: Path
+    manifest: Manifest
+    protocol: DinnerPerturbationProtocol
+    family: str
+    seed: int
+    scene_sha256: str
+    layout_sha256: str
+
+
+def load_scene_variant_bundle(run_root: Path) -> VerifiedSceneVariant:
+    """Verify prepared scene, base sources, allocation and scoring layout."""
+    run_root = run_root.resolve(strict=True)
+    manifest = EvidenceStore(run_root.parent.parent).verify(run_root.name)
+    if manifest.kind != "dinner_scene_variant" or manifest.outcome != "prepared" or manifest.claims:
+        raise ValueError("Expected a prepared non-claiming dinner scene variant")
+    protocol = load_dinner_perturbation_protocol(run_root / "protocol.json")
+    family, seed = manifest.config.get("family"), manifest.config.get("seed")
+    if family == "combined":
+        allocated = seed in protocol.combined_test_seeds
+    else:
+        allocated = family in protocol.families and seed == protocol.diagnostic_seed
+    if not allocated:
+        raise ValueError("Prepared scene is outside its frozen allocation")
+    if digest_file(run_root / "base-scene.xml") != protocol.base_scene_sha256:
+        raise ValueError("Prepared scene base XML differs from its protocol")
+    if digest_file(run_root / "base-layout.json") != protocol.base_layout_sha256:
+        raise ValueError("Prepared scene base layout differs from its protocol")
+    report = json.loads((run_root / "variant.json").read_text())
+    scene_sha = digest_file(run_root / "scene.xml")
+    if (
+        report.get("profile") != "dinner_scene_variants_v1"
+        or report.get("requested_family") != family
+        or report.get("seed") != seed
+        or report.get("base_xml_sha256") != protocol.base_scene_sha256
+        or report.get("variant_xml_sha256") != scene_sha
+        or report.get("evaluation_success") is not None
+    ):
+        raise ValueError("Prepared scene report or generated XML identity mismatch")
+    base_layout = json.loads((run_root / "base-layout.json").read_text())
+    expected_layout = dict(base_layout, scene_sha256=scene_sha)
+    layout = json.loads((run_root / "layout.json").read_text())
+    if layout != expected_layout:
+        raise ValueError("Prepared scene scoring layout changed beyond its scene binding")
+    layout_sha = digest_file(run_root / "layout.json")
+    if (
+        manifest.metrics.get("protocol_manifest_sha256") != protocol.manifest_sha256
+        or manifest.metrics.get("scene_sha256") != scene_sha
+        or manifest.metrics.get("layout_sha256") != layout_sha
+        or manifest.metrics.get("evaluation_attempted") is not False
+        or manifest.metrics.get("task_success") is not None
+    ):
+        raise ValueError("Prepared scene evidence metrics disagree with its files")
+    return VerifiedSceneVariant(
+        root=run_root,
+        manifest=manifest,
+        protocol=protocol,
+        family=family,
+        seed=seed,
+        scene_sha256=scene_sha,
+        layout_sha256=layout_sha,
+    )
+
+
 def create_scene_variant_bundle(
     *,
     protocol_path: Path,
@@ -141,11 +207,15 @@ def create_scene_variant_bundle(
     assets = _assets()
     shutil.copyfile(protocol_path, directory / "protocol.json")
     shutil.copyfile(assets / "scene.xml", directory / "base-scene.xml")
+    shutil.copyfile(assets / "layout.json", directory / "base-layout.json")
     variant, report = dinner_scene_variant(
         (directory / "base-scene.xml").read_text(), seed=seed, family=family
     )
     (directory / "scene.xml").write_text(variant)
     (directory / "variant.json").write_bytes(canonical(report) + b"\n")
+    layout = json.loads((directory / "base-layout.json").read_text())
+    layout["scene_sha256"] = digest_file(directory / "scene.xml")
+    (directory / "layout.json").write_bytes(canonical(layout) + b"\n")
     model = DualArm(xml=variant, physics_hz=1000).model
     metrics = {
         "scene_compiles": True,
@@ -157,8 +227,10 @@ def create_scene_variant_bundle(
         "evaluation_attempted": False,
         "task_success": None,
         "protocol_manifest_sha256": protocol.manifest_sha256,
+        "scene_sha256": digest_file(directory / "scene.xml"),
+        "layout_sha256": digest_file(directory / "layout.json"),
     }
-    return store.seal(
+    result = store.seal(
         directory,
         kind="dinner_scene_variant",
         outcome="prepared",
@@ -172,3 +244,5 @@ def create_scene_variant_bundle(
         source=provenance(project_root.resolve()),
         claims=[],
     )
+    load_scene_variant_bundle(directory)
+    return result

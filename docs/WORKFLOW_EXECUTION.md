@@ -42,6 +42,19 @@ HF_HOME="$PWD/.artifacts/huggingface" HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
   --wall-timeout-seconds 1800 --step-timeout-seconds 300
 ```
 
+For a frozen robustness case, add a prepared run from the
+[six-family scene protocol](SCENE_VARIANTS.md):
+
+```sh
+  --scene-variant .artifacts/runs/SCENE_VARIANT_RUN_ID
+```
+
+The workflow verifies the prepared run before loading either model. The worker
+verifies it again before MuJoCo initialization and copies its exact scene and
+scoring layout into the workflow record. Final evidence binds the variant run,
+protocol, family, seed, scene and layout hashes. Supplying arbitrary XML is not
+supported.
+
 The command uses the canonical seven-skill sequence, prerequisite chain, and the
 per-skill action budgets and execution prefix sealed inside the workflow manifest.
 The operator cannot replace those settings with one global command-line budget.
@@ -107,7 +120,8 @@ process record is a lifecycle record, not a physical trace. See
 Missing instrumentation declarations remain an explicit failed condition until a
 source-bound audit is supplied. The execution command itself continues to report
 `independent_task_success: null`; it does not silently equate step completion with
-the separate scorer's result.
+the separate scorer's result. The audit also requires any declared scene variant
+to match the worker's sealed XML and layout before a perturbed workflow can pass.
 
 
 Current combined validation:57 native CPU process, guardian, lease and operator

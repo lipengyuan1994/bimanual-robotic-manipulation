@@ -108,6 +108,7 @@ def _learned_execution_audit(directory: Path, source: Manifest) -> dict:
         "worker/actions.jsonl",
     }
     reasons = []
+    scene_variant = None
     if source.kind != "dinner_workflow_execution":
         return {
             "profile": "learned_dinner_execution_audit_v1",
@@ -155,10 +156,9 @@ def _learned_execution_audit(directory: Path, source: Manifest) -> dict:
         terminal_by_step = {step.step_id: step.terminal_attempt_id for step in report.steps}
         for row in report.attempts:
             profile_row = profile_by_skill.get(row.step_id, {})
-            if (
-                row.checkpoint_sha256 != profile_row.get("checkpoint_sha256")
-                or row.capability_id != profile_row.get("capability_id")
-            ):
+            if row.checkpoint_sha256 != profile_row.get(
+                "checkpoint_sha256"
+            ) or row.capability_id != profile_row.get("capability_id"):
                 reasons.append(f"Attempt {row.attempt_id} does not bind its frozen checkpoint")
             if row.applied_actions and not row.policy_inference_seconds:
                 reasons.append(f"Attempt {row.attempt_id} lacks learned-policy inference timing")
@@ -193,6 +193,32 @@ def _learned_execution_audit(directory: Path, source: Manifest) -> dict:
             or source.metrics.get("instrumentation") != DINNER_WORKER_INSTRUMENTATION
         ):
             reasons.append("Zero-intervention worker instrumentation is missing or changed")
+        scene_variant = source.metrics.get("scene_variant")
+        if scene_variant is None:
+            if worker.get("scene_variant") is not None:
+                reasons.append("Worker declares a scene variant absent from source metrics")
+        elif not isinstance(scene_variant, dict):
+            reasons.append("Source scene variant declaration is malformed")
+        else:
+            expected_worker_variant = {
+                key: scene_variant.get(key)
+                for key in (
+                    "run_id",
+                    "manifest_sha256",
+                    "protocol_manifest_sha256",
+                    "family",
+                    "seed",
+                )
+            }
+            if worker.get("scene_variant") != expected_worker_variant:
+                reasons.append("Worker and source scene variant identities disagree")
+            if (
+                worker.get("scene_sha256") != scene_variant.get("scene_sha256")
+                or worker.get("layout_sha256") != scene_variant.get("layout_sha256")
+                or source.files.get("worker/scene.xml") != scene_variant.get("scene_sha256")
+                or source.files.get("worker/layout.json") != scene_variant.get("layout_sha256")
+            ):
+                reasons.append("Scene variant identity does not bind worker scene and layout")
     except (ValueError, TypeError, KeyError, OSError, json.JSONDecodeError) as error:
         reasons.append(f"Learned execution evidence is invalid: {type(error).__name__}: {error}")
     return {
@@ -200,6 +226,7 @@ def _learned_execution_audit(directory: Path, source: Manifest) -> dict:
         "verified": not reasons,
         "applicable": True,
         "reasons": reasons,
+        "scene_variant": scene_variant,
     }
 
 

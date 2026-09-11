@@ -114,6 +114,12 @@ reserves seed29001 for six one-factor diagnostics and seeds30001–30010 for ten
 all-family combined tests. Twenty-six generator/protocol fixtures pass, including
 actual SO-101 scene compilation. No perturbed policy evaluation has run, and
 prepared scenes keep task success unknown. [Perturbation boundary](SCENE_VARIANTS.md).
+The learned workflow now accepts one verified prepared scene as an optional input.
+It checks the bundle before model preload, the worker independently rechecks and
+declares it before MuJoCo starts, and the dinner evaluator binds its run/protocol,
+family, seed, scene and layout hashes to the sealed worker files. Nominal execution
+is unchanged. The scene-bundle, worker, orchestration and learned-audit group passes
+121 CPU/physics fixtures; no trained perturbed workflow has executed.
 
 The next seven-checkpoint manifest version now seals the per-skill execution
 profile alongside checkpoint lineage: all seven ordered skill/capability IDs,
@@ -167,7 +173,7 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `30097a0edaa4359f3fc5bd9ffb6f84d5bec05a74a1de690a03486ae7bd26309c`.
+seal `35e5d34c80682e51973adb70dc2e00c8a6a73f5c67dd42bcd8c4620d2fe0346c`.
 It binds the training cohort and 102 package/runtime and authored-scene/SO-101 asset
 files,
 final-update20,000 selection,

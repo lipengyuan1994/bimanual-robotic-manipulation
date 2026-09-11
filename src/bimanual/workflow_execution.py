@@ -51,6 +51,7 @@ class WorkflowExecutionConfig(BaseModel):
     policy_device: Literal["cpu", "mps"] = "cpu"
     planner_device: Literal["cpu", "mps"] = "cpu"
     camera_profile: Literal["policy480_v1", "overhead1920_wrist480_v1"] = "policy480_v1"
+    scene_variant_run: Path | None = None
     wall_timeout_seconds: float = Field(default=1800, gt=0, le=86400)
     step_timeout_seconds: float = Field(default=300, gt=0, le=86400)
     max_tokens: int = Field(default=384, strict=True, ge=1, le=1024)
@@ -89,10 +90,17 @@ def run_workflow_execution(
         update={
             "workflow_manifest": (project_root / config.workflow_manifest).resolve(),
             "planner_model_directory": (project_root / config.planner_model_directory).resolve(),
+            "scene_variant_run": (
+                (project_root / config.scene_variant_run).resolve()
+                if config.scene_variant_run is not None
+                else None
+            ),
         }
     )
     if store.root.is_relative_to(config.planner_model_directory):
         raise ValueError("Evidence store must be outside the immutable planner model")
+    if config.scene_variant_run is not None and store.root.is_relative_to(config.scene_variant_run):
+        raise ValueError("Evidence store must be outside the immutable scene variant")
     # Inspect the self-sealed declaration before allocating any output. Full
     # source verification can fail (or be invalidated by our own writes) when an
     # output store is nested inside a dataset/training run. Ordinary missing or
@@ -131,6 +139,7 @@ def run_workflow_execution(
         actual_planner_device=None,
         timeout_semantics="cooperative_between_blocking_operations_including_preload",
         background_text_generation_may_continue=False,
+        scene_variant=None,
         cleanup_errors=[],
     )
 
@@ -168,6 +177,20 @@ def run_workflow_execution(
             raise RuntimeError("Native ARM64 Python is required for local execution")
         # Both manifests must verify before any heavyweight model initialization.
         verified = load_workflow_manifest(config.workflow_manifest)
+        verified_variant = None
+        if config.scene_variant_run is not None:
+            from bimanual.scene_variant_protocol import load_scene_variant_bundle
+
+            verified_variant = load_scene_variant_bundle(config.scene_variant_run)
+            metrics["scene_variant"] = {
+                "run_id": verified_variant.manifest.run_id,
+                "manifest_sha256": verified_variant.manifest.manifest_sha256,
+                "protocol_manifest_sha256": verified_variant.protocol.manifest_sha256,
+                "family": verified_variant.family,
+                "seed": verified_variant.seed,
+                "scene_sha256": verified_variant.scene_sha256,
+                "layout_sha256": verified_variant.layout_sha256,
+            }
         registry = tuple(dinner_capability(skill) for skill in SKILLS)
         if (
             tuple(binding.view.skill_id for binding in verified.bindings) != SKILLS
@@ -226,7 +249,12 @@ def run_workflow_execution(
         verified.reverify()
         check()
         event("models_loaded_before_worker")
-        worker = DinnerControlWorker(directory / "worker", registry, cancelled=cancelled)
+        worker = DinnerControlWorker(
+            directory / "worker",
+            registry,
+            cancelled=cancelled,
+            scene_variant_root=(verified_variant.root if verified_variant is not None else None),
+        )
         metrics["episode_id"] = worker.episode_id
         check()
         session = LivePlanningSession(
@@ -351,6 +379,24 @@ def run_workflow_execution(
                     raise ValueError("Worker instrumentation declaration is missing or changed")
                 if worker_declaration.get("teacher_schedule_used") is not False:
                     raise ValueError("Workflow worker does not prove teacher schedule exclusion")
+                expected_variant = (
+                    None
+                    if metrics["scene_variant"] is None
+                    else {
+                        key: metrics["scene_variant"][key]
+                        for key in (
+                            "run_id",
+                            "manifest_sha256",
+                            "protocol_manifest_sha256",
+                            "family",
+                            "seed",
+                        )
+                    }
+                )
+                if worker_declaration.get("scene_variant") != expected_variant:
+                    raise ValueError(
+                        "Workflow worker scene variant declaration is missing or changed"
+                    )
                 metrics["instrumentation"] = dict(DINNER_WORKER_INSTRUMENTATION)
                 metrics["instrumentation_evidence"] = (
                     "Sealed workflow worker declaration bound to guarded learned-policy execution"

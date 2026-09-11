@@ -174,7 +174,7 @@ def evidence(tmp_path):
                 "successor_ready": None,
                 "final_parking_ready": True,
                 "failure_code": None,
-            }
+            },
         ],
     )
     return tmp_path
@@ -272,4 +272,68 @@ def test_source_bound_learned_execution_audit(evidence, tmp_path, monkeypatch):
         "verified": True,
         "applicable": True,
         "reasons": [],
+        "scene_variant": None,
     }
+
+
+def test_learned_execution_audit_binds_scene_variant_to_worker_files(
+    evidence, tmp_path, monkeypatch
+):
+    import bimanual.dinner_evaluation as evaluation
+
+    report = build_workflow_step_report(evidence)
+    write_json(evidence / "step-report.json", report.model_dump(mode="json"))
+    scene = evidence / "worker" / "scene.xml"
+    layout = evidence / "worker" / "layout.json"
+    scene.write_text("<mujoco/>")
+    layout.write_text("{}")
+    from bimanual.evidence import digest_file
+
+    variant = {
+        "run_id": "variant-run",
+        "manifest_sha256": "v" * 64,
+        "protocol_manifest_sha256": "p" * 64,
+        "family": "combined",
+        "seed": 30001,
+        "scene_sha256": digest_file(scene),
+        "layout_sha256": digest_file(layout),
+    }
+    write_json(
+        evidence / "worker" / "worker.json",
+        {
+            "teacher_schedule_used": False,
+            "instrumentation": DINNER_WORKER_INSTRUMENTATION,
+            "scene_sha256": variant["scene_sha256"],
+            "layout_sha256": variant["layout_sha256"],
+            "scene_variant": {
+                key: variant[key]
+                for key in (
+                    "run_id",
+                    "manifest_sha256",
+                    "protocol_manifest_sha256",
+                    "family",
+                    "seed",
+                )
+            },
+        },
+    )
+    store = EvidenceStore(tmp_path.parent / f"{tmp_path.name}-variant-store")
+    directory = store.new_run()
+    shutil.copytree(evidence, directory, dirs_exist_ok=True)
+    source = store.seal(
+        directory,
+        kind="dinner_workflow_execution",
+        outcome="completed",
+        config={},
+        metrics={
+            "execution_complete": True,
+            "instrumentation": DINNER_WORKER_INSTRUMENTATION,
+            "scene_variant": variant,
+        },
+        source={},
+        claims=[],
+    )
+    monkeypatch.setattr(evaluation, "SKILLS", (SKILL,))
+    audit = evaluation._learned_execution_audit(directory, source)
+    assert audit["verified"] is True
+    assert audit["scene_variant"] == variant

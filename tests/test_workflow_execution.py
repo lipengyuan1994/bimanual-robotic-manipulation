@@ -23,6 +23,7 @@ def harness(monkeypatch, tmp_path):
         error=None,
         close_error=False,
         worker=None,
+        worker_scene_variant=None,
     )
     config = execution.WorkflowExecutionConfig(
         workflow_manifest="cohort.json",
@@ -91,6 +92,7 @@ def harness(monkeypatch, tmp_path):
     class Worker:
         def __init__(self, directory, registry, **kwargs):
             calls.append("worker")
+            state.worker_options = kwargs
             directory.mkdir()
             self.directory, self.episode_id = directory, "same_episode"
             self.registry = tuple(registry)
@@ -109,6 +111,7 @@ def harness(monkeypatch, tmp_path):
                     {
                         "teacher_schedule_used": False,
                         "instrumentation": execution.DINNER_WORKER_INSTRUMENTATION,
+                        "scene_variant": state.worker_scene_variant,
                     }
                 )
             )
@@ -210,9 +213,9 @@ def harness(monkeypatch, tmp_path):
         monkeypatch.setattr(execution, name, value)
     store = EvidenceStore(tmp_path / "evidence")
 
-    def run(**kwargs):
+    def run(config_override=None, **kwargs):
         result = execution.run_workflow_execution(
-            config, store=store, project_root=tmp_path, **kwargs
+            config_override or config, store=store, project_root=tmp_path, **kwargs
         )
         assert store.verify(result.run_id) == result
         return result
@@ -241,12 +244,57 @@ def test_load_order_canonical_task_and_terminal_clarification(harness):
     assert all(step.timeout_ns == 300_000_000_000 for step in task.steps)
     assert [step.prerequisites for step in task.steps] == [()] + [(skill,) for skill in SKILLS[:-1]]
     assert h.state.factory_options == {}
+    assert h.state.worker_options["scene_variant_root"] is None
     assert h.state.planner_options == {"max_tokens": 384}
     assert result.outcome == "needs_clarification"
     assert result.metrics["independent_task_success"] is None
     assert result.claims == []
     assert "worker/closed.json" in result.files
     assert h.calls[-4:] == ["workflow_close", "planner_close", "worker_close", "step_report"]
+
+
+def test_frozen_scene_variant_is_verified_before_worker_and_bound_to_metrics(harness, monkeypatch):
+    from bimanual import scene_variant_protocol
+
+    h = harness
+    variant_root = h.root / "variant"
+    variant_root.mkdir()
+    identity = SimpleNamespace(
+        root=variant_root,
+        manifest=SimpleNamespace(run_id="variant-run", manifest_sha256="v" * 64),
+        protocol=SimpleNamespace(manifest_sha256="p" * 64),
+        family="combined",
+        seed=30001,
+        scene_sha256="s" * 64,
+        layout_sha256="l" * 64,
+    )
+    calls = []
+
+    def load(path):
+        calls.append(Path(path))
+        return identity
+
+    monkeypatch.setattr(scene_variant_protocol, "load_scene_variant_bundle", load)
+    config = h.config.model_copy(update={"scene_variant_run": variant_root})
+    h.state.worker_scene_variant = {
+        "run_id": "variant-run",
+        "manifest_sha256": "v" * 64,
+        "protocol_manifest_sha256": "p" * 64,
+        "family": "combined",
+        "seed": 30001,
+    }
+    result = h.run(config_override=config)
+    assert calls == [variant_root.resolve()]
+    assert h.state.worker_options["scene_variant_root"] == variant_root.resolve()
+    assert result.metrics["scene_variant"] == {
+        "run_id": "variant-run",
+        "manifest_sha256": "v" * 64,
+        "protocol_manifest_sha256": "p" * 64,
+        "family": "combined",
+        "seed": 30001,
+        "scene_sha256": "s" * 64,
+        "layout_sha256": "l" * 64,
+    }
 
 
 @pytest.mark.parametrize(
