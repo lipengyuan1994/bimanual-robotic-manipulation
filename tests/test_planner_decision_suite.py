@@ -172,13 +172,18 @@ def test_suite_loads_once_retains_every_case_and_scores_without_robot_claims(tmp
         device = "cpu"
         dtype = "float32"
         load_seconds = 0.25
+        calls = 0
 
         def __init__(self, root, *, device):
             loads.append((root, device))
 
         def generate(self, context, images, *, max_tokens):
             assert len(images) == 3
-            return json.dumps(_proposal()), {"generation_budget_reached": False}
+            self.calls += 1
+            return json.dumps(_proposal()), {
+                "generation_budget_reached": False,
+                "inference_seconds": float(self.calls * 2 - 1),
+            }
 
     monkeypatch.setattr(module, "LocalQwenPlanner", StubPlanner)
     store = EvidenceStore(tmp_path / "results")
@@ -195,9 +200,19 @@ def test_suite_loads_once_retains_every_case_and_scores_without_robot_claims(tmp
     assert result.metrics["passed_case_count"] == 1
     assert result.metrics["failed_case_count"] == 1
     assert result.metrics["all_cases_passed"] is False
+    assert result.metrics["decision_success_rate"] == 0.5
+    assert 0 < result.metrics["decision_success_wilson95"][0] < 0.5
+    assert 0.5 < result.metrics["decision_success_wilson95"][1] < 1
+    assert result.metrics["mismatch_counts"]["skill"] == 1
+    assert result.metrics["mismatch_counts"]["destination"] == 1
+    assert result.metrics["case_error_count"] == 0
+    assert result.metrics["inference_latency_sample_count"] == 2
+    assert result.metrics["inference_latency_p50_seconds"] == 2.0
+    assert result.metrics["inference_latency_p95_seconds"] == 2.9
     assert result.metrics["live_dispatch_authorized"] is False
     assert result.metrics["manipulation_success"] is None
     assert result.claims == []
+    assert "case-results.json" in result.files
     directory = store.directory(result.run_id)
     assert json.loads((directory / "cases/passes/evaluation.json").read_text())["passed"]
     wrong = json.loads((directory / "cases/wrong/evaluation.json").read_text())

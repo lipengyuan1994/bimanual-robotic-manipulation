@@ -186,7 +186,10 @@ retained as a failed case and does not hide later cases. Process completion and
 decision quality are separate: a complete run may have failed cases. Suite
 records always set `live_dispatch_authorized=false`, keep
 `manipulation_success=null`, and carry no evidence claims. They measure visual
-decision agreement only.
+decision agreement only. The aggregate records exact pass/fail counts, mismatch
+counts for every decision field, malformed-case count, decision rate with a 95%
+Wilson interval, and inference-latency p50/p95 over every case that reports valid
+timing. The complete per-case table remains sealed alongside those summaries.
 
 Create a JSON list whose entries follow `PlannerDecisionCaseSpec`, then use:
 

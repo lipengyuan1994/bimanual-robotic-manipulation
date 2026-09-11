@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import shutil
 import traceback
@@ -290,6 +291,30 @@ def _decision_matches(proposal, accepted: tuple[ExpectedDecision, ...]) -> tuple
     return not closest, closest
 
 
+def _wilson95(successes: int, total: int) -> list[float]:
+    if total <= 0 or not 0 <= successes <= total:
+        raise ValueError("Wilson interval requires a non-empty valid count")
+    z = 1.959963984540054
+    proportion = successes / total
+    denominator = 1 + z**2 / total
+    centre = (proportion + z**2 / (2 * total)) / denominator
+    radius = (
+        z * math.sqrt(proportion * (1 - proportion) / total + z**2 / (4 * total**2)) / denominator
+    )
+    return [centre - radius, centre + radius]
+
+
+def _percentile(values: list[float], fraction: float) -> float | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    position = fraction * (len(ordered) - 1)
+    lower, upper = math.floor(position), math.ceil(position)
+    if lower == upper:
+        return ordered[lower]
+    return ordered[lower] + (ordered[upper] - ordered[lower]) * (position - lower)
+
+
 def run_planner_decision_suite(
     *,
     protocol_path: Path,
@@ -406,15 +431,26 @@ def run_planner_decision_suite(
             record = {"case_id": case.case_id, "passed": False, "mismatches": []}
             try:
                 text, timing = planner.generate(context, images, max_tokens=max_tokens)
+                if not isinstance(timing, dict):
+                    raise TypeError("Planner inference metrics must be a dictionary")
                 (case_root / "response.txt").write_text(text)
                 (case_root / "inference.json").write_bytes(canonical(timing) + b"\n")
+                latency = timing.get("inference_seconds")
+                if latency is not None:
+                    if (
+                        isinstance(latency, bool)
+                        or not isinstance(latency, (int, float))
+                        or not math.isfinite(latency)
+                        or latency < 0
+                    ):
+                        raise ValueError("Planner inference latency is invalid")
+                    record["inference_seconds"] = float(latency)
                 if timing.get("generation_budget_reached") is not False:
                     raise ValueError("Planner generation reached its token budget")
                 proposal = parse_proposal(text, context)
                 (case_root / "proposal.json").write_text(proposal.model_dump_json(indent=2) + "\n")
-                record["passed"], record["mismatches"] = _decision_matches(
-                    proposal, case.accepted_decisions
-                )
+                matched, mismatches = _decision_matches(proposal, case.accepted_decisions)
+                record["passed"], record["mismatches"] = matched, mismatches
             except (Exception, KeyboardInterrupt) as exc:
                 if isinstance(exc, KeyboardInterrupt):
                     raise
@@ -422,12 +458,35 @@ def run_planner_decision_suite(
                 (case_root / "error.txt").write_text(traceback.format_exc())
             (case_root / "evaluation.json").write_bytes(canonical(record) + b"\n")
             results.append(record)
+        (directory / "case-results.json").write_bytes(canonical(results) + b"\n")
+        passed = sum(result["passed"] for result in results)
+        mismatch_counts = {
+            name: sum(name in result["mismatches"] for result in results)
+            for name in (
+                "skill",
+                "arm",
+                "target",
+                "destination",
+                "target_visibility",
+                "visible_state",
+            )
+        }
+        latencies = [
+            result["inference_seconds"] for result in results if "inference_seconds" in result
+        ]
         metrics.update(
             process_complete=True,
             case_count=len(results),
-            passed_case_count=sum(result["passed"] for result in results),
-            failed_case_count=sum(not result["passed"] for result in results),
+            passed_case_count=passed,
+            failed_case_count=len(results) - passed,
             all_cases_passed=all(result["passed"] for result in results),
+            decision_success_rate=passed / len(results),
+            decision_success_wilson95=_wilson95(passed, len(results)),
+            case_error_count=sum("error" in result for result in results),
+            mismatch_counts=mismatch_counts,
+            inference_latency_sample_count=len(latencies),
+            inference_latency_p50_seconds=_percentile(latencies, 0.5),
+            inference_latency_p95_seconds=_percentile(latencies, 0.95),
             protocol_manifest_sha256=protocol.manifest_sha256,
             model_revision=protocol.model_revision,
             requested_device=device,

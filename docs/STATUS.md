@@ -99,7 +99,9 @@ observations, optional sensor bundles, instruction context, accepted outputs, ca
 order and interpreter sources before inference. Its runner verifies and copies all
 inputs before one model load, evaluates every case, preserves malformed and wrong
 answers, and separates process completion from case success. Five CPU-only fixtures
-pass. Every result denies live dispatch, keeps physical manipulation success null
+pass. The result now retains a full case table plus field-level mismatch counts,
+malformed-case count, decision rate with 95% Wilson interval, and inference-latency
+p50/p95. Every result denies live dispatch, keeps physical manipulation success null
 and carries no evidence claims. The real dinner protocol is deliberately not frozen
 or run until high-resolution inputs can be captured after the active serial ACT
 training finishes. [Planner evaluation boundary](PLANNER.md#frozen-decision-suite).
@@ -173,7 +175,7 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `35e5d34c80682e51973adb70dc2e00c8a6a73f5c67dd42bcd8c4620d2fe0346c`.
+seal `bfed72c0cd820b75ed566da982044f89b4b5d366d60ff0a8be16fd8058cc99d7`.
 It binds the training cohort and 102 package/runtime and authored-scene/SO-101 asset
 files,
 final-update20,000 selection,
@@ -327,7 +329,9 @@ Seed7 run `20260911T141555-ae5762976ce8` passes both full physical scorers over
 5,049actions with zero forbidden contacts. Rendering/recording were disabled.
 Camera variation and variant demonstrations remain unvalidated. Existing nominal
 skill views explicitly reject variants; a separate validated view/data path is
-still needed. Physical placement/mass/friction/shape variation remains unfinished.
+still needed. Physical placement, mass, friction and shape generation is now
+implemented by the separately frozen six-family release protocol described above;
+no learned outcome on those scenes has been measured.
 [Scene](DINNER_SCENE.md).
 
 The separate [visual-training allocation](experiments/visual-training-protocol-v1.json)
