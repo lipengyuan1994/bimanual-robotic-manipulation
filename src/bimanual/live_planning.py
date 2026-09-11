@@ -6,6 +6,7 @@ import hashlib
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 from PIL import Image
 from pydantic import Field
@@ -18,6 +19,8 @@ from bimanual.supervisor import Attempt
 
 
 class PlanningJob(Contract):
+    boundary_kind: Literal["ready", "recovery"] = "ready"
+    failed_attempt_id: Identifier | None = None
     job_id: Identifier
     pause_id: Identifier
     worker_generation: Identifier
@@ -104,7 +107,14 @@ class LivePlanningSession:
         pause = self.worker.check_planning_pause(job.pause_id)
         if any(
             pause[name] != getattr(job, name)
-            for name in ("worker_generation", "state_sha256", "model_sha256", "task_sha256")
+            for name in (
+                "worker_generation",
+                "state_sha256",
+                "model_sha256",
+                "task_sha256",
+                "boundary_kind",
+                "failed_attempt_id",
+            )
         ):
             raise ValueError("Original planning provenance no longer matches the worker")
         if self.worker._clock() >= job.deadline_ns:
@@ -132,12 +142,17 @@ class LivePlanningSession:
                 camera_profile=self.camera_profile,
                 instruction=snapshot.task.instruction,
                 completed_steps=snapshot.completed_steps,
+                retry_number=snapshot.attempts[-1].attempt.number
+                if pause["boundary_kind"] == "recovery"
+                else 0,
                 available_skills=tuple(
                     sorted({c.skill for c in self.worker.supervisor.registry.values()})
                 ),
             )
             now = self.worker._clock()
             job = PlanningJob(
+                boundary_kind=pause["boundary_kind"],
+                failed_attempt_id=pause["failed_attempt_id"],
                 job_id=uuid.uuid4().hex,
                 pause_id=pause["pause_id"],
                 worker_generation=pause["worker_generation"],
@@ -279,6 +294,9 @@ class LivePlanningSession:
             revalidation = {
                 "schema_version": 1,
                 "authority": "worker_pause_revalidation",
+                "boundary_kind": job.boundary_kind,
+                "failed_attempt_id": job.failed_attempt_id,
+                "retry_number": job.context.retry_number,
                 "job_id": job_id,
                 "pause_id": job.pause_id,
                 "original_context_sha256": self._jobs[job_id][1],

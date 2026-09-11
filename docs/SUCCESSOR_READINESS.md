@@ -152,3 +152,14 @@ that jaw from the plate, preserving the original destination. A northward compon
 or controlled tilt must clear the cup, camera, table and other arm before a new
 continuous physical trial. Neither alternative has been validated. Recorded
 per-jaw forces are aggregates; no unrecorded tangential contact force is inferred.
+
+## Separating-path preflight
+
+Protocol `20260911T050717-4556f977d824` and sealed result
+`20260911T050732-285490837b8c` preserve five candidates and zero physics trials.
+North10/20 mm encounter camera/cup overlap. North5 mm and ±5-degree tilts pass the
+separation prefix but exceed the unchanged 2.5 mm static plate-overlap limit during
+retreat. This check freezes the release plate pose during the prefix, then uses
+retained original plate poses during retreat. Those counterfactual overlaps do
+not prove dynamic collisions; the pose approximation is an unresolved limitation.
+No scene, destination, dataset or acceptance gate was changed.

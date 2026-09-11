@@ -307,19 +307,41 @@ class TaskSupervisor:
         """
         return self._dispatch(observation, proposal=proposal, stationary=previous_observation)
 
-    def _stationary_observation(self, observation, previous, now):
+    def dispatch_recovery(
+        self,
+        observation: Observation,
+        *,
+        previous_observation: Observation,
+        failed_attempt_id: str,
+        proposal: SkillRequest | None = None,
+    ) -> Attempt | None:
+        """Trusted worker only: recapture an explicitly eligible failed boundary."""
+        if not isinstance(failed_attempt_id, str) or not failed_attempt_id:
+            raise ValueError("Recovery requires a failed attempt identity")
+        return self._dispatch(
+            observation,
+            proposal=proposal,
+            stationary=previous_observation,
+            recovery_attempt_id=failed_attempt_id,
+        )
+
+    def _stationary_observation(self, observation, previous, now, recovery_attempt_id=None):
         if not isinstance(observation, Observation) or not isinstance(previous, Observation):
             raise TypeError("Stationary transition requires validated observations")
         if (
-            self._state != "ready"
+            self._state != ("awaiting_observation" if recovery_attempt_id else "ready")
             or not self._attempts
-            or self._attempts[-1].outcome != "succeeded"
+            or self._attempts[-1].outcome != ("failed" if recovery_attempt_id else "succeeded")
+            or (
+                recovery_attempt_id is not None
+                and self._attempts[-1].attempt.attempt_id != recovery_attempt_id
+            )
             or self._attempts[-1].attempt.task_id != self._task.task_id
             or self._attempts[-1].observation != previous
             or self._fresh_anchor != previous
             or self._last_observation != previous
         ):
-            raise ValueError("Stationary transition requires the successful predecessor terminal")
+            raise ValueError("Stationary transition requires its exact predecessor terminal")
         if (
             observation.episode_id != previous.episode_id
             or observation.instruction_revision != previous.instruction_revision
@@ -338,7 +360,7 @@ class TaskSupervisor:
         ):
             raise ValueError("Stationary transition requires fresh artifacts and unchanged state")
 
-    def _dispatch(self, observation, *, proposal=None, stationary=None):
+    def _dispatch(self, observation, *, proposal=None, stationary=None, recovery_attempt_id=None):
         now = self._now()
         self._expire(now)
         if self._state not in {"ready", "awaiting_observation"} or self._active:
@@ -346,7 +368,7 @@ class TaskSupervisor:
         if stationary is None:
             self._observation(observation, now)
         else:
-            self._stationary_observation(observation, stationary, now)
+            self._stationary_observation(observation, stationary, now, recovery_attempt_id)
         step = self._task.steps[len(self._completed)]
         if not set(step.prerequisites) <= set(self._completed):
             raise RuntimeError("Step prerequisites are incomplete")
@@ -410,7 +432,8 @@ class TaskSupervisor:
         if stationary is not None:
             self._event(
                 "stationary_recapture",
-                f"Successful stationary boundary; fresh capture at sequence {observation.sequence}",
+                f"{'Recovery' if recovery_attempt_id else 'Successful'} stationary boundary; "
+                f"fresh capture at sequence {observation.sequence}",
                 now,
             )
         self._event("attempt_started", f"Attempt {number}", now)

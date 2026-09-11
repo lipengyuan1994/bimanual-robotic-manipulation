@@ -164,21 +164,29 @@ def fixture_success(executor, monkeypatch):
     monkeypatch.setattr("bimanual.skill_executor.SuccessorReadinessMonitor", Ready)
 
 
-def test_prepares_before_capture_and_budget_failure_requires_explicit_recovery(setup):
+def test_budget_failure_replans_from_owned_boundary_and_exhausts_two_retries(setup):
     s = setup
     s.runner.start(s.task())
-    assert s.runner.tick().state == "planning"
-    assert s.captures and all(count == 1 for _, count in s.captures)
-    assert finish_model(s).state == "executing"
-    assert s.runner.tick().state == "executing"
-    assert s.worker._env.data.time == pytest.approx(0.05)
-    s.runner.tick()  # Action budget records failed canonical attempt.
+    env = s.worker._env
+    for attempt_number in range(1, 4):
+        before = env.data.time
+        assert s.runner.tick().state == "planning"
+        job = s.local._pending[0]
+        assert job.context.retry_number == attempt_number - 1
+        assert job.boundary_kind == ("ready" if attempt_number == 1 else "recovery")
+        assert finish_model(s).state == "executing"
+        assert env.data.time == before
+        assert s.runner.tick().state == "executing"
+        assert env.data.time == pytest.approx(attempt_number * 0.05)
+        s.runner.tick()
     result = s.runner.tick()
-    assert result.state == "recovery_required" and not result.recovery_implemented
-    assert result.attempt_count == 1 and not result.completed_steps
+    assert result.state == "failed" and result.recovery_implemented
+    assert result.attempt_count == 3 and not result.completed_steps
+    assert s.worker._env is env and not s.worker.recovery_available()
+    assert len(s.prepared) == 3 and not s.worker.control.pending
+    assert [r.attempt.number for r in s.worker.supervisor.snapshot().attempts] == [1, 2, 3]
     for _ in range(3):
         assert s.runner.tick() == result
-    assert len(s.prepared) == 1 and not s.worker.control.pending
 
 
 def test_two_steps_share_worker_and_require_new_planning_and_real_supervisor_finish(
@@ -376,3 +384,23 @@ def test_wrong_policy_factory_rejected_before_camera_capture(setup):
     with pytest.raises(ValueError, match="registered capability"):
         s.runner.tick()
     assert not s.captures and s.worker._env.sequence == 0
+
+
+@pytest.mark.parametrize("action", ["cancel", "replace", "stop"])
+def test_recovery_boundary_is_revoked_by_authority_change(setup, action):
+    s = setup
+    s.runner.start(s.task())
+    s.runner.tick()
+    finish_model(s)
+    s.runner.tick()
+    s.runner.tick()
+    assert s.worker.recovery_available()
+    sequence = s.worker._env.sequence
+    if action == "cancel":
+        s.runner.cancel()
+    elif action == "replace":
+        s.worker.supervisor.load_task(s.task(identity="replacement", revision=1))
+    else:
+        s.worker._env.stop()
+    assert not s.worker.recovery_available()
+    assert s.worker._env.sequence == sequence

@@ -81,6 +81,7 @@ class DinnerControlWorker:
         self._capture_count = self._applied = 0
         self._observation = self._raw = self._state = None
         self._terminal_observation = self._terminal_state = None
+        self._recovery_boundary = None
         self._generation = uuid.uuid4().hex
         self._planning_pause = None
         self.control = SupervisedPolicyControl(registry, clock_ns=clock_ns)
@@ -130,24 +131,57 @@ class DinnerControlWorker:
         """Make existing append-only evidence readable; never advance physics."""
         self._trace.flush()
 
+    def recovery_available(self) -> bool:
+        """Only a declared non-completion at a confirmed boundary can be retried."""
+        snapshot = self.supervisor.snapshot()
+        boundary = self._recovery_boundary
+        if (
+            self._closed
+            or not self._env.active
+            or boundary is None
+            or snapshot.state != "awaiting_observation"
+            or snapshot.active is not None
+            or not snapshot.attempts
+        ):
+            return False
+        last = snapshot.attempts[-1]
+        return (
+            last.outcome == "failed"
+            and last.attempt.attempt_id == boundary[0]
+            and last.observation == boundary[1]
+            and self._token() == boundary[2]
+            and snapshot.task == boundary[3]
+        )
+
     def acquire_planning_pause(self) -> dict:
         """Claim a ready boundary for externally executed reasoning; no physics advances."""
         self._available()
         snapshot = self.supervisor.snapshot()
         if self._planning_pause is not None:
             raise RuntimeError("A planning pause is already owned")
-        if snapshot.state != "ready" or snapshot.active is not None or snapshot.task is None:
-            raise RuntimeError("Planning requires a ready task with no active attempt")
-        if snapshot.completed_steps and (
-            self._terminal_observation is None
-            or self._terminal_state != self._token()
-            or snapshot.attempts[-1].outcome != "succeeded"
-            or snapshot.attempts[-1].observation != self._terminal_observation
+        recovery = snapshot.state == "awaiting_observation" and self.recovery_available()
+        if (
+            (snapshot.state != "ready" and not recovery)
+            or snapshot.active is not None
+            or snapshot.task is None
+        ):
+            raise RuntimeError("Planning requires a ready task or owned recovery boundary")
+        if (
+            not recovery
+            and snapshot.completed_steps
+            and (
+                self._terminal_observation is None
+                or self._terminal_state != self._token()
+                or snapshot.attempts[-1].outcome != "succeeded"
+                or snapshot.attempts[-1].observation != self._terminal_observation
+            )
         ):
             raise ValueError("Planning cannot replace recovery or an unverified terminal boundary")
         self.control.clear()
         pause = {
             "pause_id": uuid.uuid4().hex,
+            "boundary_kind": "recovery" if recovery else "ready",
+            "failed_attempt_id": self._recovery_boundary[0] if recovery else None,
             "worker_generation": self._generation,
             "state_sha256": self._token(),
             "model_sha256": self._expected_model_digest,
@@ -177,7 +211,15 @@ class DinnerControlWorker:
         ):
             raise RuntimeError("Planning pause is no longer owned by this worker generation")
         if (
-            snapshot.state != "ready"
+            snapshot.state
+            != ("awaiting_observation" if pause["boundary_kind"] == "recovery" else "ready")
+            or (
+                pause["boundary_kind"] == "recovery"
+                and (
+                    not self.recovery_available()
+                    or self._recovery_boundary[0] != pause["failed_attempt_id"]
+                )
+            )
             or snapshot.active is not None
             or snapshot.task is None
             or hashlib.sha256(canonical(snapshot.task.model_dump(mode="json"))).hexdigest()
@@ -316,14 +358,25 @@ class DinnerControlWorker:
         planning_deadline_ns: int | None = None,
     ):
         """Trusted revalidation bridge: dispatch the exact recapture under its owned pause."""
-        self.check_planning_pause(pause_id)
+        pause = self.check_planning_pause(pause_id)
         self._validate_capture(observation)
         previous = (
             self._terminal_observation if self.supervisor.snapshot().completed_steps else None
         )
         if planning_deadline_ns is not None and self._clock() >= planning_deadline_ns:
             raise TimeoutError("Planning job expired before dispatch")
+        recovery = self._recovery_boundary if pause["boundary_kind"] == "recovery" else None
         self.release_planning_pause(pause_id)
+        if recovery is not None:
+            try:
+                return self.supervisor.dispatch_recovery(
+                    observation,
+                    previous_observation=recovery[1],
+                    failed_attempt_id=recovery[0],
+                    proposal=proposal,
+                )
+            finally:
+                self._recovery_boundary = None
         if previous is not None:
             return self.supervisor.dispatch_stationary(
                 observation, previous_observation=previous, proposal=proposal
@@ -500,6 +553,7 @@ class DinnerControlWorker:
         return active, allowed
 
     def _abort(self, attempt_id: str, observation: Observation, error: BaseException):
+        self._recovery_boundary = None
         active = self.supervisor.snapshot().active
         if active is not None and active.attempt_id == attempt_id:
             try:
@@ -650,15 +704,36 @@ class DinnerControlWorker:
             self._record("actions.jsonl", action)
 
     def finish(
-        self, attempt_id: str, observation: Observation, *, executor_outcome: str, reason: str
+        self,
+        attempt_id: str,
+        observation: Observation,
+        *,
+        executor_outcome: str,
+        reason: str,
+        recoverable_failure: bool = False,
     ):
         """Only trusted executor termination logic may call this; no automatic scoring."""
         self._validate_capture(observation)
+        active = self.supervisor.snapshot().active
+        if type(recoverable_failure) is not bool or (
+            recoverable_failure
+            and (
+                executor_outcome != "failed"
+                or active is None
+                or active.attempt_id != attempt_id
+                or observation.sequence <= active.observation.sequence
+                or observation.simulation_seconds <= active.observation.simulation_seconds
+            )
+        ):
+            raise ValueError("Recovery requires declared failure after confirmed physical progress")
+        self._recovery_boundary = None
         result = self.supervisor.finish(
             attempt_id, observation, executor_outcome=executor_outcome, reason=reason
         )
         if executor_outcome == "succeeded":
             self._terminal_observation, self._terminal_state = observation, self._state
+        elif recoverable_failure and result.state == "awaiting_observation":
+            self._recovery_boundary = (attempt_id, observation, self._state, result.task)
         return result
 
     def dispatch_stationary(self, previous_observation: Observation, *, proposal=None):
@@ -682,6 +757,7 @@ class DinnerControlWorker:
             return self.supervisor.cancel(reason)
         finally:
             self._planning_pause = None
+            self._recovery_boundary = None
             self._env.stop()
 
     def close(self):

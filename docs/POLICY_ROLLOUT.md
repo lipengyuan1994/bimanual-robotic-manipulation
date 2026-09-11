@@ -632,3 +632,20 @@ prediction error and reducing terminal learning rate did not resolve that failur
 additional unchanged-duration training is not justified by these results alone.
 The next diagnosis must examine the persistent launch bias and input/target
 representation before proposing another preregistered intervention.
+
+## First-action loss diagnosis
+
+Sealed CPU diagnosis `20260911T050712-1aacb1d9c003` preserves 13 train-frame
+predictions with unchanged model weights. On nominal frame zero, the first action
+contributes 38.0% of raw left-arm absolute error and 28.45% of normalized error,
+while uniform ten-step loss assigns it 10% weight. The other nine pan predictions
+point forward. Processor round-trip error is 9.05e-8 rad; adjacent camera pixels
+and float32 joints differ, and the retained label audit finds no exact input
+conflicts. These checks do not establish the cause, but do not support a
+normalization fault or duplicated-input explanation.
+
+One proposed controlled intervention is temporal loss weights [9,1,1,1,1,1,1,1,1,1],
+normalized over valid weighted targets, giving the executed first action 50%.
+Keep dataset, initialization, sampling, 20,000-update budget, terminal learning-rate
+schedule and all six evaluation gates unchanged. No experiment or promotion has
+occurred under this proposal; benefit remains unmeasured.

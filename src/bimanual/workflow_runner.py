@@ -40,7 +40,7 @@ class WorkflowSnapshot:
     planning_job_id: str | None
     execution_complete: bool
     independent_task_success: None = None
-    recovery_implemented: bool = False
+    recovery_implemented: bool = True
 
 
 class DinnerWorkflowRunner:
@@ -49,8 +49,8 @@ class DinnerWorkflowRunner:
     Factories construct fresh single-attempt executors *before* planning capture;
     model loading is forbidden in factories. A factory may reverify preloaded
     references there. The planner's own model thread remains external to physics.
-    There is no automatic recovery: failed-step fresh-boundary ownership is not yet
-    available, so awaiting_observation becomes explicit recovery_required.
+    Owned incomplete-skill boundaries permit at most two camera-grounded retries.
+    Other failures terminate or require explicit recovery.
     """
 
     def __init__(
@@ -212,12 +212,12 @@ class DinnerWorkflowRunner:
                 self.planner_runner.cancel("Workflow reached a supervisor terminal state")
                 self._terminal(snapshot.state, "Supervisor reached " + snapshot.state)
                 return self._snapshot()
-            if snapshot.state == "awaiting_observation":
+            if snapshot.state == "awaiting_observation" and not self.worker.recovery_available():
                 self.planner_runner.cancel("Owned recovery boundary is required")
                 last = snapshot.attempts[-1]
                 self._terminal(
                     "recovery_required",
-                    last.reason + "; no owned recovery boundary is implemented",
+                    last.reason + "; no eligible owned recovery boundary",
                 )
                 return self._snapshot()
             if self._executor is not None:
@@ -287,7 +287,10 @@ class DinnerWorkflowRunner:
                 self._state, self._reason = "executing", "Registered skill executing"
                 self._write("executor_started", {"attempt_id": self._attempt_id})
                 return self._snapshot()
-            if snapshot.state != "ready" or snapshot.active is not None:
+            if (
+                snapshot.state not in {"ready", "awaiting_observation"}
+                or snapshot.active is not None
+            ):
                 raise ValueError("Workflow cannot adopt unowned active execution")
             step = snapshot.task.steps[len(snapshot.completed_steps)]
             self._write("executor_prepare_requested", {"capability_id": step.capability_id})

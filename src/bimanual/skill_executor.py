@@ -176,10 +176,18 @@ class DinnerSkillExecutor:
             self._final_parking_ready,
         )
 
-    def _finish(self, state, reason, observation):
+    def _finish(self, state, reason, observation, *, recoverable_failure=False):
         result = self._outcome(state, reason)
-        self._write("termination_requested", asdict(result))
-        self.worker.finish(self._attempt, observation, executor_outcome=state, reason=reason)
+        self._write(
+            "termination_requested", asdict(result) | {"recoverable_failure": recoverable_failure}
+        )
+        self.worker.finish(
+            self._attempt,
+            observation,
+            executor_outcome=state,
+            reason=reason,
+            recoverable_failure=recoverable_failure,
+        )
         self._result = result
         return self._result
 
@@ -211,6 +219,7 @@ class DinnerSkillExecutor:
                     "failed",
                     "Physical completion/readiness not reached within action budget",
                     observation,
+                    recoverable_failure=not self._physical_success,
                 )
             if not self.worker.control.pending:
                 start = time.perf_counter()

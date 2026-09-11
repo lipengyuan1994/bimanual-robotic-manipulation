@@ -33,11 +33,21 @@ Terminal states include `execution_complete`, `cancelled`, `needs_clarification`
 
 Events are appended and flushed to disk in `worker/workflow/events.jsonl`, including intents before submission, dispatch-producing polls, executor start and physical control ticks. A persistence failure stops further workflow work and revokes this task's authority, including an attempt already dispatched by the planner. Existing lower-level camera, model, action, physics and outcome evidence stays in the worker directory. The runner does not restart after such an error or claim crash recovery from a partial log.
 
-## Recovery gap
+## Bounded recovery
 
-**Automatic failed-step recovery is not implemented.** The supervisor already limits each step to two retries and requires a genuinely newer observation/physical boundary for a retry. The current worker has no approved method for advancing physics without an active owned attempt after failure; its stationary recapture API deliberately covers successful transitions only.
+The executor may declare an action-budget failure recoverable only before physical
+success and after confirmed owned control progress. The worker retains that exact
+failed attempt, task and physical state. The runner prepares a fresh executor,
+re-renders the paused scene and asks the visual planner again with retry context.
+Dispatch requires unchanged state, distinct fresh camera artifacts, identical
+pixels and the exact failed-attempt identity. No physics advances during planning.
 
-Accordingly, a failed or timed-out attempt reaching `awaiting_observation` produces `recovery_required`, preserving its reason and attempt history. Repeated ticks neither rerun the policy nor consume hidden retries. Guard exceptions stop the workflow safely. No unowned hold step, reset, timestamp relabel, teacher fallback, or retry-budget reset is inserted. A later explicitly owned recovery transition is required before the original recovery milestone can be considered complete.
+The supervisor retains every failure and allows at most two retries. A collision,
+partial action, stopped worker, invalid evidence or successful-but-unsettled outcome
+is not eligible. Cancellation and task replacement invalidate recovery authority.
+Other failed boundaries still report `recovery_required`; guard exceptions stop.
+This implements a bounded retry lifecycle, not measured learned recovery success.
+
 
 ## Validation
 

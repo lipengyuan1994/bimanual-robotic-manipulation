@@ -467,3 +467,40 @@ def test_reused_camera_paths_cannot_be_presented_as_recapture(setup, monkeypatch
     with pytest.raises(ValueError, match="recapture"):
         session.complete(job.job_id, response(job))
     assert worker.supervisor.snapshot().active is None
+
+
+@pytest.mark.render
+def test_actual_camera_recovery_recaptures_without_unowned_physics(setup):
+    worker, session, clock, _ = setup
+    worker._render_capture = None
+    before = worker.capture()
+    attempt = worker.supervisor.dispatch(before)
+    worker.bind(attempt.attempt_id, policy_sha256="a" * 64, chunk_size=1)
+    worker.offer(attempt.attempt_id, np.tile(worker._env.home, (1, 1)), before)
+    worker.step(attempt.attempt_id, before)
+    clock.now += 50_000_000
+    terminal = worker.capture()
+    worker.finish(
+        attempt.attempt_id,
+        terminal,
+        executor_outcome="failed",
+        reason="Declared incomplete fixture, not learned recovery success",
+        recoverable_failure=True,
+    )
+    assert worker.recovery_available()
+    clock.now += 1
+    job = session.begin()
+    assert job.context.retry_number == 1
+    assert job.failed_attempt_id == attempt.attempt_id
+    clock.now += 1
+    result = session.complete(job.job_id, response(job))
+    assert result.attempt.number == 2
+    assert result.attempt.step_id == attempt.step_id
+    assert result.execution_observation.sequence == terminal.sequence
+    assert worker._env.data.time == terminal.simulation_seconds
+    assert all(
+        fresh.artifact.path != old.artifact.path and fresh.artifact.sha256 == old.artifact.sha256
+        for fresh, old in zip(result.execution_observation.frames, terminal.frames, strict=True)
+    )
+    assert len(worker.supervisor.snapshot().attempts) == 1
+    assert not worker.recovery_available()

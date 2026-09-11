@@ -587,8 +587,9 @@ def test_stationary_recapture_dispatches_successor_without_unowned_physics(core)
         "future",
     ],
 )
-def test_stationary_transition_rejects_changed_or_reused_evidence(core, change):
-    previous, fresh = stationary_boundary(core)
+@pytest.mark.parametrize("recovery", [False, True])
+def test_stationary_transition_rejects_changed_or_reused_evidence(core, change, recovery):
+    previous, fresh = stationary_boundary(core, outcome="failed" if recovery else "succeeded")
     supervisor, clock, _ = core
     payload = fresh.model_dump()
     if change == "old_file":
@@ -613,13 +614,35 @@ def test_stationary_transition_rejects_changed_or_reused_evidence(core, change):
         for frame in payload["frames"]:
             frame[key] = value
     with pytest.raises(ValueError):
-        supervisor.dispatch_stationary(
-            Observation.model_validate(payload), previous_observation=previous
-        )
+        if recovery:
+            supervisor.dispatch_recovery(
+                Observation.model_validate(payload),
+                previous_observation=previous,
+                failed_attempt_id=supervisor.snapshot().attempts[-1].attempt.attempt_id,
+            )
+        else:
+            supervisor.dispatch_stationary(
+                Observation.model_validate(payload), previous_observation=previous
+            )
     assert supervisor.snapshot().active is None
 
 
 def test_stationary_transition_cannot_bypass_recovery_or_predecessor(core):
     previous, fresh = stationary_boundary(core, outcome="failed")
-    with pytest.raises(ValueError, match="successful predecessor"):
+    with pytest.raises(ValueError, match="predecessor terminal"):
         core[0].dispatch_stationary(fresh, previous_observation=previous)
+
+
+def test_owned_recovery_requires_exact_failure_and_preserves_attempt_number(core):
+    previous, fresh = stationary_boundary(core, outcome="failed")
+    supervisor = core[0]
+    failed = supervisor.snapshot().attempts[-1].attempt
+    with pytest.raises(ValueError):
+        supervisor.dispatch_recovery(
+            fresh, previous_observation=previous, failed_attempt_id="wrong"
+        )
+    retry = supervisor.dispatch_recovery(
+        fresh, previous_observation=previous, failed_attempt_id=failed.attempt_id
+    )
+    assert retry.number == 2 and retry.step_id == failed.step_id
+    assert len(supervisor.snapshot().attempts) == 1

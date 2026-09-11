@@ -1,8 +1,8 @@
-# Current project status
+# Project status
 
 Updated: 2026-09-11. Branch: `codex/preparation-foundation`.
 Use `git rev-parse HEAD` for the current checkpoint. The previous pushed checkpoint
-is `b793460`; this checkpoint adds verified workflow-cohort integration.
+is `8219306`; current work adds owned soft-failure recovery.
 [Roadmap](ROADMAP.md), [original plan](PLAN.md),
 [historical status and evidence](STATUS_HISTORY.md).
 
@@ -12,7 +12,7 @@ is `b793460`; this checkpoint adds verified workflow-cohort integration.
 |---|---|
 | M0 complete | Native environment, evidence, read-only portal, seven lessons, learning site and README/CI synchronization |
 | M1 locally complete | One continuous scripted dinner scene passes contact, placement, drawer and hand-off checks with three-camera replay |
-| M2 in progress | ACT and Qwen run locally; supervisor, guarded control, skill monitors, successor gates, checkpoint cohorts and serialized workflow exist. No learned grasp or full learned dinner success. Automatic recovery incomplete |
+| M2 in progress | ACT and Qwen run locally; supervisor, guarded control, skill monitors, successor gates, checkpoint cohorts and serialized workflow exist. No learned grasp or full learned dinner success. Bounded soft-failure retries locally checked; learned recovery quality unmeasured |
 | M3 incomplete | No frozen release suite, Intel/OpenVINO run or final submission package |
 | M4 pending | Production reliability, held-out perturbations, interruption/rollback and operational gates incomplete |
 
@@ -57,10 +57,10 @@ object comparison is next, not an inference that the model now recognizes it.
   body seal is fixed with a sealed synthetic-source regression. Loaded policies
   are checked against their pinned bindings and cannot be shared by two cohorts
   or workers; factories recheck ownership and binding before execution.
-- **Owned failed-step recovery remains missing.** The runner reports
-  `recovery_required`; it does not invent unowned motion or reset the retry budget.
-  The supervisor's limit remains at most two retries. Current stationary recapture
-  supports successful boundaries only.
+- **Owned soft-failure recovery is implemented and locally checked.**
+  An incomplete action-budget attempt can request fresh stationary camera assessment
+  and retry at most twice. Exact failure identity, task and simulator state remain
+  bound. Collisions, partial actions and stopped workers remain ineligible.
 - The portal remains a read-only evidence/learning application, not the finished
   live operator UI. End-to-end learned execution and full-task scoring still need
   integration and actual quality validation.
@@ -119,7 +119,7 @@ Next executable work:
 2. Diagnose the final ACT launch predictions, then preregister a justified data or
    representation change. Preserve both failed 20,000-update experiments.
 3. Compare visible-object descriptions against missing-object controls for Qwen.
-4. Implement a genuinely owned recovery boundary before enabling automatic retries.
+4. Verify the published recovery checkpoint CI; broaden fault recovery only with evidence.
 5. Train/validate the full skill cohort and connect the live operator application.
 
 ## External dependencies
@@ -134,3 +134,35 @@ choices offered Windows 11 and Ubuntu was requested. Verify host identity,
 expiry, rendering and OpenVINO after access is granted. Deadline last verified:
 September 16, 2:30 PM EDT. No organizer message or hackathon submission has been sent.
 [Intel access](INTEL_ACCESS.md), [questions](ORGANIZER_QUESTIONS.md).
+
+## Current session evidence
+
+ACT diagnosis `20260911T050712-1aacb1d9c003` retains 13 CPU train-frame predictions.
+The first action contributes 38.0% of raw left-arm error despite 10% temporal loss
+weight. Normalization round-trip error is only 9.05e-8 rad; successive camera and
+joint inputs differ. Proposed next experiment: first-action temporal loss weight
+50%, with the remaining nine sharing 50%, retaining all six gates. No training or
+physical rollout has started for that proposal.
+
+Plate separation search `20260911T050732-285490837b8c` retains all five preflight
+failures. North10/20 mm paths encounter camera/cup overlap. North5 mm and ±5-degree
+tilts exceed the static plate-overlap threshold during retreat. The latter use a
+counterfactual plate-pose approximation, not observed dynamic collisions. No
+physics trial or source dataset change followed.
+
+Current full regression `.artifacts/checks-owned-recovery.log` completed in 453.53s:
+820 passed, fourteen optional skips, eight render deselections, and two failures.
+The failures were the prior status heading change and a new replacement test that
+reused a forbidden task ID. Both are corrected: API/supervisor recheck passes 58
+and recovery revocation recheck passes three. Focused integration initially passed
+124; the final focused run passed 62 with only that same corrected fixture failure.
+This is combined verification, not a clean final full-suite pass. CI remains pending.
+
+Actual native camera recovery test passes (3.61s): fresh files, identical pixels,
+unchanged simulation time and exact failed-attempt dispatch. This uses an injected
+planner response and declared fixture failure, not a learned recovery demonstration.
+Log `.artifacts/render-owned-recovery.log`. Ruff, formatting, 382 documentation
+links and README synchronization pass. All current test/model processes are terminal.
+
+Next command: `scripts/check.sh` for a clean aggregate verification of the final
+checkpoint, then implement the separately declared first-action loss experiment.

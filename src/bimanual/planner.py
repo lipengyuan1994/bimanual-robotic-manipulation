@@ -20,6 +20,7 @@ SkillName = Literal["open_drawer", "pick", "place", "handoff", "stop", "clarify"
 
 
 class PlannerContext(Contract):
+    retry_number: Annotated[int, Field(ge=0, le=2)] = 0
     observation: Observation
     camera_profile: Literal[
         "policy480_v1", "overhead960_wrist480_v1", "overhead1920_wrist480_v1"
@@ -133,6 +134,10 @@ def planner_messages(context: PlannerContext, images: tuple[Image.Image, ...]) -
         "instruction_revision": obs.instruction_revision,
         "observation_sequence": obs.sequence,
         "completed_steps": context.completed_steps,
+        "retry_number": context.retry_number,
+        "retry_context": "Previous attempt incomplete; assess fresh images before retrying."
+        if context.retry_number
+        else None,
         "available_skills": context.available_skills,
         "joint_order": obs.joint_order,
         "joint_position_rad": obs.joint_position_rad,
