@@ -2,7 +2,7 @@
 
 Updated: 2026-09-11. Branch: `codex/preparation-foundation`.
 Use `git rev-parse HEAD` for the exact checkpoint; previous pushed checkpoint is
-`852b7fa`. Current work adds process isolation and paired visual diagnosis.
+`fd0b69f`. Current work validates repaired release and diagnoses model inputs.
 [Roadmap](ROADMAP.md), [original plan](PLAN.md), [history](STATUS_HISTORY.md).
 
 ## Readiness
@@ -36,8 +36,9 @@ Previous terminal-decay run `20260911T035236-64462d013810` also passed five of s
 The next ACT step is to diagnose the persistent signed launch error before declaring
 another controlled training experiment. [Training](TRAINING.md), [policy evidence](POLICY_ROLLOUT.md).
 
-**Qwen job 50272 is active**; no other model/render/benchmark should share its GPU.
-Log `.artifacts/qwen-frozen-dinner-pair.log`. Poll the same handle; do not duplicate.
+Qwen **50272 is terminal**. No GPU model job remains active from this session.
+Full teacher trial **76771 is terminal and passed**. No model or physics job from
+this session remains active. Preserve all source runs and the original dataset.
 
 ## Workflow execution and recovery
 
@@ -75,8 +76,9 @@ both wrist images match. Both failed attempts remain preserved.
 
 New protocol `20260911T111218-c75b807e19fb` freezes the last captured positive and
 negative pair. Four cases use identical saved pixels per scene and unchanged
-visual-decision gates; no historical exact replay is claimed. Job **50272** is
-running local MPS inference. No pair outcome or planner promotion is claimed yet.
+visual-decision gates; no historical exact replay is claimed. Evaluation
+`20260911T111242-65da2d81e562` completes all four cases: both present cases fail,
+both absent cases pass. The appearance description is not promoted.
 [Planner evidence](PLANNER_LIVE_INTEGRATION.md).
 
 ## Physical foundation and plate repair
@@ -115,6 +117,16 @@ The larger west30/south5/down10 mm trial `20260911T060903-2e2b0e5fc492` also
 completes 2,781 controls/139,050 samples collision-free but fails release. Final
 jaw load is 0.389 N, tilt 10.45 degrees and height +11.74 mm; no hold sample is
 jaw-free. Analysis `20260911T061047-d494cfcfd579` preserves the support migration.
+The next measured down2 mm / northwest24 mm sequence **passes release** in
+`20260911T111745-e717fe08f3a5`: 2,901 controls/145,050 samples, zero forbidden
+contacts. Analysis `20260911T112034-4540db745aa4` confirms all final 2,000 rows pass;
+plate target error is 2.270 mm, with zero jaw forces and essentially flat placement.
+A 120-control return route passes static checks in `20260911T112143-e4f5f6790080`.
+Full continuous teacher run `20260911T112302-2cba6a2aa0ac` passes all 5,049
+controls/252,450 samples, with zero forbidden contacts. Independent rescore
+`20260911T112722-fd2f1119487f` confirms completion, zero partial actions and no trace
+errors; learned execution remains false. A packaged recipe, new recording and
+verified skill boundaries remain necessary before adopting a replacement dataset.
 [All transition evidence](SUCCESSOR_READINESS.md).
 
 ## Verification
@@ -159,13 +171,14 @@ jaw-free. Analysis `20260911T061047-d494cfcfd579` preserves the support migratio
 
 ## Next executable steps
 
-1. Poll Qwen **50272**, verify and score all four outcomes. Keep unchanged gates
-   and distinguish captured-image diagnosis from live dispatch or task completion.
-2. Diagnose the retained ACT launch-direction error; do not run a failed checkpoint.
-3. Continue measured-state plate-release design. Static path
-   `20260911T111303-15937bf42f64` clears path collisions/table but leaves one jaw
-   footprint 0.398 mm inside the disk; it is not a physical release demonstration.
-4. Verify CI after the process checkpoint push. Keep draft PR #1 unmerged.
+1. Package the verified repaired teacher recipe as a separate version, capture its
+   synchronized demonstration and verify all seven skill boundaries. Preserve the
+   old dataset until the replacement is validated.
+2. ACT input diagnosis `20260911T111920-7fd911a11b83` finds weak joint-state
+   sensitivity: +/-0.08 rad state changes shift nominal-image first pan by only
+   0.000389 rad. Diagnose/train a declared representation change; no failed rollout.
+3. Improve visual recognition under a new matched protocol; the appearance pair failed.
+4. Verify CI after the checkpoint push. Keep draft PR #1 unmerged.
 5. Validate the full learned cohort, live operator UI and remaining release gates.
 
 ## External dependencies

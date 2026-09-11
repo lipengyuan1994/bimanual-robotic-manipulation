@@ -121,3 +121,11 @@ partial actions. It passes independent physical scoring and explicitly retains
 `learned_execution_verified: false`. This is a rescore of existing evidence,
 not a new physical run. Workflow scene/layout binding tests additionally reject
 missing sealed scenes and mismatched layout digests.
+
+
+Repaired continuous teacher `20260911T112302-2cba6a2aa0ac` passes supported rescore
+`20260911T112722-fd2f1119487f`: 5,049 confirmed controls, 252,450 physics samples,
+zero forbidden samples, zero partial actions and no trace errors. Its staged
+plate release, validated return and resumed drawer/utensil sequence all satisfy
+the unchanged authored-scene profile. Instrumentation remains an explicitly
+source-inspected declaration. Learned execution is still unverified.

@@ -25,7 +25,7 @@
       "id": "M2",
       "title": "Learned workflow",
       "state": "in_progress",
-      "detail": "Pinned seven-skill cohorts, isolated execution, bounded visual retries and saved-run scoring are implemented. ACT still fails its launch-direction gate; paired Qwen diagnosis is running. Learned dinner quality and plate transition repair remain incomplete."
+      "detail": "Repaired continuous teacher passes independent scoring; new recording and skill-boundary checks are next. Isolated execution and recovery are implemented. ACT launch-direction and Qwen present-object recognition gates still fail; learned dinner completion remains unproven."
     },
     {
       "id": "M3",

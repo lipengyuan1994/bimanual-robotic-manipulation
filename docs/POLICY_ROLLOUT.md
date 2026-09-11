@@ -660,3 +660,14 @@ error is 0.344 mm and settled error 0.033 mm. The first pan prediction remains
 negative (-0.001956 rad) versus the positive teacher command (+0.000564 rad).
 Weights remain unchanged during evaluation. The first-direction gate fails;
 no physical rollout, checkpoint promotion or learned manipulation success follows.
+
+
+Read-only input diagnosis `20260911T111920-7fd911a11b83`, protocol
+`20260911T111914-b522245f85ed`, crosses recorded initial joint states and camera
+images for training cases 1000/1001/1002. All nine queries preserve model weights.
+Off-diagonal pairs are counterfactual diagnostics, not physical evaluation episodes.
+With nominal images, changing pan state from -0.08 to +0.08 rad changes predicted
+first pan only from -0.002154 to -0.001765 rad. With state fixed at zero, swapping
+the images yields predictions -0.031035 to +0.025209 rad. This supports weak use
+of joint-state information in this checkpoint; it does not by itself establish
+why training learned that behavior or validate a replacement representation.

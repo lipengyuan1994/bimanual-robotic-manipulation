@@ -169,3 +169,12 @@ each scene. It retains the original four-case decision gates and records the
 historical differences. Driver `.artifacts/qwen-frozen-dinner-pair.py` runs only
 local inference, without rendering or action authority. Job 50272 is active;
 no inference outcome is claimed yet.
+
+
+Frozen-pair evaluation `20260911T111242-65da2d81e562` is complete. Baseline and
+appearance descriptions both fail with the bar present and pass with it absent.
+The appearance-positive response explicitly says no cyan bar is visible. Its
+processor retained 2,040 overhead visual tokens (1920x1088 effective pixels) plus
+120 per wrist image; the result is not explained by silently reducing the overhead
+to the policy camera size. No appearance prompt change is promoted. This is four
+captured-image development cases, not a generalization suite or live task run.

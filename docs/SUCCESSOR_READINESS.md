@@ -252,3 +252,33 @@ down2 mm then northwest20 mm passes the 60-control path and retains at least
 plate projection, but box4 still overlaps it radially by 0.398 mm. This is an
 incomplete release design, not a demonstrated physical separation. All physical
 jaw shapes are reported; no visual-only geometry supplies the clearance result.
+
+
+## Measured staged release passes
+
+Extending the radial slide to 24 mm produces static run
+`20260911T111638-47854065df82`: every physical jaw footprint clears the frozen disk
+by at least 3.289 mm, with minimum jaw/table gap 6.157 mm. Protocol
+`20260911T111739-c9ff5d9dbbeb` authorizes one full-prefix replay, down2 mm / radial24 mm
+sequence and final hold. No scene, destination or physical acceptance threshold changes.
+
+Actual diagnostic `20260911T111745-e717fe08f3a5` completes 2,901 controls and
+145,050 physical samples. It has zero forbidden contacts, maximum overlap 1.831 mm,
+and preserves bar/cup placements and the closed drawer. Independent analysis
+`20260911T112034-4540db745aa4` confirms every final 2,000 sample passes every plate
+check: jaw-free, table-only support, target distance, speed, tilt and height.
+Final target error is 2.270 mm; fixed and moving jaw forces remain zero. The trial
+stops after this hold, so it is successful release evidence, not a complete dinner run.
+
+Post-release return protocol `20260911T112119-503192266cb4` tests one 120-control
+smooth joint path to original target 2850, with no arm/object contacts permitted.
+Static result `20260911T112143-e4f5f6790080` passes all controls. Full continuous
+protocol `20260911T112248-2dc85927e9a9` adds this return, 60 settled controls, then
+resumes original actions 2851 onward. It expects 5,049 controls / 252,450 samples
+and the unchanged independent dinner scorer. Trial `20260911T112302-2cba6a2aa0ac` completes all 5,049 controls and 252,450
+physical samples, with zero forbidden contacts and unchanged full-task success.
+Independent rescore `20260911T112722-fd2f1119487f` confirms complete coverage,
+zero partial controls and no malformed rows. This repairs the continuous authored
+teacher sequence. Packaging, synchronized recording and measured successor-boundary
+verification remain before a replacement training dataset is adopted. No learned
+execution or held-out generalization is established.
