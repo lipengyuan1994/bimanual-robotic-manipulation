@@ -50,6 +50,8 @@ Bounded learned dinner work: [skill training and dataset views](SKILL_TRAINING.m
 
 Sequential local training: [remaining six-skill cohort](TRAINING_COHORT.md).
 
+Per-checkpoint physics: [teacher-prepared learned-skill evaluation](SKILL_PHYSICAL_EVALUATION.md).
+
 Appearance variation: [frozen visual splits and source verification](VISUAL_TRAINING.md).
 
 Measured skill termination: [learned executor and physical monitor](SKILL_EXECUTION.md).

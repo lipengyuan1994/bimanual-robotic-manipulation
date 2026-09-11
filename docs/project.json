@@ -25,7 +25,7 @@
       "id": "M2",
       "title": "Learned workflow",
       "state": "in_progress",
-      "detail": "Teacher recording, LeRobot readback and all seven recorded boundaries pass. First full handoff ACT checkpoint completed20,000 local updates; learned physical quality remains untested. Four bounded planner direction cases and operator fixture checks pass. Full learned dinner success remains unproven."
+      "detail": "Teacher recording, LeRobot readback and all seven recorded boundaries pass. Corrective handoff training completed but failed two physical diagnostics. A resumable six-skill local training cohort is running, and the teacher-prepared component evaluator is implemented. Full learned dinner success remains unproven."
     },
     {
       "id": "M3",

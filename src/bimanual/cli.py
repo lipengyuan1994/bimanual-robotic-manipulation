@@ -125,6 +125,18 @@ def main(argv: list[str] | None = None) -> int:
     )
     cohort_run.add_argument("protocol", type=Path)
     cohort_run.add_argument("--skill", required=True)
+    skill_physical = commands.add_parser(
+        "skill-physical-eval",
+        help="Run one teacher-prepared learned-skill physical diagnostic",
+    )
+    skill_physical.add_argument("--training-run", type=Path, required=True)
+    skill_physical.add_argument("--dataset", type=Path, required=True)
+    skill_physical.add_argument("--skill-views", type=Path, required=True)
+    skill_physical.add_argument("--skill", required=True)
+    skill_physical.add_argument("--device", choices=["cpu", "mps"], default="mps")
+    skill_physical.add_argument("--max-actions", type=int, default=2000)
+    skill_physical.add_argument("--execute-chunk-steps", type=int, default=2)
+    skill_physical.add_argument("--wall-timeout-seconds", type=float, default=1200)
     evaluation = commands.add_parser("dinner-evaluate", help="Re-score sealed dinner evidence")
     evaluation.add_argument("run_id")
     evaluation.add_argument("--instrumentation-run", help="Sealed declarations linked to this run")
@@ -486,6 +498,29 @@ def main(argv: list[str] | None = None) -> int:
             from bimanual.training_cohort_runner import run_training_cohort_skill
 
             result = run_training_cohort_skill(args.protocol, args.skill)
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
+        elif args.command == "skill-physical-eval":
+            from bimanual.skill_physical_evaluation import (
+                SkillPhysicalEvaluationConfig,
+                run_skill_physical_evaluation,
+            )
+
+            result = invoke_with_diagnostics(
+                run_skill_physical_evaluation,
+                SkillPhysicalEvaluationConfig(
+                    training_run=args.training_run,
+                    dataset_root=args.dataset,
+                    skill_views_path=args.skill_views,
+                    skill_id=args.skill,
+                    device=args.device,
+                    max_actions=args.max_actions,
+                    execute_chunk_steps=args.execute_chunk_steps,
+                    wall_timeout_seconds=args.wall_timeout_seconds,
+                ),
+                store=store,
+                project_root=root,
+            )
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1
         elif args.command == "dinner-evaluate":

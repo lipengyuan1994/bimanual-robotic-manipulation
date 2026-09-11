@@ -19,7 +19,9 @@ Event-window implementation is authorized in [decision 0003](docs/decisions/0003
 Two SO-101 arms run locally with bounded control and three cameras. The scripted
 teacher completes drawer use, tableware placement and physical hand-off in one
 authored scene. Corrected demonstrations and skill boundaries have been checked;
-the first full hand-off ACT checkpoint completed local training and awaits evaluation. Learned dinner-table success and
+corrective hand-off training completed but failed both frozen physical diagnostics.
+A resumable six-skill ACT cohort is now training locally, with guarded per-skill
+physical evaluation ready for each checkpoint. Learned dinner-table success and
 release reliability remain unproven. [Accepted plan](docs/PLAN.md)
 
 The portal offers optional instruction/start/stop controls through a server-owned

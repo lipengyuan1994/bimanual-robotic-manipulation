@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 11, 2026. Latest pushed checkpoint: `c124e4a` on
+Updated September 11, 2026. Latest pushed checkpoint: `548327d` on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -57,8 +57,28 @@ It binds nominal v2 data/views, exact20,000-update MPS configurations, final-onl
 checkpoint selection, the prepared hand-off protocol and all three frozen
 evaluation records. Both physical failures remain prerequisites as failures, not
 success claims. The [resumable one-skill-at-a-time executor](TRAINING_COHORT.md)
-passes six CPU recovery fixtures; CLI/protocol/model-lease coverage totals28tests.
-No remaining-skill training has started yet.
+passes seven CPU recovery fixtures; combined cohort/model-lease checks pass34tests.
+Targeted training/process checks pass107tests with13optional skips.
+
+`bar_place_and_return` cohort attempt `20260911T204632-867e6f75a36e` is active;
+child training run `20260911T204632-a60b589a1eea` is configured for20,000native-MPS
+updates under shared model-job ownership. Session56052; log
+`.artifacts/cohort-bar-place-training.log`. Poll this handle and do not launch any
+other model, inference or render job. Training progress and loss are not physical
+skill success.
+
+A generic teacher-prepared component evaluator is now implemented. It verifies the
+nominal-v2 source and skill boundary, executes the sealed teacher prefix through
+real collision/contact physics, and then permits checkpoint actions only. Component
+success requires both the physical skill outcome and successor/final-parking
+readiness. Its records always disclose teacher action count and cannot set full-task,
+autonomous-workflow or release success. Eight focused CPU/physics tests pass,
+including a real630-action MuJoCo prefix, source-forgery rejection, shared model-job
+exclusion and refusal to pass physical-only results without readiness. No trained
+checkpoint has been run through this evaluator yet because the active training job
+owns the model slot. The first command path remains in-process; guardian-based
+native-hang cleanup is still needed before it is a release runner.
+[Evaluation contract and command](SKILL_PHYSICAL_EVALUATION.md).
 
 Full regression85553 exited0:1,058passed,18optional skips,9render deselections,
 472.02seconds. Log `.artifacts/checks-corrective-integration.log`. The subsequent
@@ -193,7 +213,7 @@ Parent-record reconstruction remains unresolved. The original portal service was
   against hashed lockfile requirements:ARM64,68compiled extensions, CPU arithmetic
   and MuJoCo stepping. It predates visual variants and excludes ML extras/rendering.
   [Repeatable installation](SETUP.md).
-- Checkpointc124e4a is pushed; its portal job passes and its Python/render job is
+- Checkpoint548327d is pushed; its remote CI is not yet verified. Checkpointc124e4a's portal job passes and its Python/render job is
   still running. Prior checkpoint2399b2f's GitHub Actions
   runs34635313597 and34635303088 now have successful portal and Python/render jobs.
   These checks cover pushed2399b2f, not the subsequent working-tree changes.
