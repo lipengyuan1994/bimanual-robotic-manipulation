@@ -162,6 +162,18 @@ def test_missing_result_cannot_create_partial_suite_report(tmp_path, monkeypatch
     assert not [row for row in store.list_runs(limit=100) if row.get("kind") == module.KIND]
 
 
+def test_all_component_passes_remain_teacher_prepared_only(tmp_path, monkeypatch):
+    protocol_path, _, _ = setup_suite(tmp_path, monkeypatch)
+    result = module.run_skill_physical_suite_report(protocol_path)
+    assert result.outcome == "completed"
+    assert result.metrics["all_components_passed"] is True
+    assert result.metrics["teacher_prepared_component_success"] is True
+    assert result.metrics["independent_task_success"] is None
+    assert result.metrics["autonomous_workflow_success"] is None
+    assert result.metrics["release_qualified"] is False
+    assert result.claims == ["All six frozen teacher-prepared authored-scene components passed"]
+
+
 def test_duplicate_result_is_ambiguous(tmp_path, monkeypatch):
     protocol_path, store, evaluations = setup_suite(tmp_path, monkeypatch)
     source = evaluations[0]

@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 11, 2026. Latest implementation checkpoint: `ed225e3` on
+Updated September 11, 2026. Latest implementation checkpoint: `399313b` on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -106,8 +106,10 @@ A CPU-only suite reporter now requires exactly one verified result for every fro
 skill and rebinds each evaluation to its cohort wrapper and training child before
 sealing a result table. Missing or duplicate outcomes stop without a partial report;
 failed components remain failed. It never promotes teacher-prepared components to
-independent dinner, autonomous-workflow or release success. Four aggregation fixtures
-pass. Run it only after the six one-time component evaluations finish.
+independent dinner, autonomous-workflow or release success. Five aggregation fixtures
+pass. Run it only after the six one-time component evaluations finish. The portal
+recognizes cohort attempts, component evaluations, the suite report and guarded
+workflow evidence by readable names; native ARM64 type-check and production build pass.
 
 Before the suite ran, review found the outcome monitor's redundant default budget
 still came from shorter v1 skill intervals. The executor now passes a guard one

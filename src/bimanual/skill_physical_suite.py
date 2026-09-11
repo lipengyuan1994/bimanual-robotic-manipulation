@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from bimanual.evidence import EvidenceStore, canonical, digest_file, provenance
+from bimanual.evidence import EvidenceStore, Manifest, canonical, digest_file, provenance
 from bimanual.skill_physical_evaluation import SkillPhysicalEvaluationConfig
 from bimanual.skill_physical_protocol import load_skill_physical_protocol
 from bimanual.skill_physical_protocol_runner import KIND as EVALUATION_KIND
@@ -18,8 +18,8 @@ KIND = "six_skill_teacher_prepared_physical_suite_report"
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
-def _candidate_manifests(store: EvidenceStore, protocol_sha256: str) -> dict[str, object]:
-    matches: dict[str, object] = {}
+def _candidate_manifests(store: EvidenceStore, protocol_sha256: str) -> dict[str, Manifest]:
+    matches: dict[str, Manifest] = {}
     for path in (store.root / "runs").glob("*/manifest.json"):
         try:
             with path.open() as stream:
@@ -55,7 +55,7 @@ def _expected_training(cohort_path: Path, cohort, skill: str) -> ACTTrainingConf
 
 
 def _validate_candidate(
-    candidate,
+    candidate: Manifest,
     *,
     store: EvidenceStore,
     protocol,
