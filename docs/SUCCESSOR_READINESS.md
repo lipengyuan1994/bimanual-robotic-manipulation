@@ -124,3 +124,31 @@ Static margins at the destination cannot certify the route or released dynamics.
 Sealed repair-design note `20260911T043714-e0cc9763cf19` retains exact measured
 and commanded right-arm posture, shoulder geometry, proposed search endpoints
 and required checks. It establishes no valid replacement posture or route.
+
+## Further bounded repair evidence
+
+Twelve fixed right-arm staging poses (`20260911T044110-b2ccb7287b2f`), three cup
+relocations (`20260911T044402-fc46384331dc`), and eight timed right-arm returns
+(`20260911T044606-5359e25ac580`) all fail full static preflight. None advances to
+physics; no collision rules, scoring targets or production assets are changed.
+These searches rule out only their recorded candidates.
+
+Repartitioning existing preparation controls also fails the ten-observation gate:
+`20260911T045024-34810b17eedb` audits boundaries 1570/1574/1580;
+`20260911T045222-68516a611800` audits 1660/1670 against their own measured posture.
+At the latter boundaries the gripper is still moving at 0.786 / 0.0279 rad/s,
+respectively. The cup's retained physical outcome still passes, and no grasp
+activity is reassigned, but the required stationary interval is absent. No new
+skill-view profile was created and no old boundary was silently changed.
+
+Release diagnosis `20260911T045528-4a0b37e4eba3` and design note
+`20260911T045721-41f7350bb2c3` identify a better mechanical hypothesis: the fixed
+jaw still supports the plate throughout release, with approximately 0.37 N
+aggregate jaw force and plate center 19.1 mm above its flat placement center.
+The commanded withdrawal is mostly west, approximately [-115, -18.63, -0.482] mm,
+while the supporting jaw is on the plate's north side. Intermittent support during
+this motion amplifies small differences. The next candidate should first separate
+that jaw from the plate, preserving the original destination. A northward component
+or controlled tilt must clear the cup, camera, table and other arm before a new
+continuous physical trial. Neither alternative has been validated. Recorded
+per-jaw forces are aggregates; no unrecorded tangential contact force is inferred.

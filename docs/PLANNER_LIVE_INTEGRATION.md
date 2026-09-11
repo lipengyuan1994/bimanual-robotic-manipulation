@@ -115,3 +115,21 @@ inputs, camera/model provenance, cancellation and tampered artifacts. Actual
 high-resolution rendering and Qwen behavior remain pending while the fixed MPS
 training job owns local GPU resources. Earlier actual 480-pixel evidence remains
 historical evidence for that profile and source revision.
+
+## Actual high-resolution live check
+
+Run `20260911T045505-ef9d1f373348` completes on native MPS with
+`overhead1920_wrist480_v1`, local Qwen weights and exact paused-scene recapture.
+The overhead processor grid uses 2,040 vision tokens; each wrist uses 120.
+Model load takes 16.62 seconds and inference 85.60 seconds. A CPU regression suite
+was running concurrently; these are diagnostic timings, not isolated Intel or
+release benchmarks. ACT training was already terminal.
+
+Qwen again reports the practice bar not visible, returns `clarify`, and dispatches
+no attempt. Worker evidence has zero physics/action records. The actual overhead
+image contains a visible cyan rectangular bar; human inspection therefore suggests
+an object-recognition or naming issue rather than complete camera occlusion.
+This does not identify its cause. A separately recorded appearance-description
+comparison with a corresponding missing-object case is next; do not inject object
+coordinates or promote a prompt from a positive case alone. The retained driver,
+model response, all warm-up/original/recaptured images and calibration are sealed.

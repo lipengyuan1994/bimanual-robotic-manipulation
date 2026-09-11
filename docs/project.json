@@ -25,7 +25,7 @@
       "id": "M2",
       "title": "Learned workflow",
       "state": "in_progress",
-      "detail": "ACT control, physical outcomes and successor-readiness gating are connected. Sealed dinner runs can be re-evaluated from the CLI. Plate-transition repair, HD validation and learned dinner success remain pending; training continues."
+      "detail": "Pinned seven-skill cohorts and a serialized planner/executor runner are implemented. Final ACT launch gate and HD Qwen recognition still fail; learned dinner quality, owned recovery and transition repair remain incomplete."
     },
     {
       "id": "M3",

@@ -615,3 +615,20 @@ fixed hold targets and their scope. Historical records with the earlier textual
 mask description remain unchanged. ActionChunk schema and target/freshness guards
 are unchanged. Thirty-five temporal tests pass in the native LeRobot environment,
 including actual official averaging parity; `.artifacts/owned-temporal-real-tests.log`.
+
+## Terminal learning-rate decay result
+
+The preregistered 20,000-update comparison `20260911T035236-64462d013810` completes
+in 3,672.98 seconds on native MPS, with checkpoint, processor and sampler reload
+checks passing. Training handle 27780 is terminal. Offline run
+`20260911T045418-d8a9a5277bc8` and frozen comparison
+`20260911T045441-86b5ad13622d` retain the final-only assessment.
+
+Five of six gates pass. Nominal launch tool-target error is 0.375 mm and settled
+error is 0.068 mm, but the first pan target remains **-0.002800 rad** against the
+teacher's **+0.000564 rad**. The first-movement gate fails again. The model is not
+promoted and no physical rollout follows under this protocol. Improving average
+prediction error and reducing terminal learning rate did not resolve that failure;
+additional unchanged-duration training is not justified by these results alone.
+The next diagnosis must examine the persistent launch bias and input/target
+representation before proposing another preregistered intervention.

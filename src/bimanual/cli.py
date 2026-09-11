@@ -77,6 +77,23 @@ def main(argv: list[str] | None = None) -> int:
     evaluation = commands.add_parser("dinner-evaluate", help="Re-score sealed dinner evidence")
     evaluation.add_argument("run_id")
     evaluation.add_argument("--instrumentation-run", help="Sealed declarations linked to this run")
+    workflow_create = commands.add_parser(
+        "workflow-create", help="Pin seven explicitly selected development skill checkpoints"
+    )
+    workflow_create.add_argument("--dataset", type=Path, required=True)
+    workflow_create.add_argument("--skill-views", type=Path, required=True)
+    workflow_create.add_argument("--destination", type=Path, required=True)
+    workflow_create.add_argument(
+        "--training-run",
+        type=Path,
+        action="append",
+        required=True,
+        help="Repeat seven times: handoff, bar, cup, plate, drawer, spoon, fork",
+    )
+    workflow_check = commands.add_parser(
+        "workflow-check", help="Verify a pinned skill cohort without loading models"
+    )
+    workflow_check.add_argument("manifest", type=Path)
     cup = commands.add_parser("cup", help="Physically carry and release a hollow cup upright")
     cup.add_argument("--no-render", action="store_true")
     cup.add_argument("--arm", choices=["left", "right"], default="left")
@@ -297,6 +314,22 @@ def main(argv: list[str] | None = None) -> int:
             )
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1
+        elif args.command == "workflow-create":
+            from bimanual.workflow_manifest import SKILLS, create_workflow_manifest
+
+            if len(args.training_run) != len(SKILLS):
+                raise ValueError("Supply exactly seven ordered --training-run arguments")
+            result = create_workflow_manifest(
+                args.dataset,
+                args.skill_views,
+                dict(zip(SKILLS, args.training_run, strict=True)),
+                args.destination,
+            )
+            emit(result.report())
+        elif args.command == "workflow-check":
+            from bimanual.workflow_manifest import load_workflow_manifest
+
+            emit(load_workflow_manifest(args.manifest).report())
         elif args.command == "cup":
             from bimanual.cup import CupConfig, run_cup
 

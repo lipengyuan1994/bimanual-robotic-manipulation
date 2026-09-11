@@ -50,3 +50,6 @@ Bounded learned dinner work: [skill training and dataset views](SKILL_TRAINING.m
 Measured skill termination: [learned executor and physical monitor](SKILL_EXECUTION.md).
 
 Learned skill transitions: [successor readiness](SUCCESSOR_READINESS.md).
+
+Complete learned workflow: [pinned checkpoint cohort](WORKFLOW_MANIFEST.md) and
+[serialized planning/execution runner](WORKFLOW_RUNNER.md).

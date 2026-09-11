@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 from dataclasses import asdict, dataclass
 
 from bimanual.dinner_teacher import ASSETS
-from bimanual.evidence import digest_file
+from bimanual.evidence import canonical, digest_file
 from bimanual.skill_outcomes import SkillOutcomeMonitor
 from bimanual.skill_registry import dinner_capability
 from bimanual.successor_readiness import SuccessorReadinessMonitor, SuccessorReference
@@ -84,12 +85,20 @@ class DinnerSkillExecutor:
         if self._reference is not None:
             if self._reference.skill_id != self.policy.binding.view.skill_id:
                 raise ValueError("Readiness reference does not match the current skill")
+            exported = json.loads(
+                (self.policy.binding.dataset_root / "export_manifest.json").read_text()
+            )
+            export_seal = hashlib.sha256(
+                canonical(
+                    {key: value for key, value in exported.items() if key != "manifest_sha256"}
+                )
+            ).hexdigest()
             if (
                 self._reference.parent_episode_id != self.policy.binding.view.parent_episode_id
                 or self._reference.dataset_root.resolve()
                 != self.policy.binding.dataset_root.resolve()
-                or self._reference.export_manifest_sha256
-                != digest_file(self.policy.binding.dataset_root / "export_manifest.json")
+                or self._reference.export_manifest_sha256 != export_seal
+                or exported.get("manifest_sha256") != export_seal
             ):
                 raise ValueError("Readiness reference does not match checkpoint dataset lineage")
             if successor is not None and (
