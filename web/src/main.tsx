@@ -46,7 +46,7 @@ function RunLink({ run, select }: { run: Run; select: (id: string) => void }) {
     return <span title={run.error}>Check local files</span>;
   if (run.files?.["replay.gif"])
     return <button onClick={() => select(run.run_id)}>Replay ↑</button>;
-  const filename = ["error.txt", "failure.txt", "proposal.json", "response.txt", "metrics.json", "score.json", "doctor.json", "trajectory.csv", "observations.jsonl", "steps.jsonl", "act_config.json"].find(
+  const filename = ["error.txt", "failure.txt", "proposal.json", "response.txt", "suite-results.json", "metrics.json", "score.json", "doctor.json", "trajectory.csv", "observations.jsonl", "steps.jsonl", "act_config.json"].find(
     (name) => run.files?.[name],
   );
   return filename ? (
@@ -396,6 +396,14 @@ function App() {
                             ? "ACT training"
                           : run.kind === "act_policy_rollout"
                             ? "ACT learned rollout"
+                          : run.kind === "training_cohort_skill_attempt"
+                            ? "ACT skill training attempt"
+                          : run.kind === "learned_skill_teacher_prepared_physical_evaluation"
+                            ? "Learned skill physical check"
+                          : run.kind === "six_skill_teacher_prepared_physical_suite_report"
+                            ? "Six-skill physical suite"
+                          : run.kind === "dinner_workflow_process"
+                            ? "Guarded dinner workflow"
                           : run.kind === "preparation_runtime"
                             ? "Runtime probe"
                             : run.kind ? run.kind.replaceAll("_", " ") : "Unreadable run"}
