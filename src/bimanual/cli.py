@@ -69,6 +69,7 @@ def main(argv: list[str] | None = None) -> int:
         "dinner-teacher", help="Run the fixed-scene continuous dinner teacher"
     )
     dinner.add_argument("--no-render", action="store_true")
+    dinner.add_argument("--recipe", choices=["v1", "v2"], default="v1")
     dinner.add_argument(
         "--record-demonstration",
         action="store_true",
@@ -325,7 +326,9 @@ def main(argv: list[str] | None = None) -> int:
 
             result = run_dinner_teacher(
                 DinnerTeacherConfig(
-                    render=not args.no_render, record_demonstration=args.record_demonstration
+                    recipe=args.recipe,
+                    render=not args.no_render,
+                    record_demonstration=args.record_demonstration,
                 ),
                 store=store,
                 project_root=root,

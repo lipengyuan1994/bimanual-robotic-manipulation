@@ -9,6 +9,7 @@ import time
 from collections.abc import Callable
 from importlib.resources import files
 from pathlib import Path
+from typing import Literal
 
 import mujoco
 import numpy as np
@@ -27,6 +28,7 @@ OBJECTS = ("spoon", "fork", "plate", "cup", "practice_object")
 
 class DinnerTeacherConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
+    recipe: Literal["v1", "v2"] = "v1"
     render: bool = True
     record_demonstration: bool = False
 
@@ -40,17 +42,25 @@ def load_plan(directory: Path = ASSETS) -> tuple[dict, dict, dict]:
         if digest_file(directory / name) != digest:
             raise ValueError(f"Dinner asset digest mismatch: {name}")
     plan = json.loads(gzip.decompress((directory / "plan.json.gz").read_bytes()))
-    if (plan.get("schema_version"), plan.get("physics_hz"), plan.get("control_hz")) != (
-        1,
-        1000,
-        20,
-    ):
+    if plan.get("schema_version") not in (1, 2) or (
+        plan.get("physics_hz"),
+        plan.get("control_hz"),
+    ) != (1000, 20):
         raise ValueError("Unsupported dinner timing/schema")
     if plan.get("joint_order") != list(JOINT_ORDER) or plan.get("camera_order") != list(CAMERAS):
         raise ValueError("Dinner observation/action ordering mismatch")
     if not plan.get("steps") or len(plan["steps"]) != manifest.get("action_count"):
         raise ValueError("Incomplete dinner target plan")
     for step in plan["steps"]:
+        expected_fields = {"phase", "q"}
+        if plan["schema_version"] == 2:
+            expected_fields |= {"path_start", "arm_object_contacts"}
+            if step.get("path_start") not in ("measured", "commanded") or step.get(
+                "arm_object_contacts"
+            ) not in ("none", "phase"):
+                raise ValueError("Invalid dinner path/contact policy")
+        if set(step) != expected_fields:
+            raise ValueError("Unexpected dinner step fields")
         phase_permissions(step["phase"])
         q = np.asarray(step["q"], dtype=float)
         if q.shape != (12,) or not np.isfinite(q).all():
@@ -248,15 +258,18 @@ def run_dinner_teacher(
     try:
         if cancelled():
             raise InterruptedError("Dinner teacher cancelled before initialization")
-        _, plan, layout = load_plan()
+        assets = ASSETS if config.recipe == "v1" else ASSETS.with_name("dinner_teacher_v2")
+        _, plan, layout = load_plan() if config.recipe == "v1" else load_plan(assets)
+        if plan["schema_version"] != (1 if config.recipe == "v1" else 2):
+            raise ValueError("Dinner recipe/schema mismatch")
         verify_assets()
-        shutil.copytree(ASSETS, directory / "teacher-assets")
+        shutil.copytree(assets, directory / "teacher-assets")
         runtime = directory / "runtime-source"
         runtime.mkdir()
         for module in Path(__file__).parent.glob("*.py"):
             shutil.copyfile(module, runtime / module.name)
         shutil.copytree(MODEL_DIR / "assets", directory / "assets")
-        shutil.copyfile(ASSETS / "scene.xml", directory / "scene.xml")
+        shutil.copyfile(assets / "scene.xml", directory / "scene.xml")
         for name in ("LICENSE", "UPSTREAM.json"):
             shutil.copyfile(MODEL_DIR / name, directory / name)
         (directory / "config.json").write_text(config.model_dump_json(indent=2) + "\n")
@@ -264,7 +277,7 @@ def run_dinner_teacher(
             gzip.open(directory / "physics.jsonl.gz", "wt") as trace,
             (directory / "actions.jsonl").open("w") as actions,
         ):
-            env = DinnerEnvironment((ASSETS / "scene.xml").read_text(), trace, cancelled)
+            env = DinnerEnvironment((assets / "scene.xml").read_text(), trace, cancelled)
             (directory / "mapping.json").write_text(json.dumps(env.mapping(), indent=2) + "\n")
             if config.record_demonstration:
                 (directory / "controller.json").write_text(
@@ -324,7 +337,13 @@ def run_dinner_teacher(
                 env.phase = step["phase"]
                 env.active_contacts, carried, arm = phase_permissions(env.phase)
                 q = np.asarray(step["q"])
-                previous = env.data.ctrl[env.actuator_ids].copy()
+                if step.get("arm_object_contacts") == "none":
+                    env.active_contacts = {}
+                previous = (
+                    env.data.qpos[env.qadr].copy()
+                    if step.get("path_start") == "measured"
+                    else env.data.ctrl[env.actuator_ids].copy()
+                )
                 if carried:
                     check_carried_path(
                         env, previous, q, env.allowed, body_name=carried, site_name=arm + "/pinch"
@@ -337,6 +356,10 @@ def run_dinner_teacher(
                     q=q.tolist(),
                     episode_id=env.episode_id,
                     applied=False,
+                    targets_rad=q.tolist(),
+                    observation_sequence=env.sequence,
+                    simulation_seconds_before=float(env.data.time),
+                    partial_physics=False,
                 )
                 if recorder:
                     # Separate full-rate sensor capture; the 2 Hz replay is not training input.
@@ -359,6 +382,10 @@ def run_dinner_teacher(
                             }
                         )
                 finally:
+                    action["simulation_seconds_after"] = float(env.data.time)
+                    action["partial_physics"] = (
+                        not action["applied"] and float(env.data.time) > action["t"]
+                    )
                     actions.write(json.dumps(action, allow_nan=False) + "\n")
                 if config.render and env.sequence % 10 == 0:
                     capture()
@@ -405,6 +432,29 @@ def run_dinner_teacher(
             )
     else:
         score = {"full_workflow_success": False, "failed_gates": ["initialization"]}
+    independent_score = None
+    instrumentation = {
+        "physics_hz": 1000,
+        "object_state_edits": 0,
+        "artificial_attachments": 0,
+        "external_object_force_samples": 0,
+    }
+    if config.recipe == "v2" and (directory / "physics.jsonl.gz").exists():
+        from bimanual.dinner_outcomes import score_dinner_outcomes
+
+        with (
+            gzip.open(directory / "physics.jsonl.gz", "rt") as trace,
+            (directory / "actions.jsonl").open() as actions,
+        ):
+            independent_score = score_dinner_outcomes(
+                (json.loads(line) for line in trace),
+                layout,
+                metadata=instrumentation,
+                actions=(json.loads(line) for line in actions),
+            )
+        (directory / "independent-score.json").write_text(
+            json.dumps(independent_score, indent=2, allow_nan=False) + "\n"
+        )
     if frames:
         frames[0].save(
             directory / "replay.gif", save_all=True, append_images=frames[1:], duration=100, loop=0
@@ -419,12 +469,23 @@ def run_dinner_teacher(
         learned_execution=False,
         production_ready=False,
         rendered=config.render and bool(frames),
+        independent_score=independent_score,
+        instrumentation=instrumentation,
+        instrumentation_evidence=(
+            "Source-inspected teacher declaration; not a detector of unlogged edits"
+        ),
     )
     outcome = (
         "interrupted"
         if interrupted
         else "completed"
-        if error is None and score.get("full_workflow_success")
+        if error is None
+        and score.get("full_workflow_success")
+        and (
+            config.recipe == "v1"
+            or independent_score is not None
+            and independent_score["independent_task_success"]
+        )
         else "failed"
     )
     if recorder:

@@ -78,6 +78,8 @@ def test_mid_step_cancellation_retains_partial_trace(tmp_path):
     run = store.directory(result.run_id)
     actions = [json.loads(line) for line in (run / "actions.jsonl").read_text().splitlines()]
     assert len(actions) == 1 and not actions[0]["applied"]
+    assert actions[0]["partial_physics"] is True
+    assert actions[0]["simulation_seconds_after"] > actions[0]["simulation_seconds_before"]
     with gzip.open(run / "physics.jsonl.gz", "rt") as file:
         rows = [json.loads(line) for line in file]
     assert 0 < len(rows) < 50
@@ -305,3 +307,129 @@ def test_teacher_truth_is_rejected_by_real_recorder(tmp_path, recorder_environme
     assert result.outcome == "failed" and not result.claims
     assert "truth is forbidden" in result.metrics["error"]
     store.verify(result.run_id)
+
+
+def test_repaired_recipe_preserves_original_scene_and_untouched_targets():
+    from bimanual.evidence import digest_file
+
+    _, old, _ = load_plan()
+    manifest, new, layout = load_plan(ASSETS.with_name("dinner_teacher_v2"))
+    assert new["schema_version"] == 2 and len(new["steps"]) == 5049
+    assert manifest["source_run"] == "20260911T112302-2cba6a2aa0ac"
+    assert manifest["files"]["scene.xml"] == digest_file(ASSETS / "scene.xml")
+    assert manifest["files"]["layout.json"] == digest_file(ASSETS / "layout.json")
+    assert layout["plate_position_tolerance_m"] == 0.02
+
+    def strip(steps):
+        return [{"phase": s["phase"], "q": s["q"]} for s in steps]
+
+    assert strip(new["steps"][:1570]) == old["steps"][:1570]
+    assert strip(new["steps"][1580:2681]) == old["steps"][1570:2671]
+    assert strip(new["steps"][3081:]) == old["steps"][2851:]
+    assert all(s["q"] == old["steps"][1569]["q"] for s in new["steps"][1570:1580])
+    assert all(s["arm_object_contacts"] == "none" for s in new["steps"][2901:3081])
+    assert all(s["path_start"] == "measured" for s in new["steps"][2901:3081])
+    assert all(s["phase"] == "plate/settled" for s in new["steps"][3021:3081])
+
+
+@pytest.mark.parametrize(
+    "field,value", [("path_start", "oracle"), ("arm_object_contacts", "all"), ("object_pose", [])]
+)
+def test_repaired_recipe_rejects_unknown_or_widened_control_policy(tmp_path, field, value):
+    from bimanual.evidence import digest_file
+
+    path = tmp_path / "v2"
+    shutil.copytree(ASSETS.with_name("dinner_teacher_v2"), path)
+    plan = json.loads(gzip.decompress((path / "plan.json.gz").read_bytes()))
+    plan["steps"][0][field] = value
+    (path / "plan.json.gz").write_bytes(gzip.compress(json.dumps(plan).encode(), mtime=0))
+    manifest = json.loads((path / "manifest.json").read_text())
+    manifest["files"]["plan.json.gz"] = digest_file(path / "plan.json.gz")
+    (path / "manifest.json").write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="policy|fields"):
+        load_plan(path)
+
+
+def test_recipe_config_rejects_arbitrary_asset_paths():
+    with pytest.raises(ValueError):
+        DinnerTeacherConfig(recipe="../../custom")
+
+
+@pytest.mark.parametrize("physical_pass", [False, True])
+def test_v2_uses_measured_start_restricts_contacts_and_requires_independent_score(
+    tmp_path, monkeypatch, recorder_environment, physical_pass
+):
+    import numpy as np
+
+    import bimanual.dinner_teacher as teacher
+
+    _, instances = recorder_environment
+    manifest, plan, layout = load_plan(ASSETS.with_name("dinner_teacher_v2"))
+    plan = dict(
+        plan,
+        steps=[
+            dict(
+                phase="plate/withdraw",
+                q=[0.0] * 12,
+                path_start="measured",
+                arm_object_contacts="none",
+            )
+        ],
+    )
+    monkeypatch.setattr(teacher, "load_plan", lambda directory: (manifest, plan, layout))
+    factory = teacher.DinnerEnvironment
+
+    def environment(*args):
+        env = factory(*args)
+        env.data.qpos = np.full(12, 0.25)
+        env.qadr = np.arange(12)
+        return env
+
+    seen = []
+
+    def check(env, start, target, allowed):
+        seen.append((start.copy(), env.active_contacts.copy()))
+
+    monkeypatch.setattr(teacher, "DinnerEnvironment", environment)
+    monkeypatch.setattr(teacher, "check_joint_path", check)
+    monkeypatch.setattr(
+        "bimanual.dinner_outcomes.score_dinner_outcomes",
+        lambda *args, **kwargs: {"independent_task_success": physical_pass},
+    )
+    result = run_dinner_teacher(
+        DinnerTeacherConfig(recipe="v2", render=False), EvidenceStore(tmp_path), Path.cwd()
+    )
+    assert result.outcome == ("completed" if physical_pass else "failed")
+    assert len(seen) == 1 and len(instances) == 1
+    np.testing.assert_array_equal(seen[0][0], np.full(12, 0.25))
+    assert seen[0][1] == {}
+    assert result.metrics["independent_score"]["independent_task_success"] is physical_pass
+
+
+def test_dinner_cli_selects_repaired_recipe(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from bimanual.cli import main
+
+    seen = []
+
+    def execute(config, **kwargs):
+        seen.append(config)
+        return SimpleNamespace(outcome="failed", model_dump=lambda **kw: {"outcome": "failed"})
+
+    monkeypatch.setattr("bimanual.dinner_teacher.run_dinner_teacher", execute)
+    assert (
+        main(
+            [
+                "--artifacts",
+                str(tmp_path),
+                "dinner-teacher",
+                "--recipe",
+                "v2",
+                "--no-render",
+                "--record-demonstration",
+            ]
+        )
+        == 1
+    )
+    assert seen[0].recipe == "v2" and seen[0].record_demonstration and not seen[0].render

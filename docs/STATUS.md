@@ -2,7 +2,7 @@
 
 Updated: 2026-09-11. Branch: `codex/preparation-foundation`.
 Use `git rev-parse HEAD` for the exact checkpoint; previous pushed checkpoint is
-`fd0b69f`. Current work validates repaired release and diagnoses model inputs.
+`6719928`. Current work packages and records the repaired v2 teacher recipe.
 [Roadmap](ROADMAP.md), [original plan](PLAN.md), [history](STATUS_HISTORY.md).
 
 ## Readiness
@@ -171,9 +171,10 @@ verified skill boundaries remain necessary before adopting a replacement dataset
 
 ## Next executable steps
 
-1. Package the verified repaired teacher recipe as a separate version, capture its
-   synchronized demonstration and verify all seven skill boundaries. Preserve the
-   old dataset until the replacement is validated.
+1. V2 recipe and CLI selection are implemented; 24 focused teacher tests pass.
+   Full regression **1316 is active**, `.artifacts/checks-dinner-v2-final.log`.
+   After a clean checkpoint, record `dinner-teacher --recipe v2 --record-demonstration`,
+   then verify all seven boundaries and export separately. Preserve the v1 dataset.
 2. ACT input diagnosis `20260911T111920-7fd911a11b83` finds weak joint-state
    sensitivity: +/-0.08 rad state changes shift nominal-image first pan by only
    0.000389 rad. Diagnose/train a declared representation change; no failed rollout.

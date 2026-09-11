@@ -132,3 +132,36 @@ The first packaged trial, `20260911T012748-2d4a69c7807d`, had a passing physical
 score but an outer failed outcome because the actor read an incorrect result-field
 name. That run remains unchanged. The corrected clean run establishes command
 completion; no earlier failed video is substituted.
+
+## Repaired recipe v2
+
+Use `bimanual dinner-teacher --recipe v2` to select the separately packaged repair.
+The default remains v1 while the new recording and skill boundaries are validated.
+V2 preserves the same scene/layout bytes and all targets outside the repaired
+section. Its 5,049 targets come from physical run `20260911T112302-2cba6a2aa0ac`,
+independently rescored as `20260911T112722-fd2f1119487f`.
+
+V2 adds ten bar-settling controls, a staged plate release and a checked return.
+The last 60 return-hold controls are labeled `plate/settled`; target values remain
+identical to the verified source. Version 2 adds explicit `path_start` and
+`arm_object_contacts` fields. The former selects measured joints or previous
+command for collision checking; the latter can only retain normal phase permissions
+or restrict all arm/object contacts. It cannot widen them. Missing/unknown fields
+are rejected. The post-release return uses measured joints and forbids arm/object
+contact, as in the physical trial.
+
+The supported v2 command requires both the existing stage audit and the independent
+stage-free dinner scorer to pass. All new teacher runs record explicit partial-action
+timing and retain their source-inspected instrumentation declaration. Those
+counter declarations are not a detector for arbitrary unlogged simulator changes.
+
+Capture the full-rate dataset separately from the replay:
+
+```sh
+.venv/bin/bimanual dinner-teacher --recipe v2 --record-demonstration
+```
+
+Adding `--no-render` omits only the presentation replay; demonstration recording
+still renders all three full-rate training cameras. Packaging/unit checks passed;
+a clean supported recording and successor-boundary checks remain required before
+adopting a replacement dataset. V1 assets and datasets remain unchanged.
