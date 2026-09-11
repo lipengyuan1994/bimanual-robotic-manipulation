@@ -92,7 +92,7 @@ def damaged_seal(config, *, store, **kwargs):
     return result
 
 
-def settings(*, wall=5):
+def settings(*, wall=5, cancellation_grace=0.15):
     return WorkflowProcessConfig(
         execution=WorkflowExecutionConfig(
             workflow_manifest="cohort.json",
@@ -101,16 +101,16 @@ def settings(*, wall=5):
             wall_timeout_seconds=wall,
             step_timeout_seconds=min(1, wall),
         ),
-        cancellation_grace_seconds=0.15,
+        cancellation_grace_seconds=cancellation_grace,
         terminate_grace_seconds=0.15,
         poll_interval_seconds=0.01,
     )
 
 
-def run(tmp_path, entrypoint, *, wall=5, cancelled=lambda: False):
+def run(tmp_path, entrypoint, *, wall=5, cancelled=lambda: False, cancellation_grace=0.15):
     store = EvidenceStore(tmp_path / "evidence")
     result = run_workflow_process(
-        settings(wall=wall),
+        settings(wall=wall, cancellation_grace=cancellation_grace),
         store=store,
         project_root=tmp_path,
         cancelled=cancelled,
@@ -151,7 +151,14 @@ def test_prestart_cancel_does_not_spawn(tmp_path):
 
 
 def test_running_cooperative_cancel_preserves_child_seal(tmp_path):
-    _, result = run(tmp_path, cooperative, cancelled=lambda: any(tmp_path.rglob("started.json")))
+    # Exercise the production grace period, not the deliberately short escalation
+    # fixture. A sealed child still needs time to finish interpreter shutdown.
+    _, result = run(
+        tmp_path,
+        cooperative,
+        cancelled=lambda: any(tmp_path.rglob("started.json")),
+        cancellation_grace=WorkflowProcessConfig.model_fields["cancellation_grace_seconds"].default,
+    )
     assert result.outcome == "cancelled"
     assert result.metrics["child_manifest_verified"]
     assert not result.metrics["forced_interruption"]

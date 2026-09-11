@@ -178,3 +178,16 @@ processor retained 2,040 overhead visual tokens (1920x1088 effective pixels) plu
 120 per wrist image; the result is not explained by silently reducing the overhead
 to the policy camera size. No appearance prompt change is promoted. This is four
 captured-image development cases, not a generalization suite or live task run.
+
+## Object terminology diagnosis
+
+Frozen diagnostic `20260911T115608-34d5fb7f9763` completes both scene descriptions
+on native MPS, float16, fallback disabled. With unchanged images and model but no
+skill-selection schema, the positive description identifies a cyan beam between
+the arms while explicitly rejecting the name bar. The negative description
+identifies only the small cyan square at the drawer edge. Neither reaches its
+192-token generation limit. This suggests a terminology mismatch, not proof of a
+fixed planner. Protocol `20260911T115919-698f78cadeac` preregisters the next paired
+skill-decision test: bar, beam and strip name the same elongated target; appearance
+is not evidence of presence. Original positive/negative gates remain unchanged.
+No action is dispatched and no planner change is promoted from this diagnosis.

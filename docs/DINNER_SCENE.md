@@ -174,3 +174,12 @@ and passing independent task score. The stage audit rejected exactly one gate:
 The packaging correction labels only the final 40 controls as settled, leaving the
 preceding 20 as retreat. Targets, timing, guards and scoring thresholds are unchanged.
 A fresh recording is required; the failed source is not edited or exported as success.
+
+The corrected clean recording **`20260911T114540-8b3b1ff0238d`**, checkpoint
+`106f5ed`, passes both stage and independent audits: 5,049 applied controls,
+252,450 physics samples, zero forbidden contacts, 5,050 observations and 15,150
+RGB images. Its source seal is
+`37ec8a70353517d668f4bc18cf8252c2067e2fe4db6b7d1060e1c43d782808ff`.
+The failed predecessor remains immutable. This proves the supported teacher
+recording in one authored scene; learned execution and successor readiness are
+separate gates.
