@@ -16,8 +16,11 @@ from bimanual.dual_arm import JOINT_ORDER
 from bimanual.evidence import canonical, digest_file
 from bimanual.skill_views import (
     INTERVALS,
+    INTERVALS_V2,
     PLAN_SHA256,
+    PLAN_SHA256_V2,
     SkillView,
+    SkillViews,
     action_window,
     create_skill_views,
     load_skill_views,
@@ -36,6 +39,9 @@ def seal_fixture(root, *, kind="dinner_teacher", outcome="completed"):
         data["lineage"][name]["sha256"] = digest_file(raw / data["lineage"][name]["path"])
     write_json(raw / "demonstration/episode.json", data)
     record = DemonstrationEpisode.model_validate(data)
+    metrics = {"score": json.loads((raw / "score.json").read_text())}
+    if (raw / "independent-score.json").exists():
+        metrics["independent_score"] = json.loads((raw / "independent-score.json").read_text())
     source = dict(
         schema_version=1,
         run_id="synthetic-dinner-fixture",
@@ -44,7 +50,7 @@ def seal_fixture(root, *, kind="dinner_teacher", outcome="completed"):
         outcome=outcome,
         claims=[],
         config={},
-        metrics={"score": json.loads((raw / "score.json").read_text())},
+        metrics=metrics,
         provenance={"git_revision": "a" * 40, "source_sha256": "b" * 64},
         files={
             str(path.relative_to(raw)): digest_file(path)
@@ -66,7 +72,7 @@ def seal_fixture(root, *, kind="dinner_teacher", outcome="completed"):
         fps=20,
         storage="images",
         split="train",
-        frames=4819,
+        frames=len(record.frames) - 1,
         camera_features=CAMERA_FEATURES,
         joint_order=list(JOINT_ORDER),
         episodes=[
@@ -78,7 +84,7 @@ def seal_fixture(root, *, kind="dinner_teacher", outcome="completed"):
                 evidence_manifest_sha256=digest_file(raw / "manifest.json"),
                 seed=record.lineage.seed,
                 split=record.lineage.split,
-                exported_transitions=4819,
+                exported_transitions=len(record.frames) - 1,
                 lineage=record.lineage.model_dump(),
             )
         ],
@@ -94,12 +100,24 @@ def seal_fixture(root, *, kind="dinner_teacher", outcome="completed"):
 
 @pytest.fixture(scope="module")
 def synthetic_export(tmp_path_factory):
-    root = tmp_path_factory.mktemp("skill-view-source") / "dataset"
+    return make_synthetic_export(tmp_path_factory.mktemp("skill-view-source"), "v1")
+
+
+@pytest.fixture(scope="module")
+def synthetic_export_v2(tmp_path_factory):
+    return make_synthetic_export(tmp_path_factory.mktemp("skill-view-source-v2"), "v2")
+
+
+def make_synthetic_export(directory, recipe):
+    assets = ASSETS if recipe == "v1" else ASSETS.with_name("dinner_teacher_v2")
+    root = directory / "dataset"
     raw = root / "raw_sources/000000"
     (raw / "demonstration").mkdir(parents=True)
-    shutil.copytree(ASSETS, raw / "teacher-assets")
-    shutil.copyfile(ASSETS / "scene.xml", raw / "scene.xml")
-    write_json(raw / "config.json", {"record_demonstration": True, "fixture": True})
+    shutil.copytree(assets, raw / "teacher-assets")
+    shutil.copyfile(assets / "scene.xml", raw / "scene.xml")
+    write_json(
+        raw / "config.json", {"record_demonstration": True, "fixture": True, "recipe": recipe}
+    )
     write_json(
         raw / "controller.json",
         dict(
@@ -108,27 +126,29 @@ def synthetic_export(tmp_path_factory):
             split="train",
             teacher_uses_simulator_truth=True,
             plan="teacher-assets/plan.json.gz",
-            plan_sha256=PLAN_SHA256,
+            plan_sha256=PLAN_SHA256 if recipe == "v1" else PLAN_SHA256_V2,
         ),
     )
     write_json(raw / "score.json", {"full_workflow_success": True, "fixture_only": True})
+    if recipe == "v2":
+        write_json(raw / "independent-score.json", {"independent_task_success": True})
     images = []
     for index in range(3):
         path = raw / f"camera-{index}.png"
         Image.new("RGB", (480, 270), (index, 0, 0)).save(path)
         images.append(dict(path=path.name, sha256=digest_file(path)))
-    plan = json.loads(gzip.decompress((ASSETS / "plan.json.gz").read_bytes()))
+    plan = json.loads(gzip.decompress((assets / "plan.json.gz").read_bytes()))
     data = episode()
     data["lineage"]["seed"] = 0
     data["lineage"]["controller"]["path"] = "controller.json"
     data["joint_limits"] = dict(lower_rad=[-10.0] * 12, upper_rad=[10.0] * 12)
     data["frames"], phases, actions = [], [], []
-    for index in range(4820):
+    for index in range(len(plan["steps"]) + 1):
         obs = observation(index)
         for camera, artifact in zip(obs["frames"], images, strict=True):
             camera["artifact"] = artifact
-        final = index == 4819
-        step = plan["steps"][min(index, 4818)]
+        final = index == len(plan["steps"])
+        step = plan["steps"][min(index, len(plan["steps"]) - 1)]
         data["frames"].append(dict(observation=obs, action_rad=None if final else step["q"]))
         sidecar = dict(
             episode_id=data["episode_id"],
@@ -307,3 +327,39 @@ def test_ineligible_or_altered_recording_rejected_before_manifest_write(
     with pytest.raises(ValueError):
         create_skill_views(root, path)
     assert not path.exists()
+
+
+def test_v2_views_verify_repaired_boundaries_and_reject_mixed_profile(
+    tmp_path, synthetic_export_v2
+):
+    result = create_skill_views(synthetic_export_v2, tmp_path / "v2.json")
+    assert load_skill_views(tmp_path / "v2.json", dataset_root=synthetic_export_v2) == result
+    assert result.profile == "dinner_nominal_skill_views_v2"
+    assert result.parent_transitions == 5049
+    assert tuple((v.skill_id, v.start, v.end) for v in result.views) == INTERVALS_V2
+    for view in result.views:
+        window = action_window(view, view.end - view.start - 1, 10)
+        assert window.parent_action_indices == (view.end - 1,) * 10
+    for updates in ({"profile": "dinner_nominal_skill_views_v1"}, {"parent_transitions": 4819}):
+        with pytest.raises(ValueError):
+            SkillViews.model_validate({**result.model_dump(), **updates})
+
+
+@pytest.mark.parametrize("fault", ["audit", "recipe", "phase"])
+def test_v2_resealed_ineligible_source_is_rejected(tmp_path, synthetic_export_v2, fault):
+    root = tmp_path / "dataset"
+    shutil.copytree(synthetic_export_v2, root)
+    raw = root / "raw_sources/000000"
+    if fault == "audit":
+        write_json(raw / "independent-score.json", {"independent_task_success": False})
+    elif fault == "recipe":
+        write_json(raw / "config.json", {"record_demonstration": True, "recipe": "v1"})
+    else:
+        path = raw / "demonstration/phases.jsonl"
+        rows = [json.loads(line) for line in path.read_text().splitlines()]
+        rows[3080]["phase"] = "plate/retreat"
+        path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    seal_fixture(root)
+    with pytest.raises(ValueError):
+        create_skill_views(root, tmp_path / "rejected.json")
+    assert not (tmp_path / "rejected.json").exists()

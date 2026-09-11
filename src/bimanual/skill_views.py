@@ -36,6 +36,21 @@ BOUNDARY_PHASES = (
 # This view profile is specific to the existing authored teacher, not arbitrary scenes.
 PLAN_SHA256 = "9fb9baa727c607bd7fd94db4309f99b0e386073dc9e70d0708db024ee5dc58f1"
 
+INTERVALS_V2 = (
+    ("handoff_transfer", 0, 630),
+    ("bar_place_and_return", 630, 1580),
+    ("cup_pick_place", 1580, 2099),
+    ("plate_pick_place", 2099, 3081),
+    ("drawer_open", 3081, 3641),
+    ("spoon_retrieve_place", 3641, 4345),
+    ("fork_retrieve_place", 4345, 5049),
+)
+PLAN_SHA256_V2 = "0c93816e3791ac577cc3284fc8b9932ee0e34a2f067eca805ad12f72117b9231"
+PROFILES = {
+    "dinner_nominal_skill_views_v1": (INTERVALS, PLAN_SHA256),
+    "dinner_nominal_skill_views_v2": (INTERVALS_V2, PLAN_SHA256_V2),
+}
+
 
 class SkillView(Contract):
     skill_id: Identifier
@@ -46,7 +61,7 @@ class SkillView(Contract):
 
     @model_validator(mode="after")
     def fixed_interval(self):
-        if (self.skill_id, self.start, self.end) not in INTERVALS:
+        if (self.skill_id, self.start, self.end) not in (*INTERVALS, *INTERVALS_V2):
             raise ValueError("Unsupported skill interval or cross-skill range")
         if self.terminal_parent_frame != self.end:
             raise ValueError("Skill terminal must be the original parent end observation")
@@ -54,7 +69,9 @@ class SkillView(Contract):
 
 
 class SkillViews(Contract):
-    profile: Literal["dinner_nominal_skill_views_v1"] = "dinner_nominal_skill_views_v1"
+    profile: Literal["dinner_nominal_skill_views_v1", "dinner_nominal_skill_views_v2"] = (
+        "dinner_nominal_skill_views_v1"
+    )
     parent_run_id: Identifier
     parent_episode_id: Identifier
     parent_source_sha256: Digest
@@ -63,7 +80,7 @@ class SkillViews(Contract):
     seed: Literal[0] = 0
     split: Literal["train"] = "train"
     independent_scene_count: Literal[1] = 1
-    parent_transitions: Literal[4819] = 4819
+    parent_transitions: Literal[4819, 5049] = 4819
     derivation_source_sha256: Digest
     artifacts: tuple[Artifact, ...]
     views: tuple[SkillView, ...] = Field(min_length=7, max_length=7)
@@ -71,7 +88,10 @@ class SkillViews(Contract):
 
     @model_validator(mode="after")
     def fixed_partition(self):
-        if tuple((view.skill_id, view.start, view.end) for view in self.views) != INTERVALS:
+        intervals, _ = PROFILES[self.profile]
+        if self.parent_transitions != intervals[-1][2]:
+            raise ValueError("Profile and parent transition count disagree")
+        if tuple((view.skill_id, view.start, view.end) for view in self.views) != intervals:
             raise ValueError("Skill views must partition the original nominal episode exactly")
         if any(view.parent_episode_id != self.parent_episode_id for view in self.views):
             raise ValueError("A skill view cannot invent a different parent episode")
@@ -129,7 +149,7 @@ def _verified_inputs(dataset_root: Path) -> dict:
 
     dataset_root = dataset_root.resolve(strict=True)
     exported = verify_training_dataset(dataset_root)
-    if len(exported["episodes"]) != 1 or exported["frames"] != 4819:
+    if len(exported["episodes"]) != 1 or exported["frames"] not in (4819, 5049):
         raise ValueError("Skill views require one complete nominal dinner export")
     entry = exported["episodes"][0]
     relative = f"{entry['raw_root']}/manifest.json"
@@ -199,13 +219,28 @@ def _verified_inputs(dataset_root: Path) -> dict:
     score = json.loads((raw / "score.json").read_text())
     if score != source.metrics["score"] or score.get("full_workflow_success") is not True:
         raise ValueError("Stored physical audit disagrees with completed source")
+    recipe = config.get("recipe", "v1")
+    profile = f"dinner_nominal_skill_views_{recipe}"
+    if profile not in PROFILES:
+        raise ValueError("Unsupported dinner recipe")
+    intervals, plan_sha256 = PROFILES[profile]
+    transitions = intervals[-1][2]
+    if exported["frames"] != transitions:
+        raise ValueError("Recipe and exported transition count disagree")
+    if recipe == "v2":
+        independent = json.loads((raw / "independent-score.json").read_text())
+        if (
+            independent != source.metrics.get("independent_score")
+            or independent.get("independent_task_success") is not True
+        ):
+            raise ValueError("V2 independent physical audit did not pass")
     plan_path = raw / "teacher-assets/plan.json.gz"
     assets = json.loads((raw / "teacher-assets/manifest.json").read_text())
     if (
-        digest_file(plan_path) != PLAN_SHA256
-        or controller.get("plan_sha256") != PLAN_SHA256
-        or assets.get("files", {}).get("plan.json.gz") != PLAN_SHA256
-        or assets.get("action_count") != 4819
+        digest_file(plan_path) != plan_sha256
+        or controller.get("plan_sha256") != plan_sha256
+        or assets.get("files", {}).get("plan.json.gz") != plan_sha256
+        or assets.get("action_count") != transitions
         or assets.get("files", {}).get("scene.xml") != lineage.scene.sha256
     ):
         raise ValueError("Unsupported authored dinner plan or scene identity")
@@ -219,9 +254,13 @@ def _verified_inputs(dataset_root: Path) -> dict:
         raise ValueError("Wrong dinner plan timing or mapping")
     phases = _lines(raw / "demonstration/phases.jsonl")
     actions = _lines(raw / "actions.jsonl")
-    if len(phases) != 4820 or len(actions) != 4819 or len(episode.frames) != 4820:
+    if (
+        len(phases) != transitions + 1
+        or len(actions) != transitions
+        or len(episode.frames) != transitions + 1
+    ):
         raise ValueError("Incomplete phase, action or observation sequence")
-    if len(plan["steps"]) != 4819:
+    if len(plan["steps"]) != transitions:
         raise ValueError("Incomplete dinner plan")
     for index, (frame, sidecar) in enumerate(zip(episode.frames, phases, strict=True)):
         obs = frame.observation
@@ -242,11 +281,11 @@ def _verified_inputs(dataset_root: Path) -> dict:
             raise ValueError("Phase sidecar does not preserve observation time")
         if not math.isclose(obs.simulation_seconds, index / 20, rel_tol=0, abs_tol=1e-8):
             raise ValueError("Source recording is not a time-zero20Hz dinner trajectory")
-        if sidecar.get("terminal") is not (index == 4819) or sidecar.get(
+        if sidecar.get("terminal") is not (index == transitions) or sidecar.get(
             "transition_applied"
-        ) is not (index < 4819):
+        ) is not (index < transitions):
             raise ValueError("Incorrect terminal/applied sidecar marker")
-        if index == 4819:
+        if index == transitions:
             if (
                 frame.action_rad is not None
                 or sidecar.get("phase") != plan["steps"][-1]["phase"]
@@ -275,7 +314,7 @@ def _verified_inputs(dataset_root: Path) -> dict:
         if action.get("q") != list(frame.action_rad) or action.get("q") != step["q"]:
             raise ValueError("Recorded action targets differ from applied authored plan")
     views = []
-    for (skill, start, end), (first, last) in zip(INTERVALS, BOUNDARY_PHASES, strict=True):
+    for (skill, start, end), (first, last) in zip(intervals, BOUNDARY_PHASES, strict=True):
         if phases[start]["phase"] != first or phases[end - 1]["phase"] != last:
             raise ValueError("Skill partition does not match the phase sidecar")
         views.append(
@@ -299,6 +338,8 @@ def _verified_inputs(dataset_root: Path) -> dict:
         "teacher-assets/manifest.json",
         "teacher-assets/plan.json.gz",
     )
+    if recipe == "v2":
+        names += ("independent-score.json",)
     artifacts = [
         Artifact(
             path="export_manifest.json", sha256=digest_file(dataset_root / "export_manifest.json")
@@ -309,6 +350,8 @@ def _verified_inputs(dataset_root: Path) -> dict:
         for name in names
     )
     return dict(
+        profile=profile,
+        parent_transitions=transitions,
         parent_run_id=source.run_id,
         parent_episode_id=episode.episode_id,
         parent_source_sha256=lineage.source_sha256,

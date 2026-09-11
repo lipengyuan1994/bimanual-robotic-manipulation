@@ -6,7 +6,7 @@ independent evaluation `20260911T112722-fd2f1119487f`.
 
 It adds ten bar-settling controls and replaces the plate withdrawal with a measured
 staged release, hold, and checked return before the original drawer/utensil sequence.
-All 5,049 targets are copied exactly. The final return hold is labeled
+All 5,049 targets are copied exactly. The final 40 controls of the return hold are labeled
 `plate/settled`; this does not change any target or physics parameter.
 
 Version 2 explicitly records path-check starting state and a restrictive no-object-

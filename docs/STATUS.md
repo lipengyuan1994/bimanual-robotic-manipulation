@@ -172,7 +172,7 @@ verified skill boundaries remain necessary before adopting a replacement dataset
 ## Next executable steps
 
 1. V2 recipe and CLI selection are implemented; 24 focused teacher tests pass.
-   Full regression **1316 is active**, `.artifacts/checks-dinner-v2-final.log`.
+   Baseline regression **1316 passed: 919 tests**, `.artifacts/checks-dinner-v2-final.log`.
    After a clean checkpoint, record `dinner-teacher --recipe v2 --record-demonstration`,
    then verify all seven boundaries and export separately. Preserve the v1 dataset.
 2. ACT input diagnosis `20260911T111920-7fd911a11b83` finds weak joint-state
@@ -191,3 +191,20 @@ Organizer clarifications on assets/seeds, pouring, prior-code eligibility and
 hosting remain provisional. Deadline last verified: September16, 2:30PM EDT.
 No organizer message or hackathon submission has been sent.
 [Intel access](INTEL_ACCESS.md), [questions](ORGANIZER_QUESTIONS.md).
+
+
+## Current continuation: v2 recording correction
+
+Recording `20260911T113458-5a8697f744a0` finished **failed**, preserved unchanged.
+All 5,049 controls and 15,150 images were captured; independent physical scoring
+passes with zero forbidden contacts. The stage audit requires exactly 2,000
+plate-settled samples, while the packaged labels supplied 3,000. Only the first
+20 labels of that 60-control hold are corrected to `plate/retreat`; all targets,
+guards and acceptance thresholds remain unchanged. Re-record before export.
+
+The explicit v2 skill-view profile is implemented with pinned plan identity,
+profile/count/interval consistency and mandatory independent score. Original v1
+manifests remain compatible. View tests: 29 pass. Successor/training adapters:
+30 pass, one optional skip. Aggregate 70584 predates the phase correction and
+cannot establish the final corrected asset check. Next: finish focused correction
+checks, record the corrected recipe, then export and audit all seven boundaries.

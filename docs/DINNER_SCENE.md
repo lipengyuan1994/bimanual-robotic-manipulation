@@ -142,7 +142,7 @@ section. Its 5,049 targets come from physical run `20260911T112302-2cba6a2aa0ac`
 independently rescored as `20260911T112722-fd2f1119487f`.
 
 V2 adds ten bar-settling controls, a staged plate release and a checked return.
-The last 60 return-hold controls are labeled `plate/settled`; target values remain
+The last 40 return-hold controls are labeled `plate/settled`; target values remain
 identical to the verified source. Version 2 adds explicit `path_start` and
 `arm_object_contacts` fields. The former selects measured joints or previous
 command for collision checking; the latter can only retain normal phase permissions
@@ -165,3 +165,12 @@ Adding `--no-render` omits only the presentation replay; demonstration recording
 still renders all three full-rate training cameras. Packaging/unit checks passed;
 a clean supported recording and successor-boundary checks remain required before
 adopting a replacement dataset. V1 assets and datasets remain unchanged.
+
+
+The first v2 recording `20260911T113458-5a8697f744a0` is retained as **failed**:
+5,049 actions, 5,050 observations and 15,150 camera images, zero forbidden contacts,
+and passing independent task score. The stage audit rejected exactly one gate:
+`plate/settled` had 3,000 successful samples instead of its prescribed 2,000.
+The packaging correction labels only the final 40 controls as settled, leaving the
+preceding 20 as retreat. Targets, timing, guards and scoring thresholds are unchanged.
+A fresh recording is required; the failed source is not edited or exported as success.

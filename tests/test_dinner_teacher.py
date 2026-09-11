@@ -329,7 +329,9 @@ def test_repaired_recipe_preserves_original_scene_and_untouched_targets():
     assert all(s["q"] == old["steps"][1569]["q"] for s in new["steps"][1570:1580])
     assert all(s["arm_object_contacts"] == "none" for s in new["steps"][2901:3081])
     assert all(s["path_start"] == "measured" for s in new["steps"][2901:3081])
-    assert all(s["phase"] == "plate/settled" for s in new["steps"][3021:3081])
+    assert all(s["phase"] == "plate/retreat" for s in new["steps"][3021:3041])
+    assert sum(s["phase"] == "plate/settled" for s in new["steps"]) == 40
+    assert all(s["phase"] == "plate/settled" for s in new["steps"][3041:3081])
 
 
 @pytest.mark.parametrize(

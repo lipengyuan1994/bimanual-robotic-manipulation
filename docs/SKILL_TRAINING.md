@@ -99,3 +99,19 @@ supervised bridge preserve the canonical attempt permissions.
 
 The [development checkpoint registry](DINNER_CONTROL.md) binds selected training
 views to explicit capabilities without declaring a learned skill ready.
+
+## Repaired recipe v2
+
+The registered `dinner_nominal_skill_views_v2` profile binds the exact packaged
+5,049-action plan. Its boundaries are 0, 630, 1580, 2099, 3081, 3641, 4345 and
+5049, in the same skill order above. This includes ten additional bar-return
+holds and the measured plate release/return. The v1 profile and manifests remain
+valid and unchanged; profiles cannot mix intervals or parent transition counts.
+V2 additionally requires a sealed, successful independent physical score that
+agrees with the source manifest. Every action, phase and observation is still
+verified against the pinned plan before a view is created.
+
+Validation: 29 view tests pass, including resealed failed-audit, wrong-recipe and
+phase-change rejection. Successor-reference and training-adapter regressions:
+30 pass, one optional real-training skip. These metadata checks do not establish
+physical successor readiness; the new recorded boundaries need their own audit.

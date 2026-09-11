@@ -11,9 +11,9 @@
   "files": {
     "scene.xml": "3aa969c78966a920508553c4800bc46aa8a0cac190a2aa487fc7948c2266ed92",
     "layout.json": "8ea452fe1e6f0794b1f6104939578915061f1721735c3f335158daf2018b978a",
-    "plan.json.gz": "c1e72aef2d19ecd73e389445ca924f0e12244f9524f729be2b448f254de44f8e"
+    "plan.json.gz": "0c93816e3791ac577cc3284fc8b9932ee0e34a2f067eca805ad12f72117b9231"
   },
   "mode": "Same authored scene and original targets outside repaired plate sequence; physical contact teacher only.",
-  "phase_annotation": "Final60 post-return hold controls labeled plate/settled to expose the measured stable phase; targets unchanged.",
+  "phase_annotation": "Final40 post-return hold controls labeled plate/settled, matching the fixed2000-sample stage audit; preceding20 remain plate/retreat. Targets and guards unchanged.",
   "path_guard": "Measured start and no arm/object contacts retained for the post-release return; measured start retained for release prefix; other controls use commanded start as in source."
 }
