@@ -175,7 +175,7 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `bfed72c0cd820b75ed566da982044f89b4b5d366d60ff0a8be16fd8058cc99d7`.
+seal `af83b0f1d85e54f7b29a56fdf482e875f9eecb90fe31828c3116358ae90ed281`.
 It binds the training cohort and 102 package/runtime and authored-scene/SO-101 asset
 files,
 final-update20,000 selection,
@@ -356,6 +356,11 @@ Parent-record reconstruction remains unresolved. The original portal service was
 
 ## Verification and delivery
 
+- Current repository-wide non-render regression passes:1,251tests,18optional
+  skips and9render deselections in568.30seconds. It includes the frozen planner
+  suite, six-family scene generation, scene-bound learned workflow and evaluator
+  checks. Documentation476links and README synchronization pass. Log
+  `.artifacts/checks-planner-perturbation-integration.log`.
 - Current repository-wide CPU regression `42144` exits0:1,181passed,18optional
   skips,9render deselections and2dependency deprecation warnings in555.75seconds.
   Documentation checks cover465links and README synchronization. Log

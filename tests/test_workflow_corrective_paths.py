@@ -105,10 +105,7 @@ def test_v1_body_has_no_new_null_fields():
     )
     digest = hashlib.sha256(canonical(body)).hexdigest()
     manifest = module.WorkflowManifest.model_validate(body | {"manifest_sha256": digest})
-    assert (
-        manifest.model_dump(mode="json", exclude={"manifest_sha256"}, exclude_none=True)
-        == body
-    )
+    assert manifest.model_dump(mode="json", exclude={"manifest_sha256"}, exclude_none=True) == body
     assert manifest.manifest_sha256 == digest
 
 

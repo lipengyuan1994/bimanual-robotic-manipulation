@@ -15,6 +15,8 @@ from bimanual.skill_views import INTERVALS_V2
 from bimanual.training_cohort import COHORT_SKILLS, load_training_cohort_protocol
 
 _BUDGETS = {skill: 2 * (end - start) for skill, start, end in INTERVALS_V2[1:]}
+
+
 def _source_paths(root: Path) -> tuple[str, ...]:
     """Seal the package runtime plus exact authored-scene and robot assets."""
 

@@ -186,9 +186,7 @@ def run_skill_physical_protocol(protocol_path: Path, skill_id: str, training_att
             if child_id is None:
                 if matches:
                     raise ValueError("Physical process omitted the discovered child evaluation")
-                _reverify_protocol(
-                    protocol_path, protocol_file_sha256, protocol.manifest_sha256
-                )
+                _reverify_protocol(protocol_path, protocol_file_sha256, protocol.manifest_sha256)
                 return process
             child_result = store.verify(child_id)
             if (
@@ -198,9 +196,7 @@ def run_skill_physical_protocol(protocol_path: Path, skill_id: str, training_att
                 or matches[0] != child_result
             ):
                 raise ValueError("Physical process child binding is incomplete or contradictory")
-            _reverify_protocol(
-                protocol_path, protocol_file_sha256, protocol.manifest_sha256
-            )
+            _reverify_protocol(protocol_path, protocol_file_sha256, protocol.manifest_sha256)
             return child_result if _clean_process_child(process, child_result) else process
         if matches:
             raise RuntimeError(

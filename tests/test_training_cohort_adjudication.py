@@ -82,7 +82,8 @@ def allow_mps(monkeypatch):
 
 
 def test_zero_update_failure_is_preserved_and_authorizes_one_replacement(
-    inputs, monkeypatch  # noqa: F811
+    inputs,  # noqa: F811
+    monkeypatch,
 ):
     protocol_path, store, wrapper, child = failed_attempt(inputs)
     allow_mps(monkeypatch)
