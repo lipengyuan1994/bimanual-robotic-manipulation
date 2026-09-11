@@ -7,9 +7,9 @@ Readiness follows [ROADMAP](ROADMAP.md); original scope remains in [PLAN](PLAN.m
 
 - **M0 complete:** native environment, evidence infrastructure, portal, seven
   lessons, learning site and README/CI synchronization.
-- **M1 in progress:** one complete continuous **scripted-teacher** dinner episode
-  now passes in an authored scene. The supported `dinner-teacher` command now reproduces its physical result;
-  a rendered run from clean source remains before closing integration.
+- **M1 locally complete:** the supported `dinner-teacher` command completes the
+  continuous contact workflow with all three cameras from clean source. This is
+  one authored scene with scripted control; Intel checks remain blocked by B2.
 - **M2 in progress:** real ACT training/inference, guarded actions, Qwen proposals
   and a supervisor core exist. Learned open-hand approach passes two validation
   starts but fails nominal. No learned grasp or complete learned dinner workflow
@@ -42,8 +42,8 @@ The run took 240.95 simulated / 124.26 wall seconds **without camera rendering**
 The cup is close to its tolerance; this is not robustness evidence. The sealed
 bundle includes the scene/assets/licenses, original teacher input trajectories
 and manifests, actual actions/physics traces, runtime source and audit source/results.
-Its integrity verifies and the self-contained scene loads. There is no passing-run
-video yet; earlier rendered failures must not stand in for it.
+Its integrity verifies and the self-contained scene loads. The original feasibility run has no video. A later clean supported-command run
+`20260911T013229-b7184e9ba66a` supplies its own passing camera replay.
 
 [Full result and integration work](DINNER_SCENE.md);
 [all attempts](experiments/2026-09-10-dinner-sequence-feasibility.md).
@@ -126,9 +126,9 @@ This session changes experiment evidence/documentation; use `git rev-parse HEAD`
 for the latest handoff commit. [Draft PR #1](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/pull/1)
 is open and unmerged.
 
-Latest `scripts/check.sh`: **366 passed, three explicit optional-training skips,
+Latest `scripts/check.sh`: **403 passed, three explicit optional-training skips,
 eight rendering tests deselected**, with Ruff, formatting, docs and README checks.
-Log: `.artifacts/checks-release-convergence.log`. The preceding seven actual
+Log: `.artifacts/checks-dinner-packaged.log`. The preceding seven actual
 rendering tests and the additional sensor integration rendering test passed
 separately; do not count deselections/skips as passes. Four actual sensor bundles
 and real Qwen/ACT runs also have separate verified evidence.
@@ -160,8 +160,8 @@ hackathon submission has been sent.
 All experiment/model/physics processes from this session are terminal. No restart
 or new training is necessary simply to recover the handoff.
 
-1. Reproduce `bimanual dinner-teacher` with cameras from clean committed source.
-   The packaged assets, independent scorer and cancellation tests are implemented.
+1. Finish and verify the nominal-launch ACT sampler, then run the preregistered
+   2,000-update experiment and training-only offline gate before more physics.
 2. Inspect the stalled nominal learned trajectory against training coverage; use
    training-only policy-visited states for any corrective demonstrations. Keep the
    two validation starts out of training and retain all prior failures.
@@ -179,16 +179,35 @@ The first supported-command run `20260911T012748-2d4a69c7807d` reproduces all
 failed gates (126.17 actor wall seconds). Its outer manifest remains **failed**:
 the actor originally read the wrong scorer field name. That integration error is
 fixed and regression-tested; the historical failed manifest is retained unchanged.
-A fresh run from the corrected checkpoint is required before claiming command
-completion. No learned policy was involved.
+A fresh corrected run now passes (below). No learned policy was involved.
 
 Nine actor tests pass, including altered asset rejection and cancellation before
 initialization/midway through a physics step. The independent scorer has 28 passing
 tests and reproduces attempt 28 while rejecting attempt 22. The built wheel loads
 its assets and scene from outside the repository without historical experiment
-folders. Full checks and clean rendered reproduction are in progress.
+folders. Full checks and clean rendered reproduction now pass.
 
 ACT analysis `20260911T012244-b6feaf688748` verifies exact nominal reset input
 matches training, yet the first predicted movement has the wrong sign. Proposal
 `20260911T012605-8265a1f82ac4` changes only training-anchor sampling; no new training
 has started and held-out cases remain excluded. See [training](TRAINING.md).
+
+
+### Clean rendered M1 reproduction
+
+Run **`20260911T013229-b7184e9ba66a`** is completed and its seal verifies. Source
+is clean checkpoint `bc0b5c084affc4bfd06653a660af58f750cdc7c2`. All physical metrics
+match the initial baseline: 240,950 samples, 4,819 applied controls, zero forbidden
+contacts, maximum overlap 1.831 mm, and 2,000 terminal all-placed samples. Actual
+three-camera capture produced 483 replay frames at 2 Hz, played at 5x. Final camera
+image inspected. Execution/capture took 147.90 wall seconds for 240.95 simulation
+seconds; post-run scoring/encoding is excluded from that actor timing.
+
+M1 local physical foundation is complete. The built wheel includes the fixed
+scene/plan, the worker validates controls and contacts, and the independent scorer
+rejects malformed, partial and physically unsuccessful traces. This establishes
+one authored scripted workflow, not learned execution, scene robustness or Intel
+compliance. The portal now exposes the dinner replay and its independent score;
+native ARM64 TypeScript checks and production build pass. The updated portal was
+opened and checked: completed dinner replay, independent score link and M1 status
+are visible; the score endpoint serves the verified result.

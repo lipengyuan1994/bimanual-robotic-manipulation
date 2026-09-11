@@ -2,8 +2,8 @@
 
 The individual drawer/utensil, plate, cup and practice-bar skills now have a first
 successful continuous scripted-teacher baseline. This is one authored scene and
-one episode, not learned execution or a production reliability result. The `dinner-teacher` command now packages the baseline; a camera reproduction
-from clean committed source is the remaining integration check.
+one episode, not learned execution or a production reliability result. The `dinner-teacher` command now packages the baseline; a three-camera reproduction
+from clean committed source now passes.
 
 An initial combined layout was checked using the existing authored scene elements:
 
@@ -121,3 +121,14 @@ actual actions, compressed physics, score and optional replay. Report simulation
 time separately from actor wall time; the latter includes capture but excludes
 post-run scoring and GIF encoding. This fixed layout establishes feasibility,
 not robustness or completion of M2–M4.
+
+
+Clean checkpoint `bc0b5c084affc4bfd06653a660af58f750cdc7c2` produced completed run
+`20260911T013229-b7184e9ba66a`. Its seal verifies, all original physical metrics
+match, and the 483-frame camera replay shows the actual continuous execution.
+Actor/capture wall time is 147.90 seconds; simulated time is 240.95 seconds.
+
+The first packaged trial, `20260911T012748-2d4a69c7807d`, had a passing physical
+score but an outer failed outcome because the actor read an incorrect result-field
+name. That run remains unchanged. The corrected clean run establishes command
+completion; no earlier failed video is substituted.

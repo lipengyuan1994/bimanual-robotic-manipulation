@@ -44,7 +44,7 @@ function RunLink({ run, select }: { run: Run; select: (id: string) => void }) {
     return <span title={run.error}>Check local files</span>;
   if (run.files?.["replay.gif"])
     return <button onClick={() => select(run.run_id)}>Replay ↑</button>;
-  const filename = ["error.txt", "failure.txt", "proposal.json", "response.txt", "metrics.json", "doctor.json", "trajectory.csv", "observations.jsonl", "act_config.json"].find(
+  const filename = ["error.txt", "failure.txt", "proposal.json", "response.txt", "metrics.json", "score.json", "doctor.json", "trajectory.csv", "observations.jsonl", "act_config.json"].find(
     (name) => run.files?.[name],
   );
   return filename ? (
@@ -101,10 +101,12 @@ function App() {
   }, [revision]);
   const labs = runs.filter(
     (run) =>
-      ["preparation_pendulum", "dual_arm_foundation", "contact_grasp_teacher", "contact_placement_teacher", "contact_handoff_teacher", "contact_drawer_teacher", "contact_cup_teacher", "contact_plate_teacher", "contact_utensils_teacher", "act_policy_rollout"].includes(run.kind ?? "") &&
+      ["preparation_pendulum", "dual_arm_foundation", "contact_grasp_teacher", "contact_placement_teacher", "contact_handoff_teacher", "contact_drawer_teacher", "contact_cup_teacher", "contact_plate_teacher", "contact_utensils_teacher", "act_policy_rollout", "dinner_teacher"].includes(run.kind ?? "") &&
       run.integrity === "verified",
   );
   const selected = labs.find((run) => run.run_id === selectedId) ?? labs.find((run) => run.files?.["replay.gif"]) ?? labs[0];
+  const isDinner = selected?.kind === "dinner_teacher";
+  const dinnerScore = selected?.metrics?.score as { full_workflow_success?: boolean } | undefined;
   const isHandoff = selected?.kind === "contact_handoff_teacher";
   const isLearned = selected?.kind === "act_policy_rollout";
   const isPlate = selected?.kind === "contact_plate_teacher";
@@ -113,7 +115,7 @@ function App() {
   const isDrawer = selected?.kind === "contact_drawer_teacher";
   const isPlacement = selected?.kind === "contact_placement_teacher";
   const isGrasp = selected?.kind === "contact_grasp_teacher" || isPlacement || isHandoff || isDrawer || isCup || isPlate || isUtensils || isLearned;
-  const isDual = selected?.kind === "dual_arm_foundation" || isGrasp;
+  const isDual = selected?.kind === "dual_arm_foundation" || isGrasp || isDinner;
   const doctor = runs.find(
     (run) => run.kind === "preparation_runtime" && run.integrity === "verified",
   );
@@ -205,7 +207,7 @@ function App() {
           <div>
             <span className="fact-label">CURRENT SCOPE</span>
             <strong>{project?.phase_label ?? "Loading"}</strong>
-            <small>Dinner-table control is pending</small>
+            <small>Learned dinner-table control is pending</small>
           </div>
           <div>
             <span className="fact-label">LOCAL ML PROBE</span>
@@ -229,7 +231,7 @@ function App() {
             <div className="card-heading">
               <div>
                 <span className="small-label">MUJOCO LEARNING LAB</span>
-                <h2>{isLearned ? "What did the policy learn?" : isUtensils ? "Open the drawer. Set out the utensils." : isPlate ? "Lift the plate. Set it down." : isCup ? "Carry the cup. Set it upright." : isDrawer ? "Grasp the handle. Open the drawer." : isHandoff ? "Grasp. Share. Hand over." : isPlacement ? "Pick up. Carry. Place." : isGrasp ? "Reach. Grasp. Release." : isDual ? "Two arms. Three camera views." : "One joint. A complete loop."}</h2>
+                <h2>{isDinner ? "Set the table. One continuous run." : isLearned ? "What did the policy learn?" : isUtensils ? "Open the drawer. Set out the utensils." : isPlate ? "Lift the plate. Set it down." : isCup ? "Carry the cup. Set it upright." : isDrawer ? "Grasp the handle. Open the drawer." : isHandoff ? "Grasp. Share. Hand over." : isPlacement ? "Pick up. Carry. Place." : isGrasp ? "Reach. Grasp. Release." : isDual ? "Two arms. Three camera views." : "One joint. A complete loop."}</h2>
               </div>
               <span className="tag">Recorded simulation · {selected?.outcome ?? "no run"}</span>
             </div>
@@ -253,17 +255,25 @@ function App() {
             </div>
             <div className="sim-footer">
               <span>
-                <b>{Number(selected?.metrics?.physics_hz ?? 200)} Hz</b> physics
+                <b>{Number(selected?.metrics?.physics_hz ?? (isDinner ? 1000 : 200))} Hz</b> physics
               </span>
               <span>
                 <b>20 Hz</b> control
               </span>
               <span>{isLearned ? "ACT · training-scene diagnostic" : isDual ? "Dual SO-101 · scripted control" : "Generic pendulum · no learned policy"}</span>
             </div>
+            {isDinner && selected && (
+              <p className="scope-note">
+                Full teacher workflow physical checks: <strong>{dinnerScore?.full_workflow_success === true ? "passed" : "failed"}</strong>.
+                {" "}One authored scene, contact-based drawer use, tableware placement and hand-off.
+                Scripted joint targets; learned dinner setup and reliability evaluation remain unfinished.
+                {" "}<a href={`/api/runs/${selected.run_id}/files/score.json`}>Inspect the independent score →</a>
+              </p>
+            )}
             {isGrasp && selected && (
               <p className="scope-note">
                 {isUtensils ? "Utensil retrieval" : isPlate ? "Plate placement" : isCup ? "Cup placement" : isDrawer ? "Drawer" : isHandoff ? "Hand-off" : isPlacement ? "Placement" : "Grasp"} test: <strong>{selected.metrics?.[isUtensils ? "utensils_success" : isPlate ? "plate_success" : isCup ? "cup_success" : isDrawer ? "drawer_success" : isHandoff ? "handoff_success" : "grasp_success"] === true ? "passed" : "failed"}</strong>.
-                {" "}{isLearned ? "Learned left-arm actions from images and joints; right arm held by supervisor. This is a training-scene test." : "Scripted teacher with simulator truth; full dinner task remains untested."}
+                {" "}{isLearned ? "Learned left-arm actions from images and joints; right arm held by supervisor. This is a training-scene test." : "Scripted teacher with simulator truth; this run tests an individual skill."}
                 {" "}<a href={`/api/runs/${selected.run_id}/files/scoring-truth.jsonl`}>Inspect contact evidence →</a>
               </p>
             )}
@@ -276,17 +286,17 @@ function App() {
               Change one thing.
             </h2>
             <p>
-              Watch an arm lift a block, carry it to a separate place, and release it using physical contacts.
+              Watch both arms open the drawer, place tableware and hand over an object using physical contacts.
             </p>
-            <code>.venv/bin/bimanual grasp --destination -.15 .08</code>
-            <a className="text-link" href="/read/docs/CONTACT_GRASP.md">
-              Open contact-grasp walkthrough <span>→</span>
+            <code>.venv/bin/bimanual dinner-teacher</code>
+            <a className="text-link" href="/read/docs/DINNER_SCENE.md">
+              Open dinner-teacher walkthrough <span>→</span>
             </a>
             <div className="scope-note">
               <strong>What this establishes</strong>
               <p>
-                These are individual contact skills and recorded learning experiments. A complete dinner-table
-                workflow, reliable learned control, task reasoning, and Intel deployment remain unfinished.
+                The scripted teacher has completed a dinner-table workflow in one authored scene.
+                Reliable learned control, live task reasoning and Intel deployment remain unfinished.
               </p>
             </div>
           </div>
@@ -371,6 +381,8 @@ function App() {
                             ? "Contact plate teacher"
                           : run.kind === "contact_utensils_teacher"
                             ? "Contact utensils teacher"
+                          : run.kind === "dinner_teacher"
+                            ? "Complete dinner teacher"
                           : run.kind === "act_runtime_probe"
                             ? "ACT runtime probe"
                           : run.kind === "act_training"
@@ -407,8 +419,8 @@ function App() {
             </table>
           </div>
           <p className="table-note">
-            These development runs cover runtime checks and bounded contact skills.
-            They are not full dinner-task evaluations or judging scores.{" "}
+            These development runs include a scripted dinner baseline and bounded learned-skill checks.
+            They are not release reliability evaluations or judging scores.{" "}
             <a href="/read/docs/EVIDENCE.md">Evidence protocol ↗</a>
           </p>
         </section>

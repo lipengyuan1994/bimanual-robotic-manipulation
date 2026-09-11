@@ -8,7 +8,7 @@ MuJoCo stepping/rendering, deterministic lab replay, usable portal/lessons,
 passing checks, and a current handoff record. B1/B2 may remain open without
 pretending the whole product is complete.
 
-## M1 — Physical foundation (authorized; in progress)
+## M1 — Physical foundation (locally complete; Intel checks await B2)
 
 The event-window authorization is recorded in [decision 0003](decisions/0003-event-window-implementation.md).
 Dual-arm loading, mapping, bounded controls and camera rendering are implemented;
@@ -19,10 +19,10 @@ A passive [drawer](DRAWER.md) now opens through contact and remains open after
 release with its utensil proxies retained. A hollow [cup](CUP.md) and [plate](PLATE.md) now pass nominal placement.
 The [utensil teacher](UTENSILS.md) opens the drawer and places both utensils in one
 continuous run. A first [continuous teacher episode](DINNER_SCENE.md) now passes in an authored
-scene. The supported command and packaged assets reproduce the physical score; a clean
-rendered run remains before closing M1 integration.
-The steps below still
-require task-level evidence before M1 is complete.
+scene. The supported command reproduces all physical checks with three-camera capture
+from clean checkpoint `bc0b5c0`, run `20260911T013229-b7184e9ba66a`. The local exit
+checks below are satisfied for one authored teacher scene; generalization and
+learned execution remain M2–M4 work.
 
 1. Import the pinned SO-101 assets with license; namespace joints, actuators and cameras.
 2. Build the reachable table/drawer/utensil scene and verify valid reset configurations.
