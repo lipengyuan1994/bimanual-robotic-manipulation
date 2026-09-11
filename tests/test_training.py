@@ -707,3 +707,35 @@ def test_real_four_step_terminal_schedule_and_reload(tmp_path):
         definition=definition, completed_updates=4, final_learning_rates=[1e-5 * 0.1, 1e-5 * 0.1]
     )
     assert verified.metrics["manipulation_success"] is None
+
+
+@pytest.mark.parametrize("profile", ["uniform", "first_action_half_v1"])
+def test_cli_forwards_declared_temporal_loss_without_training(tmp_path, monkeypatch, profile):
+    from types import SimpleNamespace
+
+    from bimanual.cli import main
+
+    seen = []
+
+    def fake_train(config, **kwargs):
+        seen.append(config)
+        return SimpleNamespace(outcome="completed", model_dump=lambda **kw: {"fixture": True})
+
+    monkeypatch.setattr("bimanual.training.run_train", fake_train)
+    assert (
+        main(
+            [
+                "--artifacts",
+                str(tmp_path / "artifacts"),
+                "train",
+                "--dataset",
+                str(tmp_path),
+                "--no-vae",
+                "--temporal-loss-profile",
+                profile,
+            ]
+        )
+        == 0
+    )
+    assert len(seen) == 1 and seen[0].temporal_loss_profile == profile
+    assert seen[0].use_vae is False

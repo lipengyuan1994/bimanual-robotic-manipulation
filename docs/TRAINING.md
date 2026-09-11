@@ -491,3 +491,31 @@ and the unchanged six offline gates before any physical validation.
 Protocol `20260911T034840-1019934f5c06` seals that comparison before training.
 An actual four-update CPU integration test passes and verifies both saved
 optimizer groups and schedule reload. This checks implementation, not quality.
+
+## First-action temporal loss experiment
+
+The terminal learning-rate comparison completed but still failed the first-action
+gate; see [the retained result and diagnosis](POLICY_ROLLOUT.md). Protocol
+`20260911T052340-2416748543bb` preregisters the next single intervention.
+
+`train --temporal-loss-profile first_action_half_v1 --no-vae` opts into weighting
+the first predicted action as heavily as all remaining actions combined. For ten
+predictions, weights are `[9,1,1,1,1,1,1,1,1,1]`. The weighted absolute error is
+divided by the number of joint dimensions times the sum of weights for valid
+(unpadded) targets. Padding contributes neither loss nor gradient. This profile
+requires at least two predictions and disables the VAE; `uniform` remains the
+unchanged official loss. The loss definition accompanies the checkpoint and
+trainer state so a later run can identify exactly what was optimized.
+
+Why test this? The controller currently executes the first prediction before
+observing again. A small average error over ten predictions can hide a poor first
+prediction. Giving it more weight may improve that action, but may also worsen
+later actions or other scenes. Training loss alone cannot resolve that tradeoff:
+all six frozen offline gates still apply, followed by the same conditional
+physical evaluation. No manual output offset or relaxed gate is part of this trial.
+
+Quick exercise: with ten valid targets and only the first prediction wrong by
+one radian on every joint, what loss results? Uniform gives 0.1 rad; this profile
+gives 0.5 rad. If only the first target is valid, both give 1 rad because the
+normalizer excludes padded targets. Reading this exercise is not recorded as
+mastery; try calculating it before checking these answers.

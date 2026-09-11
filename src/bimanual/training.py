@@ -21,6 +21,7 @@ from bimanual.contracts import Artifact, DemonstrationEpisode, validate_split_se
 from bimanual.dataset_export import CAMERA_FEATURES, LEROBOT_VERSION
 from bimanual.demonstrations import require_successful_training_episode
 from bimanual.evidence import EvidenceStore, Manifest, canonical, digest_file, provenance
+from bimanual.training_loss import act_training_loss, temporal_loss_definition
 from bimanual.training_probe import _tensor_digest
 
 
@@ -36,6 +37,7 @@ class ACTTrainingConfig(BaseModel):
     cpu_threads: int = Field(default=4, ge=1, le=32)
     learning_rate: float = Field(default=1e-5, gt=0, le=0.1)
     learning_rate_schedule: Literal["constant", "terminal_linear"] = "constant"
+    temporal_loss_profile: Literal["uniform", "first_action_half_v1"] = "uniform"
     normalization_std_floor: float = Field(default=1e-4, gt=0, le=1)
     sampling_profile: Literal["uniform", "approach_regions_v1", "approach_nominal_launch_v1"] = (
         "uniform"
@@ -49,6 +51,7 @@ class ACTTrainingConfig(BaseModel):
 
     @model_validator(mode="after")
     def sampling_configuration(self):
+        temporal_loss_definition(self.temporal_loss_profile, self.chunk_size, use_vae=self.use_vae)
         if self.learning_rate_schedule == "terminal_linear" and self.steps < 4:
             raise ValueError("Terminal linear decay requires at least four updates")
         if (self.skill_views_path is None) != (self.skill_id is None):
@@ -430,6 +433,9 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
         "learned_policy_quality": None,
         "steps": [],
         "learning_rate_schedule": learning_rate_schedule_definition(config),
+        "temporal_loss": temporal_loss_definition(
+            config.temporal_loss_profile, config.chunk_size, use_vae=config.use_vae
+        ),
     }
     started = time.perf_counter()
     torch = None
@@ -614,7 +620,7 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
                 raise ValueError("ACT batch contains no real action targets")
             policy.train()
             optimizer.zero_grad(set_to_none=True)
-            loss, parts = policy(batch)
+            loss, parts = act_training_loss(policy, batch, profile=config.temporal_loss_profile)
             if not torch.isfinite(loss).item():
                 raise RuntimeError("Non-finite ACT loss")
             loss.backward()
@@ -654,6 +660,7 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
             final_learning_rates=list(actual_learning_rates),
         )
         (checkpoint / "training_schedule.json").write_bytes(canonical(schedule_metadata))
+        (checkpoint / "training_loss.json").write_bytes(canonical(metrics["temporal_loss"]))
         preprocessor.save_pretrained(checkpoint, config_filename="policy_preprocessor.json")
         postprocessor.save_pretrained(checkpoint, config_filename="policy_postprocessor.json")
         (directory / "normalization.json").write_text(
@@ -682,6 +689,7 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
                 "step": config.steps,
                 "optimizer": optimizer.state_dict(),
                 "learning_rate_schedule": schedule_metadata,
+                "temporal_loss": metrics["temporal_loss"],
                 "sampler_rng_state": sampler.get_state(),
                 "sampling_plan": sampling_plan,
                 "sampling_plan_sha256": sampling_digest,
@@ -715,6 +723,13 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
         ):
             raise RuntimeError("Saved optimizer learning rates or schedule metadata differ")
         metrics["learning_rate_reload_verified"] = True
+        if (
+            restored_state["temporal_loss"] != metrics["temporal_loss"]
+            or json.loads((checkpoint / "training_loss.json").read_text())
+            != metrics["temporal_loss"]
+        ):
+            raise RuntimeError("Saved temporal loss profile differs from the training objective")
+        metrics["temporal_loss_reload_verified"] = True
         restored_sampler = torch.Generator(device="cpu")
         restored_sampler.set_state(restored_state["sampler_rng_state"])
         saved_sampler_state = sampler.get_state()

@@ -151,6 +151,12 @@ def main(argv: list[str] | None = None) -> int:
     train.add_argument(
         "--learning-rate-schedule", choices=["constant", "terminal_linear"], default="constant"
     )
+    train.add_argument(
+        "--temporal-loss-profile",
+        choices=["uniform", "first_action_half_v1"],
+        default="uniform",
+        help="Experimental first-action weighting requires --no-vae and chunk size >=2",
+    )
     train.add_argument("--skill-views", type=Path)
     train.add_argument("--skill-id")
     train.add_argument("--sampling-protocol-run", type=Path)
@@ -408,6 +414,7 @@ def main(argv: list[str] | None = None) -> int:
                     use_vae=not args.no_vae,
                     dropout=args.dropout,
                     learning_rate_schedule=args.learning_rate_schedule,
+                    temporal_loss_profile=args.temporal_loss_profile,
                     skill_views_path=args.skill_views,
                     skill_id=args.skill_id,
                     sampling_protocol_run=args.sampling_protocol_run,

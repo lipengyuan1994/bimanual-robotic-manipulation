@@ -2,7 +2,7 @@
 
 Updated: 2026-09-11. Branch: `codex/preparation-foundation`.
 Use `git rev-parse HEAD` for the current checkpoint. The previous pushed checkpoint
-is `8219306`; current work adds owned soft-failure recovery.
+is `fbcd3f7`; current work adds an opt-in, versioned ACT temporal loss.
 [Roadmap](ROADMAP.md), [original plan](PLAN.md),
 [historical status and evidence](STATUS_HISTORY.md).
 
@@ -32,8 +32,8 @@ Final offline evaluation `20260911T045418-d8a9a5277bc8` and frozen comparison
 `20260911T045441-86b5ad13622d` pass five of six gates. Launch tool error is
 0.375 mm and settled error 0.068 mm, but first pan remains -0.002800 rad versus
 +0.000564 rad. **The candidate is not promoted; no physical rollout follows.**
-The earlier fixed-rate 20,000-update run also failed this gate. Diagnose input/
-target representation and persistent launch bias before another training change.
+The earlier fixed-rate 20,000-update run also failed this gate. The retained
+diagnosis supports testing first-action weighting; it does not establish a fix.
 [Policy evidence and earlier physical failures](POLICY_ROLLOUT.md).
 
 **Actual HD Qwen integration completes but recognition still fails.** Run
@@ -116,8 +116,8 @@ Next executable work:
 
 1. Build a separately recorded plate-jaw separation trial from the diagnosis;
    require complete preflight and unchanged full physical gates before adoption.
-2. Diagnose the final ACT launch predictions, then preregister a justified data or
-   representation change. Preserve both failed 20,000-update experiments.
+2. Execute the preregistered first-action weighting trial after its clean code
+   checkpoint; preserve both failed 20,000-update experiments.
 3. Compare visible-object descriptions against missing-object controls for Qwen.
 4. Verify the published recovery checkpoint CI; broaden fault recovery only with evidence.
 5. Train/validate the full skill cohort and connect the live operator application.
@@ -166,3 +166,33 @@ links and README synchronization pass. All current test/model processes are term
 
 Next command: `scripts/check.sh` for a clean aggregate verification of the final
 checkpoint, then implement the separately declared first-action loss experiment.
+
+## First-action objective implementation
+
+Protocol `20260911T052340-2416748543bb` seals the next 20,000-update trial before
+training. Only temporal L1 weighting changes: first action 50%, remaining nine
+share 50%, with valid-target normalization. Dataset, initialization, sampler,
+terminal learning-rate schedule and all six gates remain unchanged. Uniform
+still calls the official LeRobot loss; the opt-in rejects VAE and chunk size one.
+Checkpoint and trainer-state loss metadata are saved and reverified.
+
+Verification: 75 base tests pass with eleven optional skips; 16 native training-
+environment tests pass with one MPS skip, including actual one-update training
+and model/processor/sampler/loss metadata reload. Runtime smoke
+`20260911T052831-698fee235767` is under `.artifacts/weighted-loss-test-20260911/`.
+The separate actual native MPS test passes in 11.51s with fallback disabled,
+`.artifacts/first-action-loss-mps-check.log`. This checks implementation, not policy
+quality. The 20,000-update experiment has not started at this documentation point.
+[Objective and learning exercise](TRAINING.md).
+
+Clean recovery regression handle 68236 is terminal: **822 passed**, fourteen
+optional skips and nine render deselections in 446.40s;
+`.artifacts/checks-recovery-clean.log`. Recovery CI run 34565689004 remains in
+progress at the last check. New loss code is covered by the focused checks above.
+
+Plate prefix diagnostic `20260911T052918-cdeba1a0c381` stopped at original control
+200, before reaching the plate. An added static commanded-overlap heuristic
+rejected an intentional grasp; actual physics had zero forbidden contacts and
+0.640 mm maximum overlap. No release conclusion follows. A separately declared
+replacement diagnostic must preserve the existing live guards and scope new
+trajectory preflight correctly; the failed experiment remains retained.
