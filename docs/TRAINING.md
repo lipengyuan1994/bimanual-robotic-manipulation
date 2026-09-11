@@ -431,3 +431,19 @@ is saved in both training and checkpoint configuration. One actual native CPU
 update with no VAE/dropout, checkpoint reload and processor/sampler checks passes
 (`.artifacts/no-dropout-checkpoint-test.log`). This is a controlled fitting
 experiment, not a claim that dropout should be removed from the released policy.
+
+### Dropout-zero result: improved nominal fit, gate still failed
+
+Run `20260911T021733-b67e2a69d96e` completed 2,000 native MPS updates from clean
+`6f878db`, with verified initialization and checkpoint/processor/sampler reloads.
+Reported training time is 374.88 seconds; brief overlap with CPU checks means this
+is not an isolated device benchmark. Offline assessment
+`20260911T022407-3ae87ae922f8` preserves weights. Frozen comparison
+`20260911T022426-bc9a525f85c4` fails the direction and other-start retention gates.
+
+Nominal launch mean joint error improves 0.013894→0.003573 rad and tool error
+6.960→1.470 mm. Settled tool error improves 1.180→1.022 mm. Other training starts'
+mean joint error worsens 0.020952→0.031807 rad, beyond the allowed 20% increase;
+the first nominal pan target is still negative. Four of six gates pass, but the
+candidate is not promoted and receives no physical rollout. Better average fit
+is insufficient to establish reliable learned control.

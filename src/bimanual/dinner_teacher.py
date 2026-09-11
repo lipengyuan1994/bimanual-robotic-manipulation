@@ -15,6 +15,8 @@ import numpy as np
 from PIL import Image, ImageDraw
 from pydantic import BaseModel, ConfigDict
 
+from bimanual.contracts import Artifact, EpisodeLineage, JointLimits
+from bimanual.demonstrations import DemonstrationRecorder
 from bimanual.dual_arm import CAMERAS, JOINT_ORDER, MODEL_DIR, DualArm, verify_assets
 from bimanual.evidence import EvidenceStore, Manifest, digest_file, provenance
 from bimanual.teacher import check_carried_path, check_joint_path
@@ -26,6 +28,7 @@ OBJECTS = ("spoon", "fork", "plate", "cup", "practice_object")
 class DinnerTeacherConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     render: bool = True
+    record_demonstration: bool = False
 
 
 def load_plan(directory: Path = ASSETS) -> tuple[dict, dict, dict]:
@@ -225,6 +228,12 @@ def run_dinner_teacher(
     error = None
     interrupted = False
     layout = {}
+    recorder = None
+    pending_observation = None
+    partial_step = False
+    demonstration_error = None
+    demonstration_boundary = None
+    phase_records = []
 
     def capture():
         obs = env.observe(render=True)
@@ -250,12 +259,59 @@ def run_dinner_teacher(
         shutil.copyfile(ASSETS / "scene.xml", directory / "scene.xml")
         for name in ("LICENSE", "UPSTREAM.json"):
             shutil.copyfile(MODEL_DIR / name, directory / name)
+        (directory / "config.json").write_text(config.model_dump_json(indent=2) + "\n")
         with (
             gzip.open(directory / "physics.jsonl.gz", "wt") as trace,
             (directory / "actions.jsonl").open("w") as actions,
         ):
             env = DinnerEnvironment((ASSETS / "scene.xml").read_text(), trace, cancelled)
             (directory / "mapping.json").write_text(json.dumps(env.mapping(), indent=2) + "\n")
+            if config.record_demonstration:
+                (directory / "controller.json").write_text(
+                    json.dumps(
+                        {
+                            "kind": "scripted_teacher",
+                            "teacher_uses_simulator_truth": True,
+                            "plan": "teacher-assets/plan.json.gz",
+                            "plan_sha256": digest_file(directory / "teacher-assets/plan.json.gz"),
+                            "source": source,
+                            "seed": 0,
+                            "split": "train",
+                            "seed_semantics": (
+                                "fixed authored scene; no randomization or held-out claim"
+                            ),
+                            "scope": "single nominal full-dinner training demonstration",
+                        },
+                        indent=2,
+                    )
+                    + "\n"
+                )
+
+                def artifact(name):
+                    return Artifact(path=name, sha256=digest_file(directory / name))
+
+                recorder = DemonstrationRecorder(
+                    directory,
+                    instruction=(
+                        "Set the dinner table: hand off the practice bar between both arms, "
+                        "place it on the table, place the cup and plate, then open the drawer "
+                        "and retrieve and place the spoon and fork."
+                    ),
+                    instruction_revision=0,
+                    lineage=EpisodeLineage(
+                        code_revision=source["git_revision"],
+                        source_sha256=source["source_sha256"],
+                        scene=artifact("scene.xml"),
+                        config=artifact("config.json"),
+                        controller=artifact("controller.json"),
+                        controller_kind="scripted_teacher",
+                        seed=0,
+                        split="train",
+                    ),
+                    joint_limits=JointLimits(
+                        lower_rad=env.lower.tolist(), upper_rad=env.upper.tolist()
+                    ),
+                )
             for step in plan["steps"]:
                 q = np.asarray(step["q"])
                 if np.any(q < env.lower) or np.any(q > env.upper):
@@ -282,9 +338,26 @@ def run_dinner_teacher(
                     episode_id=env.episode_id,
                     applied=False,
                 )
+                if recorder:
+                    # Separate full-rate sensor capture; the 2 Hz replay is not training input.
+                    pending_observation = env.observe(render=True)
                 try:
+                    partial_step = True
                     env.step(q, episode_id=env.episode_id, sequence=env.sequence)
                     action["applied"] = True
+                    partial_step = False
+                    if recorder:
+                        recorder.record(pending_observation, q)
+                        phase_records.append(
+                            {
+                                "episode_id": pending_observation["episode_id"],
+                                "observation_sequence": pending_observation["sequence"],
+                                "simulation_seconds": pending_observation["simulation_seconds"],
+                                "phase": env.phase,
+                                "transition_applied": True,
+                                "terminal": False,
+                            }
+                        )
                 finally:
                     actions.write(json.dumps(action, allow_nan=False) + "\n")
                 if config.render and env.sequence % 10 == 0:
@@ -296,6 +369,29 @@ def run_dinner_teacher(
         interrupted = isinstance(exc, (InterruptedError, KeyboardInterrupt))
     finally:
         if env is not None:
+            if recorder:
+                try:
+                    terminal = pending_observation if partial_step else env.observe(render=True)
+                    recorder.record(terminal, None)
+                    demonstration_boundary = (
+                        "pre_unconfirmed_action"
+                        if partial_step
+                        else "last_complete_control_boundary"
+                    )
+                    phase_records.append(
+                        {
+                            "episode_id": terminal["episode_id"],
+                            "observation_sequence": terminal["sequence"],
+                            "simulation_seconds": terminal["simulation_seconds"],
+                            "phase": env.phase,
+                            "transition_applied": False,
+                            "terminal": True,
+                            "boundary": demonstration_boundary,
+                        }
+                    )
+                except (Exception, KeyboardInterrupt) as exc:
+                    demonstration_error = f"{type(exc).__name__}: {exc}"
+                    error = error or demonstration_error
             env.stop()
             env.close()
     wall_seconds = time.perf_counter() - started
@@ -331,6 +427,36 @@ def run_dinner_teacher(
         if error is None and score.get("full_workflow_success")
         else "failed"
     )
+    if recorder:
+        try:
+            (directory / "demonstration/phases.jsonl").write_text(
+                "".join(json.dumps(row, allow_nan=False) + "\n" for row in phase_records)
+            )
+            if demonstration_error is not None:
+                raise ValueError(demonstration_error)
+            episode_path = recorder.finalize(
+                outcome={"completed": "success", "interrupted": "cancelled"}.get(
+                    outcome, "failure"
+                ),
+                outcome_reason=error
+                or (
+                    "Independent fixed-scene dinner physics checks passed"
+                    if outcome == "completed"
+                    else "Independent dinner physics checks failed"
+                ),
+            )
+            metrics.update(
+                demonstration_path=episode_path.relative_to(directory).as_posix(),
+                demonstration_transitions=len(recorder.frames) - 1,
+                demonstration_terminal_boundary=demonstration_boundary,
+                demonstration_seed=0,
+                demonstration_split="train",
+                demonstration_scope="single authored nominal scene; no randomization",
+            )
+        except (Exception, KeyboardInterrupt) as exc:
+            metrics["demonstration_error"] = f"{type(exc).__name__}: {exc}"
+            metrics["error"] = metrics["error"] or metrics["demonstration_error"]
+            outcome = "failed"
     return store.seal(
         directory,
         kind="dinner_teacher",

@@ -276,9 +276,19 @@ checks passed: 445 tests, 11 explicit optional-training skips, eight rendering
 deselections; log `.artifacts/checks-dropout-config.log`. The actual dropout-zero
 CPU test passes separately.
 
-Active training: `20260911T021733-b67e2a69d96e`, clean source `6f878db`, native
-MPS process 67509, log `.artifacts/approach-no-dropout-v1-2000.log`. Check that
-handle before starting anything else; do not launch a duplicate. After completion,
-verify the seal, then run `.artifacts/approach-no-dropout-offline.py <training-run>`
-in the native training environment and `.artifacts/compare-no-dropout-offline.py
-<offline-run>` in `.venv`. The gate must pass before physical validation.
+Dropout-zero training `20260911T021733-b67e2a69d96e` is completed from clean
+`6f878db`; native MPS, 2,000 updates, 374.88 seconds (not an isolated benchmark).
+Offline assessment `20260911T022407-3ae87ae922f8` and frozen comparison
+`20260911T022426-bc9a525f85c4` fail: nominal tool error improves to 1.470 mm but
+first-pan direction and other-start retention fail. Checkpoint seal/reloads pass.
+No physical rollout or promotion follows. Processes 67509 and 33394 are terminal.
+
+
+Continuous dinner recording is implemented behind `dinner-teacher
+--record-demonstration`, independent of replay. Fifteen focused tests pass,
+including complete-transition and interruption boundary checks. Full checks are
+active under handle 58082 (`.artifacts/checks-dinner-recorder.log`); no actual
+full-rate dinner capture or export is claimed yet. Wait for training to terminate
+before the new rendering run. The proposed [live planner bridge](PLANNER_LIVE_INTEGRATION.md)
+records explicit pause ownership/fresh revalidation requirements and remains
+unimplemented; old images are never simply retimestamped.

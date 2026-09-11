@@ -279,3 +279,26 @@ LeRobot emits a weights-loading progress line; the CLI now sends library progres
 to stderr so stdout remains a parseable JSON result. CPU CLI verification run
 `20260910T212012-c722c7d4d0cb` completed one update and produced valid JSON. All
 previous runs remain available, including the earlier output with mixed progress.
+
+## Continuous dinner capture (runtime validation pending)
+
+The successful fixed-scene dinner teacher is connected to the same raw
+recording contract through `dinner-teacher --record-demonstration`. Collection
+captures all three original 480×270 RGB views and joint observations before every
+20 Hz action, retaining only fully applied transitions and a terminal observation.
+This is independent of the 2 Hz replay: `--no-render` suppresses the GIF, while
+explicit demonstration collection still renders the training cameras.
+
+The authored scene has one nominal training configuration, seed 0. Repeated
+captures are not independent randomized scenes or held-out evaluation. Phase
+annotations remain a separate training sidecar; they do not enter deployed
+observations. Episode success must agree with the independent dinner scorer.
+Failed or cancelled episodes remain evidence and are rejected by success-only
+training intake. Runtime capture and export verification remain pending until a
+new complete recorded run passes; the earlier replay cannot supply missing
+full-rate observations retroactively.
+
+Fifteen focused actor/recording tests pass, including real PNG/episode-contract
+checks with a short synthetic environment and failed-step boundaries. Those
+tests do not establish physical dinner success; complete recorded reproduction
+and LeRobot export/read-back remain pending.

@@ -69,6 +69,11 @@ def main(argv: list[str] | None = None) -> int:
         "dinner-teacher", help="Run the fixed-scene continuous dinner teacher"
     )
     dinner.add_argument("--no-render", action="store_true")
+    dinner.add_argument(
+        "--record-demonstration",
+        action="store_true",
+        help="Capture full-rate training cameras and actions independently of replay",
+    )
     cup = commands.add_parser("cup", help="Physically carry and release a hollow cup upright")
     cup.add_argument("--no-render", action="store_true")
     cup.add_argument("--arm", choices=["left", "right"], default="left")
@@ -254,7 +259,11 @@ def main(argv: list[str] | None = None) -> int:
             from bimanual.dinner_teacher import DinnerTeacherConfig, run_dinner_teacher
 
             result = run_dinner_teacher(
-                DinnerTeacherConfig(render=not args.no_render), store=store, project_root=root
+                DinnerTeacherConfig(
+                    render=not args.no_render, record_demonstration=args.record_demonstration
+                ),
+                store=store,
+                project_root=root,
             )
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1
