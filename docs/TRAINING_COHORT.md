@@ -36,6 +36,23 @@ child seals, the next invocation reconciles that exact child; an incomplete chil
 is preserved and sealed failed only after the shared lease proves no model job is
 still active. Ambiguous attempts stop without selecting one.
 
+A narrow exception exists for the exact zero-update error `Requested MPS
+unavailable; no fallback`. The explicit adjudication command requires a sealed
+failed wrapper and child, zero update rows, no checkpoint, the exact MPS error, and
+a successful live native-ARM64 MPS probe. It seals the failed identities and permits
+one replacement; it never deletes the failure or makes a training/quality claim:
+
+```sh
+PYTORCH_ENABLE_MPS_FALLBACK=0 \
+  .artifacts/training-venv/bin/bimanual training-cohort-adjudicate-preflight \
+  docs/experiments/six-skill-training-protocol-v1.json \
+  --attempt FAILED_COHORT_ATTEMPT
+```
+
+Run this only from a process with actual Metal access. A failure containing any
+training update, a checkpoint, another error, a failed live probe, a changed source
+seal, or a second replacement is rejected.
+
 After the first skill has been inspected, resume the complete ordered sequence
 without manually starting each model job:
 

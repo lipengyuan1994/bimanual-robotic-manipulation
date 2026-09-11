@@ -79,10 +79,19 @@ The waiting coordinator then allocated cup attempt
 `20260911T222550-b516bc6370d5`, but its restricted process could not see Metal and
 failed before update1 with `Requested MPS unavailable; no fallback`; it stopped
 the sequence and exited1. The exact native interpreter reports ARM64, MPS built,
-MPS available and one device when run outside that restriction. Preserve the
-failed attempt as infrastructure evidence. Before a replacement, implement and
-seal an explicit zero-update preflight adjudication, then launch the remaining
-sequence with native Metal access. No model, inference or render job is active.
+MPS available and one device outside that restriction. Adjudication run
+`20260911T223530-cb658d888223`, seal
+`ef3140bc7551c5a1ec9fc7fe1e22143b0f12c16ed2d19217b90e9c8ccd6ee5a4`,
+preserves the failed wrapper/child identities, proves zero updates and no
+checkpoint, records the live MPS probe, and authorizes exactly one replacement.
+It makes no training or physical claim.
+
+Replacement cup attempt `20260911T223642-23fabd26e102`, child
+`20260911T223642-9b4a6482722b`, is active with native Metal access under
+session1714. The same process will continue serially through plate, drawer, spoon
+and fork after each completed checkpoint, stopping on any failure. Log
+`.artifacts/cohort-remaining-sequence-replacement.log`. Poll this handle; do not
+start another model, inference or render job.
 
 The next seven-checkpoint manifest version now seals the per-skill execution
 profile alongside checkpoint lineage: all seven ordered skill/capability IDs,
@@ -107,8 +116,8 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `063b5f6a4427c1396b04caf0ae55c8c8a7dcb70f577e4ad1f6112bc32d6c3493`.
-It binds the training cohort and 97 package/runtime and authored-scene/SO-101 asset
+seal `537bfac83c3deb4ec800a132830ce414a95728f859bf4cabe835a2abb7e20e51`.
+It binds the training cohort and 98 package/runtime and authored-scene/SO-101 asset
 files,
 final-update20,000 selection,
 MPS, execution prefix2, exact teacher preparation, fixed nominal-v2 scene,
@@ -147,7 +156,7 @@ still came from shorter v1 skill intervals. The executor now passes a guard one
 action beyond its explicit budget, leaving the executor as the single stopping
 authority and preventing premature v2 plate termination. The unused protocol was
 regenerated before any outcome with all then-current transitive evaluator/control/scoring
-sources pinned. The later guardian hardening produced the current 97-source-and-asset
+sources pinned. The later guardian hardening produced the current 98-source-and-asset
 seal before any component evaluation. The combined executor/outcome/protocol/evaluator group passes61
 tests; the corrected protocol re-verifies.
 
@@ -346,13 +355,13 @@ worker-lease release. Required full regression52845 exited0:1,093passed,18option
 deselections,2warnings in504.38seconds; log
 `.artifacts/checks-guardian-integration.log`. It predates the additional parent-loss
 test and24visual-protocol tests, which passed separately. Scope is POSIX/Python3.12, one worker with threads;
-  independently launched subprocess trees and parent-record reconstruction remain
+independently launched subprocess trees and parent-record reconstruction remain
 unsupported. The portal was not restarted. No model/render job is active.
 
 Training and the default workflow use the same `.model-job.lock`. A competing
 start is rejected before run allocation, the lease becomes available after the
 owner exits, and nested cohort evidence borrows the continuously held top-level
 lease. The cup preflight exposed an additional operational rule: an MPS coordinator
-must itself run with Metal access. The failed zero-update record is retained and
-requires explicit adjudication before any replacement. Full regression for the
-current workflow-profile changes remains required.
+must itself run with Metal access. The failed zero-update record and its explicit
+one-replacement adjudication are retained. Sixteen coordinator/adjudication CPU
+fixtures pass. Full regression for the current adjudication changes remains required.

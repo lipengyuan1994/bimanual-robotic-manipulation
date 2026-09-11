@@ -166,6 +166,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Seal the complete frozen six-skill component result without workflow claims",
     )
     physical_suite_report.add_argument("protocol", type=Path)
+    cohort_adjudicate = commands.add_parser(
+        "training-cohort-adjudicate-preflight",
+        help="Classify one zero-update MPS environment failure before a replacement",
+    )
+    cohort_adjudicate.add_argument("protocol", type=Path)
+    cohort_adjudicate.add_argument("--attempt", required=True)
     handoff_analysis = commands.add_parser(
         "handoff-failure-analyze",
         help="Reproduce contact-stage findings from sealed learned hand-off failures",
@@ -618,6 +624,13 @@ def main(argv: list[str] | None = None) -> int:
             )
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1
+        elif args.command == "training-cohort-adjudicate-preflight":
+            from bimanual.training_cohort_adjudication import (
+                adjudicate_training_cohort_preflight,
+            )
+
+            result = adjudicate_training_cohort_preflight(args.protocol, args.attempt)
+            emit(result.model_dump(exclude={"provenance"}))
         elif args.command == "workflow-create":
             from bimanual.workflow_manifest import SKILLS, create_workflow_manifest
 

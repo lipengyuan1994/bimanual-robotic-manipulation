@@ -9,6 +9,7 @@ from bimanual.evidence import EvidenceStore, canonical, digest_file, provenance
 from bimanual.skill_registry import load_skill_checkpoint
 from bimanual.training import ACTTrainingConfig, run_train
 from bimanual.training_cohort import COHORT_SKILLS, load_training_cohort_protocol
+from bimanual.training_cohort_adjudication import adjudicated_attempt_ids
 from bimanual.worker_lease import MODEL_JOB_LEASE, WorkerLease
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -141,12 +142,20 @@ def run_training_cohort_skill(protocol_path, skill_id):
                     and recorded.get("skill_id") == skill_id
                 ):
                     matches.append((path.parent, recorded))
+            excluded = adjudicated_attempt_ids(store, protocol_path, protocol, skill_id)
+            matches = [match for match in matches if match[0].name not in excluded]
             if len(matches) > 1:
                 raise RuntimeError("Ambiguous multiple cohort attempts; no automatic selection")
             if matches:
                 attempt, recorded = matches[0]
+                comparable_recorded = {
+                    key: value for key, value in recorded.items() if key != "runner_source_sha256"
+                }
+                comparable_expected = {
+                    key: value for key, value in metadata.items() if key != "runner_source_sha256"
+                }
                 if (
-                    recorded != metadata
+                    comparable_recorded != comparable_expected
                     or (attempt / "protocol.json").read_bytes() != protocol_path.read_bytes()
                 ):
                     raise ValueError("Existing cohort attempt declaration changed")
@@ -154,8 +163,13 @@ def run_training_cohort_skill(protocol_path, skill_id):
                     wrapper = store.verify(attempt.name)
                     if (
                         wrapper.kind != KIND
-                        or wrapper.config != metadata
+                        or wrapper.config != recorded
                         or wrapper.outcome not in {"completed", "failed"}
+                        or (PROJECT_ROOT / ".git").exists()
+                        and wrapper.provenance.get("source_files", {}).get(
+                            "src/bimanual/training_cohort_runner.py"
+                        )
+                        != recorded.get("runner_source_sha256")
                     ):
                         raise ValueError("Invalid sealed cohort attempt")
                     if wrapper.outcome == "completed":

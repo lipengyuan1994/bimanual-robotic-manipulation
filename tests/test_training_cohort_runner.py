@@ -151,3 +151,36 @@ def test_reverify_mutation_cannot_seal_completed_attempt(setup, monkeypatch):
     assert "digest mismatch" in result.metrics["error"]
     assert result.metrics["training_complete"] is False
     assert len(calls) == 1
+
+
+def test_explicitly_adjudicated_attempt_allows_one_preserved_replacement(setup, monkeypatch):
+    path, store, calls, train = setup
+
+    def preflight_failure(config, *, store, **kwargs):
+        calls.append(config.skill_id)
+        directory = store.new_run()
+        (directory / "error.txt").write_text("Injected preflight failure")
+        return store.seal(
+            directory,
+            kind="act_training",
+            outcome="failed",
+            config=config.model_dump(mode="json"),
+            metrics={"steps": [], "training_completed": False},
+            source={},
+            claims=[],
+        )
+
+    monkeypatch.setattr(runner, "run_train", preflight_failure)
+    failed = runner.run_training_cohort_skill(path, COHORT_SKILLS[0])
+    assert failed.outcome == "failed"
+    monkeypatch.setattr(
+        runner,
+        "adjudicated_attempt_ids",
+        lambda *args, **kwargs: {failed.run_id},
+    )
+    monkeypatch.setattr(runner, "run_train", train)
+    replacement = runner.run_training_cohort_skill(path, COHORT_SKILLS[0])
+    assert replacement.outcome == "completed"
+    assert failed.run_id != replacement.run_id
+    assert store.verify(failed.run_id) == failed
+    assert len(list((store.root / "runs").glob("*/cohort-attempt.json"))) == 2
