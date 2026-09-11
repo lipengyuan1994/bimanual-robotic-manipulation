@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 11, 2026. Latest pushed checkpoint: `35d4de9` on
+Updated September 11, 2026. Latest implementation checkpoint: `ed225e3` on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -70,11 +70,13 @@ unrelated runtime errors.
 `bar_place_and_return` cohort attempt `20260911T204632-867e6f75a36e` is active;
 child training run `20260911T204632-a60b589a1eea` is configured for20,000native-MPS
 updates under shared model-job ownership. Session56052; log
-`.artifacts/cohort-bar-place-training.log`; 9,737updates were present at the latest
+`.artifacts/cohort-bar-place-training.log`; 10,160updates were present at the latest
 inspection. Poll this handle and do not launch any other model, inference or render
 job. Training progress and loss are not physical skill success. After the bounded
-coordinator is committed, it may wait on this lease and then continue the remaining
-skills serially.
+coordinator was pushed at `ed225e3`, session89794 began a7,200-second bounded wait
+on this lease. It will reverify/reuse the bar attempt and then train cup, plate,
+drawer, spoon and fork serially. Log `.artifacts/cohort-remaining-sequence.log`.
+Do not start a competing model job or restart either live session.
 
 A generic teacher-prepared component evaluator is now implemented. It verifies the
 nominal-v2 source and skill boundary, executes the sealed teacher prefix through
