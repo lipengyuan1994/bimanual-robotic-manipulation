@@ -37,8 +37,8 @@ The next ACT step is to diagnose the persistent signed launch error before decla
 another controlled training experiment. [Training](TRAINING.md), [policy evidence](POLICY_ROLLOUT.md).
 
 Qwen **50272 is terminal**. No GPU model job remains active from this session.
-Full teacher trial **76771 is terminal and passed**. No model or physics job from
-this session remains active. Preserve all source runs and the original dataset.
+Full teacher trial **76771 is terminal and passed**. The corrected v2 recording
+18623 is active; preserve all source runs and the original dataset.
 
 ## Workflow execution and recovery
 
@@ -125,7 +125,7 @@ A 120-control return route passes static checks in `20260911T112143-e4f5f6790080
 Full continuous teacher run `20260911T112302-2cba6a2aa0ac` passes all 5,049
 controls/252,450 samples, with zero forbidden contacts. Independent rescore
 `20260911T112722-fd2f1119487f` confirms completion, zero partial actions and no trace
-errors; learned execution remains false. A packaged recipe, new recording and
+errors; learned execution remains false. The recipe is packaged; the corrected recording and
 verified skill boundaries remain necessary before adopting a replacement dataset.
 [All transition evidence](SUCCESSOR_READINESS.md).
 
@@ -173,8 +173,8 @@ verified skill boundaries remain necessary before adopting a replacement dataset
 
 1. V2 recipe and CLI selection are implemented; 24 focused teacher tests pass.
    Baseline regression **1316 passed: 919 tests**, `.artifacts/checks-dinner-v2-final.log`.
-   After a clean checkpoint, record `dinner-teacher --recipe v2 --record-demonstration`,
-   then verify all seven boundaries and export separately. Preserve the v1 dataset.
+   Corrected recording **18623** is active from clean `106f5ed`.
+   Verify its seal, export separately, and audit all seven boundaries. Preserve v1.
 2. ACT input diagnosis `20260911T111920-7fd911a11b83` finds weak joint-state
    sensitivity: +/-0.08 rad state changes shift nominal-image first pan by only
    0.000389 rad. Diagnose/train a declared representation change; no failed rollout.
@@ -208,3 +208,44 @@ manifests remain compatible. View tests: 29 pass. Successor/training adapters:
 30 pass, one optional skip. Aggregate 70584 predates the phase correction and
 cannot establish the final corrected asset check. Next: finish focused correction
 checks, record the corrected recipe, then export and audit all seven boundaries.
+
+
+Active corrected recording: session **18623**, run
+`20260911T114540-8b3b1ff0238d`, started from clean `106f5ed`.
+Log `.artifacts/dinner-v2-corrected-recording.json`; stderr has a matching basename.
+Poll this process instead of restarting it. The first recording session46979 is
+terminal failed. Combined corrected teacher/view tests: **53 pass** in 13.63s,
+`.artifacts/v2-phase-correction-tests.log`. Actual original v1 manifest reload also
+passes and retains hash `45bf9464a68a93f04ccc23fdd7ebbe473040af40e6b6f1e6414e9e5b521487f2`.
+Aggregate **70584 remains active**; its assets were corrected during execution,
+so rerun the final aggregate after completion before claiming a clean final check.
+Only one rendering job is active. No ACT/Qwen inference runs concurrently.
+
+After the corrected source seals successfully, export to the new
+`.artifacts/datasets/dinner-nominal-v2`, create
+`.artifacts/dinner-skill-views-v2.json`, then execute the prepared retained-data
+audit `.artifacts/audit-dinner-v2-boundaries.py`. The audit is not yet executed.
+No v2 dataset or validated successor boundaries exist yet. Local commits `dbf0217`
+and `106f5ed` are not pushed; keep draft PR #1 unmerged.
+
+
+Neutral Qwen description protocol `20260911T114805-29483c134fad` is sealed before
+inference, using the exact saved positive/negative camera images and pinned model.
+Driver `.artifacts/qwen-description-diagnosis.py` asks for visible objects/colors
+without the structured skill-selection prompt. This is qualitative diagnosis,
+not a replacement planner or promotion gate. No inference has run yet; wait for
+recording18623 to finish before using MPS. Native preparation31233 is terminal.
+
+Corrected wheel build passes offline with native uv. The archive's asset digests,
+5,049-action count and exactly 40 plate-settled controls verify; its loader also
+runs from outside the repository. Artifact:
+`.artifacts/wheels-dinner-v2-corrected/bimanual_sim-0.1.0-py3-none-any.whl`.
+This is packaging validation, not a new clean-install physics run. README generated
+sections remain synchronized with `docs/project.json`.
+
+Aggregate70584 is terminal: 922 pass, one failure, eighteen optional skips and
+nine rendering deselections. Its sole failure is the expected old imported plan
+hash versus the asset corrected during that run. Focused corrected tests pass;
+a fresh fixed-snapshot aggregate is required. Exact comparison
+`20260911T115118-910bbec745e4` verifies all 5,049 targets equal the successful
+physical source and only indices3021–3040 change phase labels; guards are identical.
