@@ -5,7 +5,7 @@ arms. The long-term product is an inspectable workstation application with learn
 manipulation, recovery, reproducible evaluation, and Intel OpenVINO deployment.
 
 <!-- README-STATUS:START -->
-**Current release: Continuous teacher baseline; learned-skill development.**
+**Current release: Physical foundation complete locally; learned workflow in progress.**
 
 - Challenge manipulation: not available
 - Intel target: not validated

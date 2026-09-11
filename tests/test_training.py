@@ -233,7 +233,7 @@ def test_keyboard_interrupt_seals_failure(manifest_dataset, tmp_path, monkeypatc
 
 
 @pytest.fixture
-def approach_sampling_dataset(manifest_dataset, tmp_path):
+def approach_sampling_dataset(manifest_dataset, tmp_path, request):
     root = manifest_dataset
     store = EvidenceStore(tmp_path / "protocol-evidence")
     directory = store.new_run()
@@ -243,7 +243,10 @@ def approach_sampling_dataset(manifest_dataset, tmp_path):
         settle_steps=20,
         control_hz=20,
         target_m=[-0.15, -0.08, 0.46],
-        cases=[[3, "train", [0] * 5], [4, "train", [0.1] * 5]],
+        cases=[
+            [3 + index, "train", offsets]
+            for index, offsets in enumerate(getattr(request, "param", [[0] * 5, [0.1] * 5]))
+        ],
     )
     (directory / "protocol.json").write_text(json.dumps(protocol))
     store.seal(
@@ -339,7 +342,9 @@ def test_approach_sampling_balances_episodes_and_regions(approach_sampling_datas
     assert all(r["probability"] > 0 and r["source_episode_sha256"] for r in plan["frames"])
 
 
-@pytest.mark.parametrize("profile", ["uniform", "approach_regions_v1"])
+@pytest.mark.parametrize(
+    "profile", ["uniform", "approach_regions_v1", "approach_nominal_launch_v1"]
+)
 def test_sampler_rng_save_restore_and_uniform_compatibility(approach_sampling_dataset, profile):
     torch = pytest.importorskip("torch")
     plan = sampling_plan_fixture(approach_sampling_dataset, profile)
@@ -353,21 +358,26 @@ def test_sampler_rng_save_restore_and_uniform_compatibility(approach_sampling_da
     expected = [sample_training_indices(torch, sampler, plan, 8) for _ in range(3)]
     restored = torch.Generator(device="cpu")
     restored.set_state(state)
-    assert [sample_training_indices(torch, restored, plan, 8) for _ in range(3)] == expected
+    reloaded_plan = json.loads(json.dumps(plan))
+    assert [
+        sample_training_indices(torch, restored, reloaded_plan, 8) for _ in range(3)
+    ] == expected
 
 
-def test_profile_requires_explicit_compatible_protocol(manifest_dataset, tmp_path):
+@pytest.mark.parametrize("profile", ["approach_regions_v1", "approach_nominal_launch_v1"])
+def test_profile_requires_explicit_compatible_protocol(manifest_dataset, tmp_path, profile):
     with pytest.raises(ValueError, match="sampling protocol"):
-        ACTTrainingConfig(dataset_path=manifest_dataset, sampling_profile="approach_regions_v1")
+        ACTTrainingConfig(dataset_path=manifest_dataset, sampling_profile=profile)
     with pytest.raises(ValueError, match="sampling protocol"):
         ACTTrainingConfig(dataset_path=manifest_dataset, sampling_protocol_run=tmp_path)
 
 
-def test_profile_rejects_changed_protocol(approach_sampling_dataset):
+@pytest.mark.parametrize("profile", ["approach_regions_v1", "approach_nominal_launch_v1"])
+def test_profile_rejects_changed_protocol(approach_sampling_dataset, profile):
     _, protocol = approach_sampling_dataset
     (protocol / "protocol.json").write_text("{}")
     with pytest.raises(ValueError, match="digest|mismatch"):
-        sampling_plan_fixture(approach_sampling_dataset)
+        sampling_plan_fixture(approach_sampling_dataset, profile)
 
 
 @pytest.mark.parametrize("field,value", [("motion_steps", 10), ("settle_steps", 0)])
@@ -391,7 +401,8 @@ def test_profile_rejects_empty_regions(approach_sampling_dataset, tmp_path, fiel
         sampling_plan_fixture((root, directory))
 
 
-def test_profile_rejects_unrelated_protocol_identity(approach_sampling_dataset, tmp_path):
+@pytest.mark.parametrize("profile", ["approach_regions_v1", "approach_nominal_launch_v1"])
+def test_profile_rejects_unrelated_protocol_identity(approach_sampling_dataset, tmp_path, profile):
     root, original = approach_sampling_dataset
     body = json.loads((original / "protocol.json").read_text())
     store = EvidenceStore(tmp_path / "alternative")
@@ -407,4 +418,67 @@ def test_profile_rejects_unrelated_protocol_identity(approach_sampling_dataset, 
         claims=[],
     )
     with pytest.raises(ValueError, match="episode/config"):
-        sampling_plan_fixture((root, directory))
+        sampling_plan_fixture((root, directory), profile)
+
+
+@pytest.mark.parametrize(
+    "approach_sampling_dataset,nominal_index",
+    [([[0] * 5, [0.1] * 5], 0), ([[0.1] * 5, [0] * 5], 1)],
+    indirect=["approach_sampling_dataset"],
+)
+def test_nominal_launch_masses_coverage_and_lineage(approach_sampling_dataset, nominal_index):
+    root, protocol = approach_sampling_dataset
+    plan = sampling_plan_fixture(approach_sampling_dataset, "approach_nominal_launch_v1")
+    frames = plan["frames"]
+    assert [f["dataset_index"] for f in frames] == list(range(160))
+    assert [(f["episode_index"], f["source_frame_index"]) for f in frames] == [
+        (episode, frame) for episode in range(2) for frame in range(80)
+    ]
+    assert all(f["probability"] > 0 for f in frames)
+    for name, count in [("nominal_launch", 10), ("settled", 40), ("remaining", 110)]:
+        rows = [f for f in frames if f["region"] == name]
+        assert len(rows) == count
+        assert sum(f["probability"] for f in rows) == pytest.approx(1 / 3)
+        assert all(f["probability"] == pytest.approx(1 / (3 * count)) for f in rows)
+    launch = [f for f in frames if f["region"] == "nominal_launch"]
+    assert {f["episode_index"] for f in launch} == {nominal_index}
+    assert [f["source_frame_index"] for f in launch] == list(range(10))
+    for episode in plan["episodes"]:
+        rows = [f for f in frames if f["episode_index"] == episode["episode_index"]]
+        mass = sum(f["probability"] for f in rows)
+        assert episode["probability"] == pytest.approx(mass)
+        assert mass != pytest.approx(0.5)  # This profile intentionally changes episode balance.
+        for region in episode["regions"]:
+            subset = rows[region["start"] : region["end"]]
+            assert {f["region"] for f in subset} == {region["name"]}
+            assert region["conditional_probability"] == pytest.approx(
+                sum(f["probability"] for f in subset) / mass
+            )
+    nominal = plan["nominal_launch"]["nominal_episode"]
+    assert nominal["episode_index"] == nominal_index
+    assert nominal["left_joint_offset_rad"] == [0] * 5
+    assert nominal["source_config"]["sha256"] == digest_file(
+        root / nominal["raw_root"] / nominal["source_config"]["path"]
+    )
+    assert nominal["source_episode_sha256"] == launch[0]["source_episode_sha256"]
+    assert plan["collection_protocol"]["run_id"] == protocol.name
+
+
+@pytest.mark.parametrize(
+    "approach_sampling_dataset",
+    [[[0.1] * 5, [0.2] * 5], [[0] * 5, [0] * 5]],
+    indirect=True,
+)
+def test_nominal_launch_rejects_missing_or_ambiguous_nominal(approach_sampling_dataset):
+    with pytest.raises(ValueError, match="exactly one zero-offset"):
+        sampling_plan_fixture(approach_sampling_dataset, "approach_nominal_launch_v1")
+
+
+@pytest.mark.parametrize(
+    "approach_sampling_dataset",
+    [[[], [0.1] * 5], [[False] * 5, [0.1] * 5], [["0"] * 5, [0.1] * 5]],
+    indirect=True,
+)
+def test_nominal_launch_rejects_malformed_offsets(approach_sampling_dataset):
+    with pytest.raises(ValueError, match="offsets|episode/config"):
+        sampling_plan_fixture(approach_sampling_dataset, "approach_nominal_launch_v1")

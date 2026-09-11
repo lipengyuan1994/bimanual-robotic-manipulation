@@ -318,3 +318,19 @@ All masks must derive from verified training configs, and all probability/RNG
 lineage must be saved. No validation states were used to choose this design.
 The proposal and detailed limits are preserved locally in
 `.artifacts/nominal-launch-proposal.md`; it has not been implemented or trained.
+
+
+The follow-up is now preregistered as protocol `20260911T013418-850e2f3250df`.
+Before any new physical run, compare the same retained training observations:
+the nominal first pan increment must be positive, mean first-target joint/FK
+errors at nominal frames 0/1/5 must each improve by at least 25%, settled mean
+FK error may increase at most 0.5 mm, and other training starts' mean joint error
+may increase at most 20%. All selected frames are reported. These are internal
+development gates, not event requirements or manipulation success. Only a passing
+offline comparison advances to the unchanged eight-second physical suite.
+The `approach_nominal_launch_v1` sampler is implemented and verified against the
+actual 480-frame dataset: groups 10/120/350 each receive one third of total mass.
+It derives a unique nominal episode from the verified zero-offset training config,
+retains all frames and ordering, and records truthful conditional probabilities.
+Focused tests: 32 passed, one real-ACT check explicitly skipped. This protocol has
+not trained a model yet.

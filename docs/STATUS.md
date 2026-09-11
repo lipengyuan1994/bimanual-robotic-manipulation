@@ -120,10 +120,11 @@ replays, lessons and recorded planner decisions; it is not a live robot operator
 
 ## Verification and source checkpoint
 
-Implementation checkpoint **`4c8af294965a702c1ddbef1a035abf12d6edcc86`** passed
+Earlier implementation checkpoint **`4c8af294965a702c1ddbef1a035abf12d6edcc86`** passed
 [GitHub CI](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34547899994).
-This session changes experiment evidence/documentation; use `git rev-parse HEAD`
-for the latest handoff commit. [Draft PR #1](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/pull/1)
+The supported dinner teacher is committed at `bc0b5c0`; its clean rendered result
+and portal are committed at `bdcd4e4`. Use `git rev-parse HEAD` for the latest
+handoff commit; subsequent sampler changes do not alter the sealed teacher run. [Draft PR #1](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/pull/1)
 is open and unmerged.
 
 Latest `scripts/check.sh`: **403 passed, three explicit optional-training skips,
@@ -160,8 +161,9 @@ hackathon submission has been sent.
 All experiment/model/physics processes from this session are terminal. No restart
 or new training is necessary simply to recover the handoff.
 
-1. Finish and verify the nominal-launch ACT sampler, then run the preregistered
-   2,000-update experiment and training-only offline gate before more physics.
+1. Run the verified nominal-launch sampler under preregistered protocol
+   `20260911T013418-850e2f3250df`: 2,000 updates, followed by training-only offline
+   gates before any further physical attempt.
 2. Inspect the stalled nominal learned trajectory against training coverage; use
    training-only policy-visited states for any corrective demonstrations. Keep the
    two validation starts out of training and retain all prior failures.
@@ -211,3 +213,12 @@ compliance. The portal now exposes the dinner replay and its independent score;
 native ARM64 TypeScript checks and production build pass. The updated portal was
 opened and checked: completed dinner replay, independent score link and M1 status
 are visible; the score endpoint serves the verified result.
+
+
+The `approach_nominal_launch_v1` sampler now passes 32 focused tests (one real-ACT
+check explicitly skipped), and actual dataset verification confirms 10/120/350
+anchors with equal group mass. Full checks are running in
+`.artifacts/checks-nominal-launch-profile.log`. No training has started. Prepared
+local experiment drivers are `.artifacts/approach-nominal-launch-v1-2000.py`,
+`.artifacts/approach-nominal-launch-offline.py <training-run>` and
+`.artifacts/compare-nominal-launch-offline.py <offline-run>`; retain their evidence.

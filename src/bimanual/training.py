@@ -36,13 +36,17 @@ class ACTTrainingConfig(BaseModel):
     cpu_threads: int = Field(default=4, ge=1, le=32)
     learning_rate: float = Field(default=1e-5, gt=0, le=0.1)
     normalization_std_floor: float = Field(default=1e-4, gt=0, le=1)
-    sampling_profile: Literal["uniform", "approach_regions_v1"] = "uniform"
+    sampling_profile: Literal["uniform", "approach_regions_v1", "approach_nominal_launch_v1"] = (
+        "uniform"
+    )
     sampling_protocol_run: Path | None = None
 
     @model_validator(mode="after")
     def sampling_configuration(self):
         if (self.sampling_profile == "uniform") != (self.sampling_protocol_run is None):
-            raise ValueError("Only approach_regions_v1 requires a sampling protocol run")
+            raise ValueError(
+                "Nonuniform profiles require a sampling protocol run; uniform forbids it"
+            )
         return self
 
 
@@ -55,7 +59,7 @@ def build_sampling_plan(
     checked against the sealed collection schedule and copied source configs.
     """
     protocol = None
-    if config.sampling_profile == "approach_regions_v1":
+    if config.sampling_profile != "uniform":
         path = config.sampling_protocol_run
         if not path.is_absolute():
             path = project_root / path
@@ -75,7 +79,7 @@ def build_sampling_plan(
             or schedule.get("control_hz") != 20
         ):
             raise ValueError("Sampling requires nonempty declared start/middle/settled regions")
-    frame_sources, episode_plans = [], []
+    frame_sources, episode_plans, nominal_candidates = [], [], []
     count = len(manifest["episodes"])
     for source in manifest["episodes"]:
         raw = dataset_root / source["raw_root"]
@@ -103,6 +107,26 @@ def build_sampling_plan(
                 or length != motion + settle
             ):
                 raise ValueError("Approach episode/config does not match the sampling protocol")
+            if config.sampling_profile == "approach_nominal_launch_v1":
+                offsets = source_config.get("left_joint_offset_rad")
+                if (
+                    not isinstance(offsets, list)
+                    or len(offsets) != 5
+                    or any(type(value) not in (int, float) for value in offsets)
+                    or not np.isfinite(offsets).all()
+                ):
+                    raise ValueError("Nominal launch requires five finite numeric joint offsets")
+                if all(value == 0 for value in offsets):
+                    nominal_candidates.append(
+                        dict(
+                            episode_id=episode.episode_id,
+                            episode_index=source["episode_index"],
+                            raw_root=source["raw_root"],
+                            source_episode_sha256=source["episode_sha256"],
+                            source_config=episode.lineage.config.model_dump(mode="json"),
+                            left_joint_offset_rad=offsets,
+                        )
+                    )
             regions = [
                 ("start", 0, 10, 1 / 3),
                 ("middle", 10, motion, 1 / 3),
@@ -133,10 +157,52 @@ def build_sampling_plan(
                         probability=episode_probability * probability / (end - start),
                     )
                 )
+    nominal_launch = None
+    if config.sampling_profile == "approach_nominal_launch_v1":
+        if len(nominal_candidates) != 1:
+            raise ValueError(
+                "Nominal launch requires exactly one zero-offset nominal training episode"
+            )
+        nominal = nominal_candidates[0]
+        groups = {"nominal_launch": [], "settled": [], "remaining": []}
+        for frame in frame_sources:
+            if frame["region"] == "settled":
+                group = "settled"
+            elif frame["episode_index"] == nominal["episode_index"] and frame["region"] == "start":
+                group = "nominal_launch"
+            else:
+                group = "remaining"
+            frame["region"] = group
+            groups[group].append(frame)
+        for frames in groups.values():
+            if not frames:
+                raise ValueError("Nominal launch sampling groups must be nonempty")
+            for frame in frames:
+                frame["probability"] = 1 / (3 * len(frames))
+        for episode in episode_plans:
+            frames = [f for f in frame_sources if f["episode_index"] == episode["episode_index"]]
+            probability = sum(f["probability"] for f in frames)
+            episode["probability"] = probability
+            regions = []
+            for index, frame in enumerate(frames):
+                if not regions or regions[-1]["name"] != frame["region"]:
+                    regions.append(dict(name=frame["region"], start=index, end=index, mass=0.0))
+                regions[-1]["end"] = index + 1
+                regions[-1]["mass"] += frame["probability"]
+            for region in regions:
+                region["conditional_probability"] = region.pop("mass") / probability
+            episode["regions"] = regions
+        nominal_launch = dict(
+            nominal_episode=nominal,
+            groups=[
+                dict(name=name, frame_count=len(frames), probability=1 / 3)
+                for name, frames in groups.items()
+            ],
+        )
     probabilities = np.array([frame["probability"] for frame in frame_sources])
     if len(frame_sources) != manifest["frames"] or not np.isclose(probabilities.sum(), 1):
         raise ValueError("Sampling plan does not cover the verified dataset")
-    return dict(
+    plan = dict(
         schema_version=1,
         profile=config.sampling_profile,
         algorithm="torch.randint" if protocol is None else "torch.multinomial_float64",
@@ -145,6 +211,9 @@ def build_sampling_plan(
         frames=frame_sources,
         collection_protocol=protocol.model_dump(mode="json") if protocol else None,
     )
+    if nominal_launch is not None:
+        plan["nominal_launch"] = nominal_launch
+    return plan
 
 
 def sample_training_indices(torch, generator, plan: dict, batch_size: int) -> list[int]:

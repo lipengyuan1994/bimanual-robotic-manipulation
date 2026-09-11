@@ -106,7 +106,9 @@ def main(argv: list[str] | None = None) -> int:
     train.add_argument("--chunk-size", type=int, default=10)
     train.add_argument("--seed", type=int, default=0)
     train.add_argument(
-        "--sampling-profile", choices=["uniform", "approach_regions_v1"], default="uniform"
+        "--sampling-profile",
+        choices=["uniform", "approach_regions_v1", "approach_nominal_launch_v1"],
+        default="uniform",
     )
     train.add_argument("--sampling-protocol-run", type=Path)
     rollout = commands.add_parser(
