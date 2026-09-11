@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 11, 2026. Latest implementation checkpoint: `399313b` on
+Updated September 11, 2026. Latest implementation checkpoint: `9813f1e` on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -70,7 +70,7 @@ unrelated runtime errors.
 `bar_place_and_return` cohort attempt `20260911T204632-867e6f75a36e` is active;
 child training run `20260911T204632-a60b589a1eea` is configured for20,000native-MPS
 updates under shared model-job ownership. Session56052; log
-`.artifacts/cohort-bar-place-training.log`; 10,160updates were present at the latest
+`.artifacts/cohort-bar-place-training.log`; 15,154updates were present at the latest
 inspection. Poll this handle and do not launch any other model, inference or render
 job. Training progress and loss are not physical skill success. After the bounded
 coordinator was pushed at `ed225e3`, session89794 began a7,200-second bounded wait
