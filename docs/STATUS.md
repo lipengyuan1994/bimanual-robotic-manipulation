@@ -127,9 +127,9 @@ and portal are committed at `bdcd4e4`. Use `git rev-parse HEAD` for the latest
 handoff commit; subsequent sampler changes do not alter the sealed teacher run. [Draft PR #1](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/pull/1)
 is open and unmerged.
 
-Latest `scripts/check.sh`: **445 passed, ten explicit optional-training skips,
+Latest `scripts/check.sh`: **452 passed, eleven explicit optional-training skips,
 eight rendering tests deselected**, with Ruff, formatting, docs and README checks.
-Log: `.artifacts/checks-temporal-no-vae-final.log`; the preceding dinner-only
+Log: `.artifacts/checks-dinner-recorder.log`; the preceding dinner-only
 checkpoint had 403 passing tests. The preceding seven actual
 rendering tests and the additional sensor integration rendering test passed
 separately; do not count deselections/skips as passes. Four actual sensor bundles
@@ -286,9 +286,18 @@ No physical rollout or promotion follows. Processes 67509 and 33394 are terminal
 
 Continuous dinner recording is implemented behind `dinner-teacher
 --record-demonstration`, independent of replay. Fifteen focused tests pass,
-including complete-transition and interruption boundary checks. Full checks are
-active under handle 58082 (`.artifacts/checks-dinner-recorder.log`); no actual
-full-rate dinner capture or export is claimed yet. Wait for training to terminate
-before the new rendering run. The proposed [live planner bridge](PLANNER_LIVE_INTEGRATION.md)
+including complete-transition and interruption boundary checks. Full checks pass: 452 tests, eleven optional-training skips and eight render
+deselections (`.artifacts/checks-dinner-recorder.log`); handle 58082 is terminal.
+No completed full-rate dinner capture or export is claimed yet. The proposed [live planner bridge](PLANNER_LIVE_INTEGRATION.md)
 records explicit pause ownership/fresh revalidation requirements and remains
 unimplemented; old images are never simply retimestamped.
+
+
+Active physical capture: `20260911T022644-a24a56ff004c`, clean source `6c6c991`,
+process 84841, log `.artifacts/dinner-recorded-v1.log`. It runs the supported
+`dinner-teacher --record-demonstration` command with full-rate PNGs and a replay.
+Actual PNG files are accumulating. Check the live handle before restarting;
+a partial folder is not a successful demonstration. After it finishes, verify
+the seal, independent score, episode/action/phase alignment and camera artifacts,
+then export/read back through the existing LeRobot path. All model training and
+assessment processes are terminal.
