@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 11, 2026. Latest implementation checkpoint: `f3a02f8` on
+Updated September 11, 2026. Latest committed checkpoint before this working change: `1a25848` on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -109,6 +109,16 @@ physical-outcome failure produces `physical_outcome_failed`, stops at
 passes92 CPU/physics fixtures. These tests validate recovery authority and taxonomy,
 not learned grasp success.
 
+Integrated workflow children now build `step-report.json` before sealing. The
+typed report joins each canonical supervisor attempt to one planner dispatch,
+the frozen capability/checkpoint, camera and revalidation timing, planner and ACT
+inference samples, applied/rejected/partial actions, simulated duration, physical
+readiness and structured failure code. Retry links, counts and timestamps fail
+closed; downstream steps remain `not_attempted`. Focused report/execution checks
+pass43tests; the broader non-render workflow group passes137tests. No trained
+seven-step workflow has produced this evidence yet.
+[Report contract](WORKFLOW_STEP_REPORT.md).
+
 A generic teacher-prepared component evaluator is now implemented. It verifies the
 nominal-v2 source and skill boundary, executes the sealed teacher prefix through
 real collision/contact physics, and then permits checkpoint actions only. Component
@@ -124,8 +134,8 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `8f8d9baf8e8e4b09e91f4b3c7584454c3a6fb6ca1de3e4625a463904cf889fcc`.
-It binds the training cohort and 98 package/runtime and authored-scene/SO-101 asset
+seal `50e30d1d176463979b853ce51f65aae02ae08751f35adfaf0946268b4e66c246`.
+It binds the training cohort and 99 package/runtime and authored-scene/SO-101 asset
 files,
 final-update20,000 selection,
 MPS, execution prefix2, exact teacher preparation, fixed nominal-v2 scene,
@@ -164,7 +174,8 @@ still came from shorter v1 skill intervals. The executor now passes a guard one
 action beyond its explicit budget, leaving the executor as the single stopping
 authority and preventing premature v2 plate termination. The unused protocol was
 regenerated before any outcome with all then-current transitive evaluator/control/scoring
-sources pinned. The later guardian hardening produced the current 98-source-and-asset
+sources pinned. The later guardian hardening and step-report addition produced the current
+99-source-and-asset
 seal before any component evaluation. The combined executor/outcome/protocol/evaluator group passes61
 tests; the corrected protocol re-verifies.
 

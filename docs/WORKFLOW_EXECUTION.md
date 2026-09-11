@@ -71,7 +71,11 @@ stop events and verified child manifest identity. The child evidence store is
 `RUN_DIRECTORY/child-evidence`; its run ID is recorded as `child_run_id`.
 Only a verified completed `dinner_workflow_execution` child with matching config
 can establish execution completion. This still does not establish physical task
-success. One spawned worker owns the simulation, supervised by a separate guardian.
+success. Each child that reaches worker creation also seals `step-report.json`,
+which joins planner, camera, supervisor, ACT-inference and action evidence for
+every attempt. Any ambiguous or contradictory join downgrades the child run to
+failed. See [workflow step evidence](WORKFLOW_STEP_REPORT.md). One spawned worker
+owns the simulation, supervised by a separate guardian.
 The guardian monitors the original parent's process handle and can terminate a
 worker stuck in a native call after parent loss. A common filesystem lease prevents
 another supported worker from starting in the same evidence store until cleanup.

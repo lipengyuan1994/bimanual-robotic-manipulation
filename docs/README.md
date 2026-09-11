@@ -62,4 +62,5 @@ Learned skill transitions: [successor readiness](SUCCESSOR_READINESS.md).
 
 Complete learned workflow: [pinned checkpoint cohort](WORKFLOW_MANIFEST.md) and
 [serialized planning/execution runner](WORKFLOW_RUNNER.md), with a
-[local execution command](WORKFLOW_EXECUTION.md).
+[local execution command](WORKFLOW_EXECUTION.md) and
+[sealed per-step evidence](WORKFLOW_STEP_REPORT.md).

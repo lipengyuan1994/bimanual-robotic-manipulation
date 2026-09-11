@@ -172,6 +172,22 @@ def harness(monkeypatch, tmp_path):
         def close(self):
             calls.append("workflow_close")
 
+    def build_step_report(directory):
+        calls.append("step_report")
+        return SimpleNamespace(
+            profile="fixture_step_report_v1",
+            attempt_count=0,
+            successful_attempts=0,
+            failed_attempts=0,
+            total_applied_actions=0,
+            model_dump=lambda **kwargs: {
+                "profile": "fixture_step_report_v1",
+                "attempt_count": 0,
+                "attempts": [],
+                "independent_task_success": None,
+            },
+        )
+
     for name, value in dict(
         load_workflow_manifest=verify,
         verify_model=verify_model,
@@ -181,6 +197,7 @@ def harness(monkeypatch, tmp_path):
         LivePlanningSession=Session,
         LocalPlannerRunner=PlannerRunner,
         DinnerWorkflowRunner=Workflow,
+        build_workflow_step_report=build_step_report,
     ).items():
         monkeypatch.setattr(execution, name, value)
     store = EvidenceStore(tmp_path / "evidence")
@@ -221,7 +238,7 @@ def test_load_order_canonical_task_and_terminal_clarification(harness):
     assert result.metrics["independent_task_success"] is None
     assert result.claims == []
     assert "worker/closed.json" in result.files
-    assert h.calls[-3:] == ["workflow_close", "planner_close", "worker_close"]
+    assert h.calls[-4:] == ["workflow_close", "planner_close", "worker_close", "step_report"]
 
 
 @pytest.mark.parametrize(
@@ -265,7 +282,7 @@ def test_keyboard_interrupt_cancels_and_closes(harness):
     result = harness.run()
     assert result.outcome == "cancelled"
     assert "workflow_cancel" in harness.calls and "worker_cancel" in harness.calls
-    assert harness.calls[-3:] == ["workflow_close", "planner_close", "worker_close"]
+    assert harness.calls[-4:] == ["workflow_close", "planner_close", "worker_close", "step_report"]
 
 
 def test_cancellation_before_any_loading_is_retained(harness):
@@ -295,6 +312,20 @@ def test_final_supervisor_write_failure_cannot_report_complete(harness, monkeypa
     result = harness.run()
     assert result.outcome == "failed" and result.claims == []
     assert "final_supervisor" in result.metrics["cleanup_errors"][0]
+
+
+def test_step_report_failure_cannot_report_complete(harness, monkeypatch):
+    harness.state.terminal = "execution_complete"
+
+    def reject(directory):
+        raise ValueError("Injected contradictory step evidence")
+
+    monkeypatch.setattr(execution, "build_workflow_step_report", reject)
+    result = harness.run()
+    assert result.outcome == "failed" and not result.metrics["execution_complete"]
+    assert result.metrics["state_before_cleanup_failure"] == "execution_complete"
+    assert "step_report: ValueError" in result.metrics["cleanup_errors"][0]
+    assert result.claims == []
 
 
 def test_records_loaded_parameter_devices_without_guessing_from_request(harness, monkeypatch):
@@ -385,6 +416,7 @@ def test_task_file_and_events_are_part_of_the_seal(harness):
         "cohort.json",
         "execution-profile.json",
         "planner-model.json",
+        "step-report.json",
     } <= result.files.keys()
     assert result.metrics["execution_profile_sha256"] == "e" * 64
 

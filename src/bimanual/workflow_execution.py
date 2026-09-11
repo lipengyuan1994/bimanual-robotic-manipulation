@@ -28,6 +28,7 @@ from bimanual.workflow_manifest import (
 )
 from bimanual.workflow_progress import write_snapshot
 from bimanual.workflow_runner import DinnerWorkflowRunner
+from bimanual.workflow_step_report import build_workflow_step_report
 
 TERMINAL_STATES = frozenset(
     {
@@ -327,6 +328,22 @@ def run_workflow_execution(
             except (Exception, KeyboardInterrupt) as cleanup:
                 metrics["cleanup_errors"].append(
                     f"final_supervisor: {type(cleanup).__name__}: {cleanup}"
+                )
+            try:
+                step_report = build_workflow_step_report(directory)
+                (directory / "step-report.json").write_bytes(
+                    canonical(step_report.model_dump(mode="json"))
+                )
+                metrics["step_report"] = {
+                    "profile": step_report.profile,
+                    "attempt_count": step_report.attempt_count,
+                    "successful_attempts": step_report.successful_attempts,
+                    "failed_attempts": step_report.failed_attempts,
+                    "total_applied_actions": step_report.total_applied_actions,
+                }
+            except (Exception, KeyboardInterrupt) as cleanup:
+                metrics["cleanup_errors"].append(
+                    f"step_report: {type(cleanup).__name__}: {cleanup}"
                 )
         if metrics["cleanup_errors"]:
             metrics["state_before_cleanup_failure"] = metrics["state"]

@@ -44,7 +44,9 @@ normalization, action bounds, ownership, observation expiry and cancellation.
 The implemented supervisor enforces prerequisites, per-step timeouts,
 fresh-observation recovery and at most two retries. Its lifecycle and fault tests
 do not substitute for physical learned-workflow outcomes; explicit failed-grasp
-classification and sealed per-step latency evidence remain required.
+classification is implemented. Integrated runs now seal a fail-closed
+[per-step outcome and latency report](WORKFLOW_STEP_REPORT.md); actual learned
+seven-step evidence remains pending the local checkpoint cohort.
 
 ## Official 100-point rubric
 
