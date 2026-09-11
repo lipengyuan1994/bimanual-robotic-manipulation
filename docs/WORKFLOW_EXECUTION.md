@@ -117,8 +117,8 @@ server shutdown requests cancellation and waits for the bounded process cleanup.
 A network error does not mean the worker stopped; refresh status before retrying.
 
 `finished` describes process completion, not independently verified dinner-table
-success. Inspect sealed evidence separately. The current interface shows process
-status; live cameras and per-step progress remain unfinished. No validated full
+success. Inspect sealed evidence separately. The interface shows process status, reported step progress and last-capture camera
+previews. Actual learned-run display validation remains pending. No validated full
 seven-skill learned cohort is available yet, so enabling controls alone does not
 make the workflow ready. Do not run it alongside local GPU training.
 
@@ -128,3 +128,19 @@ navigate the archive; failed and corrupted records are retained in page order.
 so newly sealed runs do not shift subsequent older pages. Omitting the limit
 retains the complete listing. Verification of a single large run can still be
 slow; the project description and operator status load independently.
+
+The operator panel also displays the last worker state, reason, reported completed
+steps and attempt count. These are unsealed progress updates, not independent
+physical scoring. They may remain unchanged during a long model call, and the last
+update remains visible after stopping. The process outcome takes precedence over
+this historical snapshot. Camera previews are described below. Progress is never fed back
+into model observations, action authorization or success scoring.
+
+Three last-capture camera previews are now available with progress. They reuse
+worker-owned observations and never trigger rendering from the browser. The
+parent checks all three image hashes and RGB PNG dimensions as one synchronized
+capture before publishing it. Capture sequence and simulation time are visible;
+a stopped or planning worker may continue to show its last capture. Synthetic
+camera tests are labeled `injected_unverified`. This display does not certify
+freshness for control or task success; the control path retains its own checks.
+Actual learned-run camera display validation is still pending.

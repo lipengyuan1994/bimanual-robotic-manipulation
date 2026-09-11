@@ -21,6 +21,7 @@ class OperatorJob:
     run_outcome: str | None = None
     error: str | None = None
     independent_task_success: None = None
+    progress: dict | None = None
 
     def report(self) -> dict:
         return asdict(self)
@@ -94,9 +95,18 @@ class OperatorJobs:
             return self._job
 
     def _execute(self, job: OperatorJob, config: WorkflowProcessConfig, event: Event):
+        def progress(value):
+            with self._lock:
+                if self._job is not None and self._job.job_id == job.job_id:
+                    self._job = replace(self._job, progress=value)
+
         try:
             result = self._runner(
-                config, store=self._store, project_root=self._root, cancelled=event.is_set
+                config,
+                store=self._store,
+                project_root=self._root,
+                cancelled=event.is_set,
+                on_progress=progress,
             )
             verified = self._store.verify(result.run_id)
             if verified != result or result.kind != "dinner_workflow_process":
@@ -111,7 +121,7 @@ class OperatorJobs:
         except BaseException as error:
             final = replace(job, state="failed", error=f"{type(error).__name__}: {error}")
         with self._lock:
-            self._job = final
+            self._job = replace(final, progress=self._job.progress)
 
     def close(self, timeout: float | None = None) -> None:
         with self._lock:

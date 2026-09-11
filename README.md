@@ -23,8 +23,8 @@ full hand-off ACT training is running locally. Learned dinner-table success and
 release reliability remain unproven. [Accepted plan](docs/PLAN.md)
 
 The portal offers optional instruction/start/stop controls through a server-owned
-configuration. API, setup and browser fixture checks pass; live cameras and step
-progress remain unfinished. See [workflow setup](docs/WORKFLOW_EXECUTION.md).
+configuration, worker progress and three-camera previews. API, setup and browser
+fixture checks pass; actual learned-run validation remains unfinished. See [workflow setup](docs/WORKFLOW_EXECUTION.md).
 Intel setup is deferred until local training completes.
 
 ## Start here

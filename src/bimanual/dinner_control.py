@@ -486,6 +486,17 @@ class DinnerControlWorker:
             joint_velocity_rad_s=raw["joint_velocity_rad_s"].tolist(),
         )
         self._observation, self._raw, self._state = observation, raw, before
+        from bimanual.workflow_progress import write_snapshot
+
+        write_snapshot(
+            self.directory / "camera-preview.json",
+            {
+                "camera_source": "live_mujoco"
+                if self._render_capture is None
+                else "injected_unverified",
+                "observation": observation.model_dump(mode="json"),
+            },
+        )
         self._capture_count += 1
         self._record(
             "captures.jsonl",

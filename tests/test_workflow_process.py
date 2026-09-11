@@ -273,3 +273,51 @@ def test_immutable_source_output_confinement_before_allocation(tmp_path, root):
             settings(), store=EvidenceStore(tmp_path / root), project_root=tmp_path
         )
     assert not (tmp_path / root).exists()
+
+
+def progress_fixture(config, *, store, **kwargs):
+    from bimanual.workflow_progress import write_snapshot
+
+    directory = store.new_run()
+    write_snapshot(
+        directory / "workflow-snapshot.json",
+        dict(
+            workflow_id="fixture",
+            task_id="task",
+            state="executing",
+            reason="CPU fixture",
+            supervisor_state="running",
+            completed_steps=["handoff"],
+            attempt_count=1,
+            active_attempt_id="attempt",
+            planning_job_id=None,
+            execution_complete=False,
+            independent_task_success=None,
+        ),
+    )
+    time.sleep(1)
+    return store.seal(
+        directory,
+        kind="dinner_workflow_execution",
+        outcome="failed",
+        config=config.model_dump(mode="json"),
+        metrics=dict(state="failed", execution_complete=False, independent_task_success=None),
+        source={},
+        claims=[],
+    )
+
+
+def test_spawned_progress_is_display_only(tmp_path):
+    updates = []
+    result = run_workflow_process(
+        settings(),
+        store=EvidenceStore(tmp_path / "evidence"),
+        project_root=tmp_path,
+        on_progress=updates.append,
+        _entrypoint=progress_fixture,
+    )
+    assert updates
+    assert updates[0]["snapshot"]["completed_steps"] == ["handoff"]
+    assert all(item["task_success_verified"] is False for item in updates)
+    assert result.outcome == "failed"
+    assert result.metrics["independent_task_success"] is None

@@ -6,6 +6,13 @@ type Job = {
   instruction: string;
   run_id: string | null;
   error: string | null;
+  progress?: {
+    snapshot: { state: string; reason: string; completed_steps: string[]; attempt_count: number };
+    camera_preview?: {
+      sequence: number; simulation_seconds: number; camera_source: string;
+      images: { camera: string; data_url: string }[];
+    } | null;
+  } | null;
 };
 type Status = { configured: boolean; job: Job | null };
 
@@ -87,6 +94,23 @@ export function OperatorPanel() {
       {job && <div aria-live="polite">
         <p>Process: <strong>{job.state}</strong></p>
         <p>{job.instruction}</p>
+        {job.progress && <div>
+          <p>Last worker update (unverified): {job.progress.snapshot.state.replaceAll("_", " ")}</p>
+          <p>{job.progress.snapshot.reason}</p>
+          <p>Steps reported complete: {job.progress.snapshot.completed_steps.join(", ") || "none"}.
+            Attempts: {job.progress.snapshot.attempt_count}.</p>
+        </div>}
+        {job.progress?.camera_preview && <div>
+          <p>Last camera capture: simulation {job.progress.camera_preview.simulation_seconds.toFixed(2)} s,
+            frame {job.progress.camera_preview.sequence}. Source: {job.progress.camera_preview.camera_source.replaceAll("_", " ")}.</p>
+          <p>These previews may remain unchanged while planning or after stopping.</p>
+          <div className="operator-cameras">
+            {job.progress.camera_preview.images.map(image => <figure key={image.camera}>
+              <img src={image.data_url} alt={`Last worker capture: ${image.camera}`} width={480} height={270} />
+              <figcaption>{image.camera.replaceAll("/", " ").replaceAll("_", " ")}</figcaption>
+            </figure>)}
+          </div>
+        </div>}
         {job.error && <p role="alert">{job.error}</p>}
         {job.run_id && <p>Recorded run: <code>{job.run_id}</code>. Refresh run evidence below to inspect the outcome.</p>}
         {busy && <button disabled={pending || job.state === "stopping"} onClick={() => void act(job.job_id)}>

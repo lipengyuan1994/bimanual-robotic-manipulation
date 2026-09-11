@@ -17,6 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from bimanual.evidence import EvidenceStore, Manifest, canonical, provenance
 from bimanual.workflow_execution import WorkflowExecutionConfig, run_workflow_execution
 from bimanual.workflow_manifest import WorkflowManifest
+from bimanual.workflow_progress import read_progress
 
 
 class WorkflowProcessConfig(BaseModel):
@@ -75,6 +76,7 @@ def run_workflow_process(
     store: EvidenceStore,
     project_root: Path,
     cancelled: Callable[[], bool] = lambda: False,
+    on_progress: Callable[[dict], None] | None = None,
     _entrypoint: Callable = run_workflow_execution,
 ) -> Manifest:
     """Synchronous supervisor suitable for an API background job or CLI.
@@ -192,6 +194,7 @@ def run_workflow_process(
             sender.close()
             metrics["child_pid"] = process.pid
             record("child_started", pid=process.pid)
+            next_progress = 0.0
             while process.is_alive():
                 if cancelled():
                     reason = "cancelled"
@@ -199,6 +202,11 @@ def run_workflow_process(
                 if time.monotonic() >= deadline:
                     reason = "timed_out"
                     break
+                if on_progress is not None and time.monotonic() >= next_progress:
+                    next_progress = time.monotonic() + 0.25
+                    progress = read_progress(child_store.root)
+                    if progress is not None:
+                        on_progress(progress)
                 # Read while the child is alive to avoid blocking its small result send.
                 if receiver.poll():
                     try:

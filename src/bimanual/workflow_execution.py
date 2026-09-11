@@ -26,6 +26,7 @@ from bimanual.workflow_manifest import (
     load_workflow_manifest,
     preload_workflow,
 )
+from bimanual.workflow_progress import write_snapshot
 from bimanual.workflow_runner import DinnerWorkflowRunner
 
 TERMINAL_STATES = frozenset(
@@ -146,7 +147,7 @@ def run_workflow_execution(
         report = json.loads(canonical(asdict(snapshot)))
         if report["independent_task_success"] is not None:
             raise ValueError("Workflow orchestration cannot supply independent task success")
-        (directory / "workflow-snapshot.json").write_bytes(canonical(report))
+        write_snapshot(directory / "workflow-snapshot.json", report)
         metrics.update(state=snapshot.state, reason=snapshot.reason, workflow=report)
 
     def remember_generation():

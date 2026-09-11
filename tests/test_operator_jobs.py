@@ -186,3 +186,25 @@ def test_thread_start_failure_leaves_a_closeable_failed_job(tmp_path, monkeypatc
         jobs.start("Dinner")
     assert jobs.snapshot().state == "failed"
     jobs.close()
+
+
+def test_progress_does_not_replace_job_state_or_terminal_evidence(tmp_path):
+    entered, release = Event(), Event()
+    value = {"snapshot": {"state": "executing"}, "task_success_verified": False}
+
+    def runner(cfg, *, store, on_progress, **kwargs):
+        on_progress(value)
+        entered.set()
+        assert release.wait(5)
+        return seal(store, "failed")
+
+    jobs = manager(tmp_path, runner)
+    jobs.start("fixture")
+    assert entered.wait(5)
+    assert jobs.snapshot().state == "active"
+    assert jobs.snapshot().progress == value
+    release.set()
+    jobs.close()
+    assert jobs.snapshot().state == "failed"
+    assert jobs.snapshot().progress == value
+    assert jobs.snapshot().independent_task_success is None

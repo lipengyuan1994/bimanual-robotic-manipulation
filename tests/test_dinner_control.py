@@ -388,3 +388,59 @@ def test_layout_mismatch_rejected_without_reading_teacher_actions(tmp_path, monk
     with pytest.raises(ValueError, match="layout"):
         DinnerControlWorker(tmp_path / "invalid", [])
     assert not (tmp_path / "invalid/layout.json").exists()
+
+
+def test_camera_preview_reuses_exact_capture_without_rendering_again(worker):
+    import base64
+    import hashlib
+
+    from bimanual.camera_preview import read_camera_preview
+
+    instance, _, _, captures = worker
+    observation = instance.capture()
+    count = len(captures)
+    preview = read_camera_preview(instance.directory)
+    assert len(captures) == count == 1
+    assert preview["camera_source"] == "injected_unverified"
+    assert preview["episode_id"] == observation.episode_id
+    assert preview["sequence"] == observation.sequence
+    assert preview["observed_monotonic_ns"] == observation.observed_monotonic_ns
+    assert preview["task_success_verified"] is False
+    for image, frame in zip(preview["images"], observation.frames, strict=True):
+        assert image["camera"] == frame.camera
+        content = base64.b64decode(image["data_url"].split(",", 1)[1])
+        assert hashlib.sha256(content).hexdigest() == frame.artifact.sha256
+    (instance.directory / observation.frames[1].artifact.path).write_bytes(b"corrupt")
+    assert read_camera_preview(instance.directory) is None
+
+
+@pytest.mark.parametrize("failure", ["missing", "fifo", "oversized", "escape", "wrong_dimensions"])
+def test_camera_preview_rejects_invalid_artifacts(worker, tmp_path, failure):
+    import hashlib
+    import os
+
+    from PIL import Image
+
+    from bimanual.camera_preview import read_camera_preview
+
+    instance, _, _, _ = worker
+    observation = instance.capture()
+    frame = instance.directory / observation.frames[0].artifact.path
+    frame.unlink()
+    if failure == "fifo":
+        os.mkfifo(frame)
+    elif failure == "oversized":
+        frame.write_bytes(b"x" * (1024 * 1024 + 1))
+    elif failure == "escape":
+        outside = tmp_path / "outside.png"
+        outside.write_bytes(b"outside")
+        frame.symlink_to(outside)
+    elif failure == "wrong_dimensions":
+        Image.new("RGB", (1, 1)).save(frame)
+        path = instance.directory / "camera-preview.json"
+        payload = json.loads(path.read_text())
+        payload["observation"]["frames"][0]["artifact"]["sha256"] = hashlib.sha256(
+            frame.read_bytes()
+        ).hexdigest()
+        path.write_text(json.dumps(payload))
+    assert read_camera_preview(instance.directory) is None
