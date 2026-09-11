@@ -28,8 +28,21 @@ class WorkflowProcessConfig(BaseModel):
     poll_interval_seconds: float = Field(default=0.05, gt=0, le=1)
 
 
+def _owner_cancelled(event, parent) -> bool:
+    """Use the spawn parent's process handle, not a potentially reused PID."""
+    return event.is_set() or (parent is not None and not parent.is_alive())
+
+
 def _child(config_data, child_root, project_root, event, sender, interpreter, entrypoint):
     """Only this child owns the simulation. Pipe messages never constitute success."""
+
+    def notify(message):
+        try:
+            sender.send(message)
+        except (BrokenPipeError, EOFError):
+            # Parent loss must not prevent preservation of the child's sealed result.
+            pass
+
     try:
         # Spawn does not inherit Python redirect_stdout. Redirect the descriptor
         # too, so native library progress cannot mix with the parent's CLI JSON.
@@ -40,15 +53,16 @@ def _child(config_data, child_root, project_root, event, sender, interpreter, en
         if platform.system() == "Darwin" and platform.machine() != "arm64":
             raise RuntimeError("Spawned local runtime must be native ARM64")
         config = WorkflowExecutionConfig.model_validate(config_data)
+        parent = mp.parent_process()
         result = entrypoint(
             config,
             store=EvidenceStore(Path(child_root)),
             project_root=Path(project_root),
-            cancelled=event.is_set,
+            cancelled=lambda: _owner_cancelled(event, parent),
         )
-        sender.send({"run_id": result.run_id})
+        notify({"run_id": result.run_id})
     except BaseException:
-        sender.send({"error": traceback.format_exc()[-8192:]})
+        notify({"error": traceback.format_exc()[-8192:]})
     finally:
         sender.close()
 

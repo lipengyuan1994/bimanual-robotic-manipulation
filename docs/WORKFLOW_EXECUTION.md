@@ -70,9 +70,12 @@ stop events and verified child manifest identity. The child evidence store is
 `RUN_DIRECTORY/child-evidence`; its run ID is recorded as `child_run_id`.
 Only a verified completed `dinner_workflow_execution` child with matching config
 can establish execution completion. This still does not establish physical task
-success. One spawned child owns the simulation; this supervisor does not recover
-from a parent OS crash or manage independently launched subprocess trees.
-The live operator UI remains separate work.
+success. One spawned child owns the simulation. Its cooperative cancellation
+checks also inspect the spawning parent's process handle, so parent exit revokes
+continued execution at the next checkpoint. A reused numeric PID cannot retain
+authority. This does not interrupt a hung native call after parent loss, rebuild
+the parent run record, or manage independently launched subprocess trees; full
+OS-crash recovery remains incomplete. The operator UI uses this same worker path.
 
 For direct debugging, `--in-process` preserves the original cooperative runner.
 That mode checks cancellation between blocking operations and cannot forcibly

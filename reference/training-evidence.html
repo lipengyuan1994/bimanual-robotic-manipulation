@@ -16,8 +16,17 @@
 <p>A normalized training loss is not automatically an angle in radians, a distance in millimetres, or a success probability. In this project, inspect the training configuration and loss weights, then use the evaluator's raw joint-angle errors for an interpretable action comparison. Do not compare two loss numbers if their weighting or normalization changed.</p>
 <h2>Averages can hide the important instant</h2>
 <p>Illustrative example: nine joint targets have 0.001 rad error, but one has 0.100 rad error. The mean is 0.0109 rad. That average hides the much larger error at one instant. If that instant is when a gripper releases an object, its timing matters. This example is invented; it is not a result from our robot.</p>
-<h2>The current experiment</h2>
-<p>Our full hand-off training run uses 630 recorded observations from one authored scene. The planned recorded-input evaluation examines those training observations; it is not held-out validation. A separate physical diagnostic must reach both the hand-off contact outcome and the stable successor boundary. Neither result alone completes the dinner-table release.</p>
+<h2>Our September 11 experiment</h2>
+<p>The first full hand-off checkpoint trained for 20,000 updates on 630 observations from one authored scene. Its recorded-input evaluation and physical tests are now complete. These are development results, not held-out validation.</p>
+<table><thead><tr><th>Check</th><th>Observed result</th></tr></thead><tbody>
+<tr><td>All 630 recorded inputs</td><td>Finite, bounded forecasts. First-action mean absolute error: 0.00335 rad; largest individual error: 0.18855 rad.</td></tr>
+<tr><td>Execute one action per forecast</td><td>Failed after 900 actions without completing the hand-off.</td></tr>
+<tr><td>Execute five actions per forecast</td><td>Stopped when the forecast expired. The freshness limit was retained.</td></tr>
+<tr><td>Execute two actions per forecast</td><td>Approached the pre-grasp pose, but failed after 900 actions without completing the hand-off.</td></tr>
+</tbody></table>
+<p>“Two actions per forecast” means executing the first two predictions from a ten-action sequence, checking each before applying it. It does not mean skipping observations or disabling contact checks. Our two-action experiment improved approach progress but did not establish grasping.</p>
+<details><summary>Check your interpretation: do valid, low-error predictions prove the robot can grasp?</summary><p>No. They describe predictions on recorded inputs. Once the policy moves the arms, its new observations can differ from the teacher's. The physical run must independently demonstrate a grasp, transfer and stable release. Our failed runs are evidence of that gap.</p></details>
+<p>A new batch-size comparison is in progress. It changes training batch size from one to four while retaining the other declared settings. Its result remains unknown; the same physical checks still apply.</p>
 <p>See the <a href="../docs/STATUS.md">current engineering status</a> and <a href="../docs/SKILL_TRAINING.md">skill-data contract</a> for the exact evidence. The <a href="https://arxiv.org/abs/2304.13705">original ACT paper</a> discusses how policy errors can compound over time. The <a href="https://huggingface.co/docs/lerobot/act">LeRobot ACT guide</a> describes its camera/joint inputs and action-sequence outputs.</p>
 <footer>Return to <a href="../lessons/0004-demonstrations-and-act.html">Lesson 04</a>. Ask the agent to help interpret a specific run; reading this sheet does not record mastery.</footer>
 </main></body></html>

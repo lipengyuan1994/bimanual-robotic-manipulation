@@ -184,3 +184,39 @@ coverage is reported separately from that suite.
 History/analysis checkpoint: full regression971passed; phase-analysis11passed;
 native frontend build,423documentation links and README synchronization pass.
 Training11662 remains active. Parent OS-crash recovery remains an M4 gap.
+
+Cooperative parent-loss handling: workflow children now check the spawning
+parent's process handle alongside explicit cancellation.22 CPU process tests
+pass, including a real parent termination fixture. Log
+`.artifacts/parent-cancellation-tests.log`. This revokes execution at cooperative
+checkpoints only; hung native calls and parent-record reconstruction remain M4
+gaps. No physical/model test or complete OS-crash recovery is claimed.
+
+Parent-loss integration now exercises the actual `_child` entry point: terminate
+its owner, observe cooperative cancellation, verify the sealed cancelled result,
+and confirm worker return after the result pipe closes.22 tests pass in11.34s
+(`.artifacts/parent-loss-integration-tests.log`). Broken result pipes no longer
+raise a second reporting exception. No full native-hang crash recovery claim.
+
+Learning reference `reference/training-evidence.html` now uses the completed
+630-input evaluation and all three physical prefix attempts, with a short
+self-check and explicit unknown batch4 outcome. Static site build/check passes
+all12required files;423documentation links pass. No new learner mastery recorded.
+Full parent-loss regression is active as76274, log `.artifacts/checks-parent-loss.log`;
+training11662 remains active (latest observed update3191).
+
+Offline wheel check `20260911T135931-14890e721519` passed:89packaged files, new modules
+match source bytes, extracted-wheel imports verify both dinner asset plans
+(4819/5049actions). Wheel hash `ce87232cff1e8e615cca2d060e35ba241a4cd4afa64902fbf33bb105b46240c0`.
+Existing environment dependencies were used: this is not a fresh installation
+or physical/render validation.
+
+Fresh base installation `20260911T140058-01b5bd0ef785` passed offline with hashed lockfile
+requirements and the wheel. Installed-package import path verified;doctor passes
+ARM64 runtime,68compiled extensions,MuJoCo stepping and CPU arithmetic. No ML
+extras, rendering, learned policy or Intel validation is included.
+
+Final parent-loss regression76274 is terminal:984passed,18optional skips,9render
+deselections in494.07s.423documentation links and README synchronization pass.
+Training11662 remains active (latest observed4654/20,000). All three evaluation
+drivers still match frozen protocol134150. No new physical success claim.
