@@ -59,11 +59,51 @@ def test_cli_preserves_incomplete_sequence_exit(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(
         module,
         "run_training_cohort_sequence",
-        lambda path: {
+        lambda path, **kwargs: {
             "all_training_complete": False,
             "physical_success": None,
             "quality_claim": False,
         },
     )
-    assert main(["training-cohort-run-all", str(tmp_path / "protocol.json")]) == 1
+    assert (
+        main(
+            [
+                "training-cohort-run-all",
+                str(tmp_path / "protocol.json"),
+                "--wait-for-active-seconds",
+                "60",
+            ]
+        )
+        == 1
+    )
     assert '"all_training_complete": false' in capsys.readouterr().out
+
+
+def test_sequence_can_wait_for_one_active_owner_then_resume(tmp_path, monkeypatch):
+    calls = []
+    clock = [0.0]
+    monkeypatch.setattr(
+        module,
+        "load_training_cohort_protocol",
+        lambda path: SimpleNamespace(manifest_sha256="a" * 64),
+    )
+
+    def run(path, skill):
+        calls.append(skill)
+        if len(calls) == 1:
+            raise RuntimeError("A workflow worker still holds this lease")
+        return result(skill)
+
+    monkeypatch.setattr(module, "run_training_cohort_skill", run)
+    monkeypatch.setattr(module.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(
+        module.time,
+        "sleep",
+        lambda seconds: clock.__setitem__(0, clock[0] + seconds),
+    )
+    report = module.run_training_cohort_sequence(
+        tmp_path / "protocol.json", wait_for_active_seconds=60, poll_interval_seconds=5
+    )
+    assert calls == [COHORT_SKILLS[0], *COHORT_SKILLS]
+    assert report["all_training_complete"] is True
+    assert report["wait_for_active_seconds"] == 60.0

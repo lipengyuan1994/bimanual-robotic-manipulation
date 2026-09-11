@@ -130,6 +130,7 @@ def main(argv: list[str] | None = None) -> int:
         help="Resume all six frozen ACT trainings serially; stop on first failure",
     )
     cohort_sequence.add_argument("protocol", type=Path)
+    cohort_sequence.add_argument("--wait-for-active-seconds", type=float, default=0)
     skill_physical = commands.add_parser(
         "skill-physical-eval",
         help="Run one teacher-prepared learned-skill physical diagnostic",
@@ -531,7 +532,11 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "training-cohort-run-all":
             from bimanual.training_cohort_sequence import run_training_cohort_sequence
 
-            result = invoke_with_diagnostics(run_training_cohort_sequence, args.protocol)
+            result = invoke_with_diagnostics(
+                run_training_cohort_sequence,
+                args.protocol,
+                wait_for_active_seconds=args.wait_for_active_seconds,
+            )
             emit(result)
             return 0 if result["all_training_complete"] else 1
         elif args.command == "skill-physical-eval":

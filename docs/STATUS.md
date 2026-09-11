@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 11, 2026. Latest pushed checkpoint: `9e25716` on
+Updated September 11, 2026. Latest pushed checkpoint: `35d4de9` on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -62,14 +62,19 @@ Targeted training/process checks pass107tests with13optional skips.
 An ordered `training-cohort-run-all` coordinator now resumes/reverifies completed
 attempts, starts exactly one remaining skill at a time through the existing runner,
 stops at the first sealed failure, and reports physical quality as unknown. Its
-three coordinator fixtures plus the existing cohort/lease group pass18tests.
+four coordinator fixtures plus the existing cohort/lease group pass16tests. A bounded
+active-owner wait can idle behind the current model lease and then resume the frozen
+sequence; it does not inspect model state, bypass ownership, retry failures or catch
+unrelated runtime errors.
 
 `bar_place_and_return` cohort attempt `20260911T204632-867e6f75a36e` is active;
 child training run `20260911T204632-a60b589a1eea` is configured for20,000native-MPS
 updates under shared model-job ownership. Session56052; log
-`.artifacts/cohort-bar-place-training.log`. Poll this handle and do not launch any
-other model, inference or render job. Training progress and loss are not physical
-skill success.
+`.artifacts/cohort-bar-place-training.log`; 9,737updates were present at the latest
+inspection. Poll this handle and do not launch any other model, inference or render
+job. Training progress and loss are not physical skill success. After the bounded
+coordinator is committed, it may wait on this lease and then continue the remaining
+skills serially.
 
 A generic teacher-prepared component evaluator is now implemented. It verifies the
 nominal-v2 source and skill boundary, executes the sealed teacher prefix through
@@ -237,6 +242,14 @@ Parent-record reconstruction remains unresolved. The original portal service was
 
 ## Verification and delivery
 
+- Current repository-wide CPU regression `42144` exits0:1,181passed,18optional
+  skips,9render deselections and2dependency deprecation warnings in555.75seconds.
+  Documentation checks cover465links and README synchronization. Log
+  `.artifacts/checks-physical-protocol.log`. The physical protocol was additionally
+  reverified after its final source bundle seal. Native `/opt/homebrew/bin/node`
+  portal type-check/build passes; an accidental `/usr/local/bin/node` x86 selection
+  failed before build and was discarded without creating or extending a Rosetta
+  environment.
 - Latest full regression:1,093passed,18optional skips,9render deselections in504.38s,
   `.artifacts/checks-guardian-integration.log`. Additional parent-loss and24visual
   protocol tests pass separately; combined process/operator suite57/57passes.
