@@ -2,9 +2,8 @@
 
 The individual drawer/utensil, plate, cup and practice-bar skills now have a first
 successful continuous scripted-teacher baseline. This is one authored scene and
-one episode, not learned execution or a production reliability result. The shared
-controller still needs integration into the supported package/CLI and reproduction
-from a clean checkpoint.
+one episode, not learned execution or a production reliability result. The `dinner-teacher` command now packages the baseline; a camera reproduction
+from clean committed source is the remaining integration check.
 
 An initial combined layout was checked using the existing authored scene elements:
 
@@ -88,3 +87,37 @@ failed runs must not be presented as media for this successful attempt.
 The original scope remains in [PLAN](PLAN.md), with readiness gates in
 [ROADMAP](ROADMAP.md). This teacher baseline does not establish the 10-seed
 hackathon target, production reliability, or Intel compliance.
+
+## Supported fixed-scene teacher command
+
+Run `.venv/bin/bimanual dinner-teacher` for a camera replay, or add `--no-render`
+for the physics-only baseline. The command runs 4,819 frozen IK-generated joint
+targets over 240.95 simulated seconds. It reserves both arms for this one worker.
+There is no language planner or learned policy in this command.
+
+Versioned assets live in `src/bimanual/models/dinner_teacher_v1/`. Their manifest
+binds the source evidence seal, source actions/driver and packaged bytes. The
+wheel includes these assets; it can load the complete scene from outside the
+repository without historical experiment folders. Both original robot licenses
+and meshes are retained. Target units/order and camera order are explicit.
+
+Execution validates the entire target plan against joint/actuator limits, checks
+each control segment for collisions, and audits contacts at every 1 ms physics
+step. The plan only contains joint targets and phases. Object states come from
+fresh physics and are written solely for independent scoring. No object state
+is replayed, reset, attached or forced into a successful result.
+
+`dinner_scoring.py` streams the raw trace independently of the controller. It
+checks complete 20 Hz action/1 kHz physics coverage, a single episode, required
+holds, hand-off ownership, drawer opening, stable placements and retained prior
+placements. Re-scoring preserved attempt 28 reproduces all original physical
+metrics; attempt 22 still fails. Malformed and partial traces fail explicitly.
+Cancellation before initialization and midway through a physics step produces a
+sealed interrupted run with no success claim. A partial action is marked unapplied.
+
+Camera replay is sampled at 2 Hz and labelled teacher / 5x playback. It is not a
+20 Hz training dataset. Run artifacts contain scene/assets, runtime source,
+actual actions, compressed physics, score and optional replay. Report simulation
+time separately from actor wall time; the latter includes capture but excludes
+post-run scoring and GIF encoding. This fixed layout establishes feasibility,
+not robustness or completion of M2–M4.

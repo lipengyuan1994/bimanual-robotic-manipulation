@@ -279,3 +279,42 @@ physical outcome and trace diagnosis. It proposes a separate bounded time-budget
 experiment with unchanged weights and physical thresholds to distinguish delayed
 convergence from persistent forecast-boundary motion. That experiment has not
 been run, and no additional training or retries were performed.
+
+## Nominal stall after per-step replanning: training-only diagnosis
+
+The [cadence comparison](POLICY_ROLLOUT.md) fixes terminal motion on two development
+validation starts, while nominal training case 1000 still stalls about 123 mm
+from pregrasp. Analysis `20260911T012244-b6feaf688748` compares only that nominal
+policy trajectory against the six training recordings and retained training-frame
+predictions. No model load, training or physical run was required.
+
+Residual fitting error is the clearest initiating defect. At reset, every measured
+joint and all three camera-image hashes exactly match nominal training frame 0,
+yet the policy predicts pan −0.036375 rad against teacher +0.000564 rad. Retained
+teacher-frame inference has 6.615 mm FK target error there and backward targets
+at frames 1 and 5 too. Frame 0 received only six sampled updates. Missing reset
+coverage cannot account for an error at this exact recorded input.
+
+The policy subsequently enters a region without matching correction examples.
+After one control step, its minimum distance to the continuous training teacher
+paths is 0.02935 rad across the five active arm joints. At the final stalled
+observation it is 0.03770 rad from the closest path, case 1002 near frame 6.
+That neighboring teacher example advances pan by +0.007408 rad; the stalled
+policy's raw first forecast instead requests −0.010304 rad, and temporal averaging
+holds it almost stationary. These distances describe joint-space coverage, not
+a calibrated novelty threshold or image-feature coverage. They support a
+sustaining coverage gap, but do not override the directly observed fitting defect
+that starts the failure. A numerical causal allocation is not established.
+
+The proposed next single experiment retains all 480 training transitions and the
+same model, seed, optimizer and 2,000-update budget. Allocate one third of draws
+to nominal training frames `[0,10)`, one third to all training settled frames
+`[60,80)`, and one third to all remaining training frames. This changes sampling
+alone, retains endpoint probability mass and keeps every training frame eligible;
+it intentionally changes episode balance. First assess nominal launch direction,
+per-region teacher/FK errors and endpoint accuracy before new physical trials.
+The reduced attention to other training starts is an explicit tradeoff to measure.
+All masks must derive from verified training configs, and all probability/RNG
+lineage must be saved. No validation states were used to choose this design.
+The proposal and detailed limits are preserved locally in
+`.artifacts/nominal-launch-proposal.md`; it has not been implemented or trained.

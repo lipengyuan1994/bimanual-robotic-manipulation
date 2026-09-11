@@ -1,0 +1,62 @@
+{
+  "name": "dinner_horizontal_release_v18",
+  "scene_sha256": "3aa969c78966a920508553c4800bc46aa8a0cac190a2aa487fc7948c2266ed92",
+  "source_layout_run": "20260910T220035-a5c40c643f17",
+  "plate_source_m": [
+    0,
+    0.3,
+    0.413
+  ],
+  "plate_destination_m": [
+    0.14,
+    -0.015,
+    0.378
+  ],
+  "plate_position_tolerance_m": 0.02,
+  "bar_destination_m": [
+    0.025,
+    0.21,
+    0.391
+  ],
+  "bar_position_tolerance_m": 0.025,
+  "plate_release_axis": [
+    0.42,
+    -0.27,
+    0.866
+  ],
+  "plate_release_calibration_m": [
+    0.02,
+    0,
+    0
+  ],
+  "plate_carry_height_m": 0.48,
+  "other_objects": "unchanged source, shapes, contacts and destinations",
+  "plate_measured_object_minus_tool_xy_m": [
+    0.0076129119934288,
+    -0.04125482633648874
+  ],
+  "plate_withdraw_delta_m": [
+    -0.12,
+    -0.02,
+    0
+  ],
+  "calibration_source": "Failed attempt15 actual plate minus tool offset is frozen. Both XY carry/lower/withdraw/retreat coordinates are generated as new target minus this offset. Cup goes first. Original V6 target fails cup-final camera clearance in release-grid.json; V7 plate-first fails right gripper cup approach. V8 target and west/up withdrawal selected by frozen scratch geometric checks before trial17. All object shapes and tolerances unchanged.",
+  "plate_transport_clearance_tool_m": [
+    0.04,
+    0.02,
+    0.48
+  ],
+  "route_reason": "Attempt27 finishes motion but plate remains tilted on fixed jaw. Withdraw 120mm west/20mm south at measured release tool height before lifting, keeping destination, XY compensation and all contact/scoring rules unchanged.",
+  "right_plate_park_pan_rad": 1.8,
+  "plate_tool_correction_xy_m": [
+    0.022717992990285624,
+    0.006320494316526915
+  ],
+  "release_correction_source": "attempt22/full-audit.json and release22-diagnosis.json; fixed before attempt23",
+  "release_correction_reason": "Attempt23 high carry correction collides with parked right arm. Retain proven V12 transport waypoint and apply the same frozen XY correction only while lowering and withdrawing. Scene, targets and scoring unchanged.",
+  "plate_correction_stages": [
+    "lower",
+    "withdraw",
+    "retreat"
+  ]
+}

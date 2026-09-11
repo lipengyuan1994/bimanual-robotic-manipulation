@@ -8,8 +8,8 @@ Readiness follows [ROADMAP](ROADMAP.md); original scope remains in [PLAN](PLAN.m
 - **M0 complete:** native environment, evidence infrastructure, portal, seven
   lessons, learning site and README/CI synchronization.
 - **M1 in progress:** one complete continuous **scripted-teacher** dinner episode
-  now passes in an authored scene. Package it as a supported command and reproduce
-  it with cameras from a clean checkpoint before closing integration.
+  now passes in an authored scene. The supported `dinner-teacher` command now reproduces its physical result;
+  a rendered run from clean source remains before closing integration.
 - **M2 in progress:** real ACT training/inference, guarded actions, Qwen proposals
   and a supervisor core exist. Learned open-hand approach passes two validation
   starts but fails nominal. No learned grasp or complete learned dinner workflow
@@ -107,8 +107,7 @@ contact checks and actual contact grasp/hand-off exist. Default physics is 200 H
 [explicit 1 kHz profiles](decisions/0004-explicit-physics-profiles.md) support tableware.
 
 Supported individual commands remain `bimanual grasp`, `handoff`, `drawer`,
-`utensils`, `plate` and `cup`. The complete teacher prototype is not yet a public
-CLI command. The portal at `http://127.0.0.1:8768/` is read-only, with evidence,
+`utensils`, `plate` and `cup`. The complete fixed-scene teacher is available as `bimanual dinner-teacher`. The portal at `http://127.0.0.1:8768/` is read-only, with evidence,
 replays, lessons and recorded planner decisions; it is not a live robot operator UI.
 
 - [Physical foundation](DUAL_ARM_FOUNDATION.md), [grasp](CONTACT_GRASP.md),
@@ -161,9 +160,8 @@ hackathon submission has been sent.
 All experiment/model/physics processes from this session are terminal. No restart
 or new training is necessary simply to recover the handoff.
 
-1. Package the passing teacher baseline and immutable scene/trajectory assets into
-   a supported command with independent scoring; remove dependence on historical
-   `.artifacts` paths. Reproduce it with cameras from clean committed source.
+1. Reproduce `bimanual dinner-teacher` with cameras from clean committed source.
+   The packaged assets, independent scorer and cancellation tests are implemented.
 2. Inspect the stalled nominal learned trajectory against training coverage; use
    training-only policy-visited states for any corrective demonstrations. Keep the
    two validation starts out of training and retain all prior failures.
@@ -173,3 +171,24 @@ or new training is necessary simply to recover the handoff.
 
 Verify the current teacher evidence with
 `.venv/bin/bimanual evidence verify 20260911T011032-a9fda4aee41f`.
+
+## Packaged teacher integration checkpoint
+
+The first supported-command run `20260911T012748-2d4a69c7807d` reproduces all
+240,950 physics samples and passes the independent full-workflow score, with zero
+failed gates (126.17 actor wall seconds). Its outer manifest remains **failed**:
+the actor originally read the wrong scorer field name. That integration error is
+fixed and regression-tested; the historical failed manifest is retained unchanged.
+A fresh run from the corrected checkpoint is required before claiming command
+completion. No learned policy was involved.
+
+Nine actor tests pass, including altered asset rejection and cancellation before
+initialization/midway through a physics step. The independent scorer has 28 passing
+tests and reproduces attempt 28 while rejecting attempt 22. The built wheel loads
+its assets and scene from outside the repository without historical experiment
+folders. Full checks and clean rendered reproduction are in progress.
+
+ACT analysis `20260911T012244-b6feaf688748` verifies exact nominal reset input
+matches training, yet the first predicted movement has the wrong sign. Proposal
+`20260911T012605-8265a1f82ac4` changes only training-anchor sampling; no new training
+has started and held-out cases remain excluded. See [training](TRAINING.md).

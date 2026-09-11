@@ -66,3 +66,10 @@ Run `npm run check` and `npm run build` in `web` for the portal.
 No paid compute, hosted inference, physical robot, or account credentials are needed
 for this foundation release. The final challenge requires separate access to an
 actual Intel Core Ultra Series 2/3 machine; see [free access routes](docs/INTEL_ACCESS.md).
+
+## Run the dinner teacher locally
+
+After setup, run `.venv/bin/bimanual dinner-teacher` (or add `--no-render`).
+This executes the fixed-scene scripted baseline through contact physics and writes
+independent scoring evidence plus a camera replay. It is not yet learned dinner
+setup. See [the workflow and limits](docs/DINNER_SCENE.md).
