@@ -163,3 +163,20 @@ retreat. This check freezes the release plate pose during the prefix, then uses
 retained original plate poses during retreat. Those counterfactual overlaps do
 not prove dynamic collisions; the pose approximation is an unresolved limitation.
 No scene, destination, dataset or acceptance gate was changed.
+
+## Actual northward separation prefix
+
+The first physical diagnostic `20260911T052918-cdeba1a0c381` stopped at original
+control 200 because an added static commanded-overlap heuristic rejected the
+existing contact grasp. It reached no plate motion and is retained unchanged.
+Corrected protocol `20260911T053053-f0e666b0363f` scopes new-motion preflight to the
+separating prefix and retains the production live 1kHz contact/penetration guards.
+
+Run `20260911T053109-6c16dbcb8104` completes 2,761 controls and 138,050 samples,
+including north5 mm separation and 60 endpoint holds, then stops before the unsafe
+westward retreat. It has zero forbidden contacts and 1.831 mm maximum measured
+overlap. **Release fails:** fixed-jaw support persists through all 3,000 hold
+samples, ending near 0.370 N; the plate remains tilted, upright cosine 0.957639,
+center height 0.396589 m. Bar/cup placements and the closed drawer are preserved.
+The small northward prefix is physically collision-free in this trial but does
+not free the fixed jaw. No full repair, workflow or learned success follows.

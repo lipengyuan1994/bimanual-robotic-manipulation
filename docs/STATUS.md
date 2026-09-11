@@ -211,10 +211,12 @@ trajectory preflight correctly; the failed experiment remains retained.
 - Final full check **1206**: `.artifacts/checks-first-action-loss-final.log`,
   864 tests collected, including the new loss tests. This follows the clean
   822-pass recovery checkpoint check; its result is not yet claimed.
-- Plate diagnostic **89905**: protocol `20260911T053053-f0e666b0363f`,
-  `.artifacts/unseat-prefix-existing-guards/run.log`. Retains previous failed
-  diagnostic, scopes new-motion preflight correctly, preserves live 1kHz guards,
-  and stops after separation plus three seconds of hold. No full repair claim.
+- Plate diagnostic **89905 is terminal**, sealed run `20260911T053109-6c16dbcb8104`.
+  All 2,761 controls and 138,050 rows complete without forbidden contacts; maximum
+  physical overlap is 1.831 mm. Release fails: the fixed jaw supports the tilted
+  plate throughout the 3,000 hold samples (about 0.370 N at the end). The north5 mm
+  prefix is collision-free in this trial but insufficient to unseat the plate.
+  Bar/cup and closed drawer are preserved. This is not a full-workflow success.
 
 Next: poll these exact handles. After training seals successfully, use
 `.artifacts/approach-first-action-loss-offline.py` with its run ID, then
