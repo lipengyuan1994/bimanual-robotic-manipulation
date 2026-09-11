@@ -24,7 +24,7 @@ is active.
 
 The six-skill suite was frozen before any of those checkpoints completed at
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `03cfa2a145bee7086a4514a0391c4165ff0b46d716b768faf518bbb9067c862e`.
+seal `15467d5ccbf76c1b4729523509c4dbea64b60810a76dc742244a1911fedb2f1d`.
 It selects final-update20,000 checkpoints, MPS, a two-action execution prefix,
 the authored nominal-v2 scene, exact teacher preparation, per-skill action budgets
 equal to twice the nominal duration, and a1,200-second wall limit. It requires one
@@ -40,8 +40,8 @@ PYTORCH_ENABLE_MPS_FALLBACK=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
   --skill bar_place_and_return --training-attempt COHORT_ATTEMPT
 ```
 
-The protocol runner verifies the cohort, exact training child, checkpoint source
-and evaluator code. It returns an existing sealed result instead of retrying it;
+The protocol runner verifies the cohort, exact training child, checkpoint source,
+and nine evaluator/control/scoring source files. It returns an existing sealed result instead of retrying it;
 multiple matching results stop as ambiguous. A failed physical result stays failed.
 
 ```sh

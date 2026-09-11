@@ -50,6 +50,7 @@ def setup(tmp_path, request):
     executor.start(
         attempt.attempt_id, observation, execute_chunk_steps=options.get("execute_chunk_steps", 1)
     )
+    assert executor._monitor.max_actions == executor.max_actions + 1
     yield worker, executor, policy
     worker.close()
 

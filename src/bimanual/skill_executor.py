@@ -131,6 +131,10 @@ class DinnerSkillExecutor:
                 initial_sequence=observation.sequence,
                 initial_simulation_seconds=observation.simulation_seconds,
                 layout=self._layout,
+                # The executor checks its declared budget before every action.
+                # Keep the monitor's redundant guard one step beyond it so an
+                # older view-profile default cannot terminate a v2 skill early.
+                max_actions=self.max_actions + 1,
             )
             self.worker.flush_physics_trace()
             self._trace_offset = (self.worker.directory / "physics.jsonl").stat().st_size

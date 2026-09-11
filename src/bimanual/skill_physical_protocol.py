@@ -15,6 +15,17 @@ from bimanual.skill_views import INTERVALS_V2
 from bimanual.training_cohort import COHORT_SKILLS, load_training_cohort_protocol
 
 _BUDGETS = {skill: 2 * (end - start) for skill, start, end in INTERVALS_V2[1:]}
+_SOURCES = (
+    "skill_physical_evaluation.py",
+    "teacher_prefix.py",
+    "skill_executor.py",
+    "skill_outcomes.py",
+    "successor_readiness.py",
+    "dinner_control.py",
+    "dinner_scoring.py",
+    "dinner_teacher.py",
+    "skill_registry.py",
+)
 
 
 def _configs() -> tuple[dict, ...]:
@@ -40,8 +51,7 @@ class SkillPhysicalProtocol(Contract):
     training_cohort_path: str
     training_cohort_file_sha256: Digest
     training_cohort_manifest_sha256: Digest
-    evaluator_source_sha256: Digest
-    prefix_source_sha256: Digest
+    evaluation_sources: dict[str, Digest]
     configs: tuple[dict, ...]
     selection_rule: Literal["evaluate_every_completed_cohort_checkpoint_once"] = (
         "evaluate_every_completed_cohort_checkpoint_once"
@@ -58,6 +68,8 @@ class SkillPhysicalProtocol(Contract):
             raise ValueError("Training cohort path must be relative to this protocol")
         if tuple(self.configs) != _configs():
             raise ValueError("Physical evaluation parameters must match the frozen six-skill suite")
+        if set(self.evaluation_sources) != set(_SOURCES):
+            raise ValueError("Physical evaluation protocol requires the exact runtime source set")
         body = self.model_dump(mode="json", exclude={"manifest_sha256"})
         if hashlib.sha256(canonical(body)).hexdigest() != self.manifest_sha256:
             raise ValueError("Physical evaluation protocol body seal mismatch")
@@ -77,8 +89,7 @@ def create_skill_physical_protocol(training_cohort_path: Path, destination: Path
         "training_cohort_path": os.path.relpath(cohort_path, destination.parent),
         "training_cohort_file_sha256": digest_file(cohort_path),
         "training_cohort_manifest_sha256": cohort.manifest_sha256,
-        "evaluator_source_sha256": digest_file(root / "skill_physical_evaluation.py"),
-        "prefix_source_sha256": digest_file(root / "teacher_prefix.py"),
+        "evaluation_sources": {name: digest_file(root / name) for name in _SOURCES},
         "configs": _configs(),
         "selection_rule": "evaluate_every_completed_cohort_checkpoint_once",
         "scope": "teacher_prepared_component_only_not_autonomous_workflow",
@@ -103,9 +114,7 @@ def load_skill_physical_protocol(path: Path) -> SkillPhysicalProtocol:
     if cohort.manifest_sha256 != protocol.training_cohort_manifest_sha256:
         raise ValueError("Frozen training cohort body changed")
     root = Path(__file__).resolve().parent
-    if (
-        digest_file(root / "skill_physical_evaluation.py") != protocol.evaluator_source_sha256
-        or digest_file(root / "teacher_prefix.py") != protocol.prefix_source_sha256
-    ):
-        raise ValueError("Physical evaluator implementation changed after protocol freeze")
+    for name, expected in protocol.evaluation_sources.items():
+        if digest_file(root / name) != expected:
+            raise ValueError(f"Physical evaluator source changed after protocol freeze: {name}")
     return protocol
