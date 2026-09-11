@@ -41,3 +41,9 @@ as well as improvements in average errors. Passing five conditions cannot cancel
 the sixth failure. We retained the rule and recorded a new training experiment.
 This exercise links lesson 4 (imitation learning) and lesson 6 (honest evaluation).
 Reading this feedback is not a recorded demonstration of mastery.
+
+Lesson 04 now includes a short falling-loss exercise and a printable
+[training-evidence reference](../reference/training-evidence.html), connected to
+our 630-frame hand-off training experiment. The exercise distinguishes fitting,
+recorded-input comparison, physical skill checks and held-out task evaluation.
+Material is available; no new learner mastery is recorded.

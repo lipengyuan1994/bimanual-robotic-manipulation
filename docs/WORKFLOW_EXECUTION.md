@@ -144,3 +144,9 @@ a stopped or planning worker may continue to show its last capture. Synthetic
 camera tests are labeled `injected_unverified`. This display does not certify
 freshness for control or task success; the control path retains its own checks.
 Actual learned-run camera display validation is still pending.
+
+Terminal timeout and clarification outcomes retain their verified run links.
+Clarification appears separately so the operator can revise the instruction for a
+new job. Failed jobs show the bounded verified worker reason when available; a
+parent timeout always reports that the time limit was reached. These explanations
+do not replace the sealed logs or change success scoring.

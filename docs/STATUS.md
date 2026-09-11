@@ -22,11 +22,11 @@ quality, release reliability or Intel compliance.
 
 ## Active jobs and next executable actions
 
-- **95347: ACT hand-off training**, run `20260911T122319-b2ee550f005b`,
+- **95347: ACT hand-off training completed**, run `20260911T122319-b2ee550f005b`,
   protocol `20260911T121325-10260896f896`, clean training source `284e86f`.
-  Native MPS, fallback disabled,20,000 planned updates; step12,577 last observed.
+  Native MPS, fallback disabled,20,000 updates completed in3098.21s.
   Log `.artifacts/dinner-handoff-v2-training.log`; progress in the run's `steps.jsonl`.
-  Poll the existing handle. No final checkpoint quality or completed training claim.
+  Handle is terminal. Seal3cace647619486eeea7e6f7a68a701f5f0d1a61758b2cd335468b85ce48980d1 verifies. Checkpoint and processor reloads pass; physical quality remains untested.
 - **19814: full progress regression is terminal**,956 passed,18 skipped,9 render
   deselected in500.57s; `.artifacts/checks-live-progress.log`. It predates the
   camera changes. Final camera regression22054 is now terminal:964 passed,
@@ -165,3 +165,41 @@ Final camera checkpoint: regression22054 passed964 tests,18 optional skips,9 ren
 deselections;416 documentation links and README synchronization pass. Native UI
 build and saved-image browser fixture pass. Training95347 remains active (last
 observed step15,848/20,000). No live rendering or learned physical result is claimed.
+
+Operator terminal-outcome fix (newer than pushedb4e141d): timeout, clarification,
+recovery-required, replaced and closed outcomes now retain their verified run IDs
+instead of being rejected as unsupported. Clarification has a distinct UI state;
+failed jobs show bounded reasons propagated only from verified child manifests,
+with a time-limit explanation taking precedence for timeout. No outcome grants
+physical success.43 targeted operator/process/API tests pass; native frontend and
+lint pass. Initial failed assertion expected no error text for a failed job; it
+was updated to require the new explicit fallback explanation, while retaining the
+independent-success assertion. Full final check will run before the next commit.
+
+Learning update: Lesson04 now connects the current630-frame experiment to an
+interactive question about training loss versus physical success. New printable
+reference `reference/training-evidence.html` separates fitting, recorded-input,
+physical-skill and held-out task evidence. Primary ACT sources were checked; no
+mastery record changed. Static learning-site build/check passes and423 repository
+links pass. Public Pages remains main-based; this draft-branch material is not
+claimed published. Final operator-reason regression44969 remains active.
+
+Learning packaging correction: the first build omitted the new reference because
+reference pages were explicitly listed. The builder now copies it, links it from
+the homepage and rewrites its repository-document links; the site checker now
+requires12 files and checks reference navigation too. Rebuild/check passes. This
+supersedes the earlier11-file check as evidence for the new learning material.
+
+Pre-evaluation verification: recorded evaluator, physical evaluator and watchdog
+harness byte hashes all match sealed protocol125848-12e6816cc83b; skill-view file
+hash also matches. No diagnostic has been executed against the active checkpoint.
+Training95347 remains live, step18,036/20,000 last observed. Full operator-reason
+regression44969 remains live; no new production Python changes during that run.
+
+Training95347 and regression44969 are terminal. Final operator-reason regression:
+969 passed,18 skipped,9 render deselected in515.40s. Learning build/check requires
+12 files and passes. The training record verifies actual MPS,20kupdates, checkpoint/
+processor/sampler reloads, and no manipulation-quality claim. Next: run the frozen
+recorded-input evaluator, then guarded physical handoff; all other learned skills
+and continuous dinner evaluation remain unfinished. Intel setup remains deferred
+until local training work is complete, not merely this first skill checkpoint.

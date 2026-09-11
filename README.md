@@ -19,7 +19,7 @@ Event-window implementation is authorized in [decision 0003](docs/decisions/0003
 Two SO-101 arms run locally with bounded control and three cameras. The scripted
 teacher completes drawer use, tableware placement and physical hand-off in one
 authored scene. Corrected demonstrations and skill boundaries have been checked;
-full hand-off ACT training is running locally. Learned dinner-table success and
+the first full hand-off ACT checkpoint completed local training and awaits evaluation. Learned dinner-table success and
 release reliability remain unproven. [Accepted plan](docs/PLAN.md)
 
 The portal offers optional instruction/start/stop controls through a server-owned
@@ -53,7 +53,7 @@ connected to Lesson 03. Reading a lesson and demonstrating understanding are tra
 - [Lesson 01: Observe, act, and step time](lessons/0001-observe-act-step.html) — 15 min
 - [Lesson 02: Frames and reachable positions](lessons/0002-frames-and-reach.html) — 15 min
 - [Lesson 03: Contacts, grasps, and hand-offs](lessons/0003-contacts-grasps-handoffs.html) — 15 min
-- [Lesson 04: Demonstrations and ACT](lessons/0004-demonstrations-and-act.html) — 15 min
+- [Lesson 04: Demonstrations and ACT](lessons/0004-demonstrations-and-act.html) — 20 min
 - [Lesson 05: Supervision and recovery](lessons/0005-supervision-and-recovery.html) — 15 min
 - [Lesson 06: Evaluation and uncertainty](lessons/0006-evaluation-and-uncertainty.html) — 15 min
 - [Lesson 07: OpenVINO and benchmarks](lessons/0007-openvino-and-benchmarks.html) — 15 min

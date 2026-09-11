@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 type Job = {
   job_id: string;
-  state: "active" | "stopping" | "finished" | "failed" | "cancelled";
+  state: "active" | "stopping" | "finished" | "failed" | "cancelled" | "needs_clarification";
   instruction: string;
   run_id: string | null;
   error: string | null;
@@ -92,7 +92,7 @@ export function OperatorPanel() {
         <button type="submit" disabled={!connected || busy || pending || !instruction.trim()}>Start workflow</button>
       </form>
       {job && <div aria-live="polite">
-        <p>Process: <strong>{job.state}</strong></p>
+        <p>Process: <strong>{job.state.replaceAll("_", " ")}</strong></p>
         <p>{job.instruction}</p>
         {job.progress && <div>
           <p>Last worker update (unverified): {job.progress.snapshot.state.replaceAll("_", " ")}</p>

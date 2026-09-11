@@ -74,7 +74,11 @@ def test_execution_outcomes_never_claim_independent_task_success(tmp_path, outco
     jobs.close()
     result = jobs.snapshot()
     assert result.state == state and result.run_outcome == outcome
-    assert result.independent_task_success is None and result.error is None
+    assert result.independent_task_success is None
+    if outcome == "failed":
+        assert result.error == "Workflow did not complete. Inspect the recorded run for details."
+    else:
+        assert result.error is None
     assert "independent_task_success" in result.report()
 
 
@@ -208,3 +212,39 @@ def test_progress_does_not_replace_job_state_or_terminal_evidence(tmp_path):
     assert jobs.snapshot().state == "failed"
     assert jobs.snapshot().progress == value
     assert jobs.snapshot().independent_task_success is None
+
+
+@pytest.mark.parametrize(
+    "outcome,state",
+    [
+        ("timed_out", "failed"),
+        ("needs_clarification", "needs_clarification"),
+        ("recovery_required", "failed"),
+        ("replaced", "cancelled"),
+        ("closed", "cancelled"),
+    ],
+)
+def test_terminal_outcomes_keep_verified_run_and_explanation(tmp_path, outcome, state):
+    def runner(cfg, *, store, **kwargs):
+        directory = store.new_run()
+        return store.seal(
+            directory,
+            kind="dinner_workflow_process",
+            outcome=outcome,
+            config={},
+            metrics={"child_reason": "Where should the cup go?"},
+            source={},
+            claims=[],
+        )
+
+    jobs = manager(tmp_path, runner)
+    jobs.start("fixture")
+    jobs.close()
+    job = jobs.snapshot()
+    assert job.state == state and job.run_id is not None
+    assert job.run_outcome == outcome
+    assert job.independent_task_success is None
+    if outcome == "timed_out":
+        assert "time limit" in job.error
+    elif state in {"failed", "needs_clarification"}:
+        assert job.error == "Where should the cup go?"

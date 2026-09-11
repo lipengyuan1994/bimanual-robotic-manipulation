@@ -15,7 +15,7 @@ from bimanual.workflow_process import WorkflowProcessConfig, run_workflow_proces
 @dataclass(frozen=True)
 class OperatorJob:
     job_id: str
-    state: Literal["active", "stopping", "finished", "failed", "cancelled"]
+    state: Literal["active", "stopping", "finished", "failed", "cancelled", "needs_clarification"]
     instruction: str
     run_id: str | None = None
     run_outcome: str | None = None
@@ -111,13 +111,35 @@ class OperatorJobs:
             verified = self._store.verify(result.run_id)
             if verified != result or result.kind != "dinner_workflow_process":
                 raise ValueError("Unverified workflow process result")
-            if result.outcome not in {"completed", "cancelled", "failed"}:
+            states = {
+                "completed": "finished",
+                "cancelled": "cancelled",
+                "failed": "failed",
+                "timed_out": "failed",
+                "needs_clarification": "needs_clarification",
+                "recovery_required": "failed",
+                "replaced": "cancelled",
+                "closed": "cancelled",
+            }
+            if result.outcome not in states:
                 raise ValueError("Unsupported workflow process outcome")
             # A late stop cannot erase completed evidence or invent a cancelled run.
-            state = {"completed": "finished", "cancelled": "cancelled", "failed": "failed"}[
-                result.outcome
-            ]
-            final = replace(job, state=state, run_id=result.run_id, run_outcome=result.outcome)
+            state = states[result.outcome]
+            reason = None
+            if state in {"failed", "needs_clarification"}:
+                reason = "Workflow time limit reached; inspect the recorded run before retrying."
+                if result.outcome != "timed_out":
+                    reason = next(
+                        (
+                            value[:2048]
+                            for key in ("error", "child_verification_error", "child_reason")
+                            if isinstance(value := result.metrics.get(key), str) and value.strip()
+                        ),
+                        "Workflow did not complete. Inspect the recorded run for details.",
+                    )
+            final = replace(
+                job, state=state, run_id=result.run_id, run_outcome=result.outcome, error=reason
+            )
         except BaseException as error:
             final = replace(job, state="failed", error=f"{type(error).__name__}: {error}")
         with self._lock:

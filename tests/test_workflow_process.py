@@ -301,7 +301,12 @@ def progress_fixture(config, *, store, **kwargs):
         kind="dinner_workflow_execution",
         outcome="failed",
         config=config.model_dump(mode="json"),
-        metrics=dict(state="failed", execution_complete=False, independent_task_success=None),
+        metrics=dict(
+            state="failed",
+            execution_complete=False,
+            independent_task_success=None,
+            reason="Fixture could not grasp the object",
+        ),
         source={},
         claims=[],
     )
@@ -321,3 +326,4 @@ def test_spawned_progress_is_display_only(tmp_path):
     assert all(item["task_success_verified"] is False for item in updates)
     assert result.outcome == "failed"
     assert result.metrics["independent_task_success"] is None
+    assert result.metrics["child_reason"] == "Fixture could not grasp the object"

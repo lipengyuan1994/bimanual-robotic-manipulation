@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Training evidence · quick reference</title><link rel="stylesheet" href="../assets/learning/lesson.css"></head>
+<body><main class="lesson">
+<nav><a href="../lessons/0004-demonstrations-and-act.html">Lesson 04</a> / Training evidence</nav>
+<p class="eyebrow">Quick reference · 5 minutes</p>
+<h1>A smaller error is<br>one piece of evidence.</h1>
+<p class="intro">Ask what was measured, on which inputs, and what remains untested.</p>
+<table><thead><tr><th>Evidence</th><th>What it establishes</th><th>What it leaves open</th></tr></thead><tbody>
+<tr><td>Training loss decreases</td><td>The optimizer reduced its chosen fitting objective on sampled training examples.</td><td>Stable grasping, contact timing and unseen scenes.</td></tr>
+<tr><td>Recorded-input evaluation</td><td>Predictions can be compared with saved target actions for the evaluated frames.</td><td>What happens after the policy changes the simulated scene.</td></tr>
+<tr><td>Physical skill evaluation</td><td>Measured contact and stability checks passed or failed for that attempted skill.</td><td>Other skills, the continuous dinner task and generalization.</td></tr>
+<tr><td>Frozen held-out task suite</td><td>Observed performance across the declared, untouched test cases.</td><td>Behavior outside the tested operating envelope.</td></tr>
+</tbody></table>
+<h2>Read the units before the number</h2>
+<p>A normalized training loss is not automatically an angle in radians, a distance in millimetres, or a success probability. In this project, inspect the training configuration and loss weights, then use the evaluator's raw joint-angle errors for an interpretable action comparison. Do not compare two loss numbers if their weighting or normalization changed.</p>
+<h2>Averages can hide the important instant</h2>
+<p>Illustrative example: nine joint targets have 0.001 rad error, but one has 0.100 rad error. The mean is 0.0109 rad. That average hides the much larger error at one instant. If that instant is when a gripper releases an object, its timing matters. This example is invented; it is not a result from our robot.</p>
+<h2>The current experiment</h2>
+<p>Our full hand-off training run uses 630 recorded observations from one authored scene. The planned recorded-input evaluation examines those training observations; it is not held-out validation. A separate physical diagnostic must reach both the hand-off contact outcome and the stable successor boundary. Neither result alone completes the dinner-table release.</p>
+<p>See the <a href="../docs/STATUS.md">current engineering status</a> and <a href="../docs/SKILL_TRAINING.md">skill-data contract</a> for the exact evidence. The <a href="https://arxiv.org/abs/2304.13705">original ACT paper</a> discusses how policy errors can compound over time. The <a href="https://huggingface.co/docs/lerobot/act">LeRobot ACT guide</a> describes its camera/joint inputs and action-sequence outputs.</p>
+<footer>Return to <a href="../lessons/0004-demonstrations-and-act.html">Lesson 04</a>. Ask the agent to help interpret a specific run; reading this sheet does not record mastery.</footer>
+</main></body></html>

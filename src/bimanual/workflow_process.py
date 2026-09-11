@@ -265,6 +265,9 @@ def run_workflow_process(
                 child_manifest_sha256=child.manifest_sha256,
                 child_outcome=child.outcome,
             )
+            child_reason = child.metrics.get("reason")
+            if isinstance(child_reason, str):
+                metrics["child_reason"] = child_reason[:2048]
             if reason is None and metrics["child_exitcode"] == 0:
                 complete = (
                     child.outcome == "completed"

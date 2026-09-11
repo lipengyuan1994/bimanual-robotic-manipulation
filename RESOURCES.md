@@ -37,3 +37,7 @@ No community message has been sent on the user's behalf.
 
 Event-specific early-work ruling, Intel access, credit terms, official assets/seeds,
 and final submission fields remain unconfirmed. See [questions](docs/ORGANIZER_QUESTIONS.md).
+
+- [Learning Fine-Grained Bimanual Manipulation with Low-Cost Hardware (ACT)](https://arxiv.org/abs/2304.13705).
+  Primary paper for Lesson 04's discussion of compounding policy errors and action
+  sequences; the reported experiments are the authors' results, not this project's.

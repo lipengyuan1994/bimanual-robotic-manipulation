@@ -8,6 +8,8 @@ const repositoryUrl =
   "https://github.com/lipengyuan1994/bimanual-robotic-manipulation";
 
 const replacements = new Map([
+  ['href="../docs/STATUS.md"', `href="${repositoryUrl}/blob/main/docs/STATUS.md"`],
+  ['href="../docs/SKILL_TRAINING.md"', `href="${repositoryUrl}/blob/main/docs/SKILL_TRAINING.md"`],
   ['href="../README.md"', 'href="../index.html"'],
   ['href="../docs/LEARNING.md"', 'href="../index.html#learning-path"'],
   ['href="../docs/SETUP.md"', `href="${repositoryUrl}/blob/main/docs/SETUP.md"`],
@@ -81,7 +83,8 @@ function indexPage() {
       Measure actual device selection and complete application timing on Intel hardware.</li>
     </ol>
     <h2>Keep nearby</h2>
-    <p><a href="reference/glossary.html">Robotics vocabulary reference</a></p>
+    <p><a href="reference/glossary.html">Robotics vocabulary reference</a> ·
+    <a href="reference/training-evidence.html">Training evidence reference</a></p>
     <h2>Build with the project</h2>
     <p>The lessons correspond to a local, native-Apple-Silicon MuJoCo learning lab.
     The exact setup, evidence boundaries, and current implementation status live in
@@ -101,5 +104,6 @@ await mkdir(resolve(outputRoot, "reference"), { recursive: true });
 await Promise.all([
   ...lessonPages.map(copyPage),
   copyPage("reference/glossary.html"),
+  copyPage("reference/training-evidence.html"),
 ]);
 await writeFile(resolve(outputRoot, "index.html"), indexPage());
