@@ -29,6 +29,7 @@ Read [STATUS](STATUS.md) first when resuming work.
 | Learned actions in the simulator | [Policy rollout and failure evidence](POLICY_ROLLOUT.md) |
 | High-resolution reset camera evidence | [Planner sensor profiles](PLANNER_SENSORS.md) |
 | Local visual skill proposals | [Qwen planner and recorded-camera probes](PLANNER.md) |
+| Frozen visual decision evaluation | [Qwen planner decision-suite protocol](PLANNER.md#frozen-decision-suite) |
 | Live pause and fresh revalidation | [Live planner integration design](PLANNER_LIVE_INTEGRATION.md) |
 | Step ownership, retries and cancellation | [Task supervisor](SUPERVISOR.md) |
 | Problems and exact next checks | [Troubleshooting](TROUBLESHOOTING.md) |

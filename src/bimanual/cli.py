@@ -333,6 +333,22 @@ def main(argv: list[str] | None = None) -> int:
     planner.add_argument("--instruction", required=True)
     planner.add_argument("--device", choices=["cpu", "mps"], default="cpu")
     planner.add_argument("--max-tokens", type=int, default=384)
+    planner_suite_create = commands.add_parser(
+        "planner-suite-create", help="Freeze source-bound visual-planner evaluation cases"
+    )
+    planner_suite_create.add_argument("--spec", type=Path, required=True)
+    planner_suite_create.add_argument("--model-root", type=Path, required=True)
+    planner_suite_create.add_argument("--destination", type=Path, required=True)
+    planner_suite_check = commands.add_parser(
+        "planner-suite-check", help="Verify a frozen visual-planner evaluation protocol"
+    )
+    planner_suite_check.add_argument("protocol", type=Path)
+    planner_suite_run = commands.add_parser(
+        "planner-suite-run", help="Run every frozen visual-planner case without dispatch"
+    )
+    planner_suite_run.add_argument("protocol", type=Path)
+    planner_suite_run.add_argument("--device", choices=["cpu", "mps"], default="cpu")
+    planner_suite_run.add_argument("--max-tokens", type=int, default=384)
     sensors = commands.add_parser(
         "planner-sensors", help="Render verified reset-only higher-resolution planner cameras"
     )
@@ -857,6 +873,33 @@ def main(argv: list[str] | None = None) -> int:
                 device=args.device,
                 max_tokens=args.max_tokens,
                 sensor_bundle=args.sensor_bundle,
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
+        elif args.command == "planner-suite-create":
+            from bimanual.planner_decision_suite import create_planner_decision_protocol
+
+            result = create_planner_decision_protocol(
+                spec_path=args.spec,
+                model_root=args.model_root,
+                destination=args.destination,
+            )
+            emit(result.model_dump(mode="json"))
+        elif args.command == "planner-suite-check":
+            from bimanual.planner_decision_suite import load_planner_decision_protocol
+
+            result = load_planner_decision_protocol(args.protocol)
+            emit(result.model_dump(mode="json"))
+        elif args.command == "planner-suite-run":
+            from bimanual.planner_decision_suite import run_planner_decision_suite
+
+            result = invoke_with_diagnostics(
+                run_planner_decision_suite,
+                protocol_path=args.protocol,
+                device=args.device,
+                max_tokens=args.max_tokens,
                 store=store,
                 project_root=root,
             )

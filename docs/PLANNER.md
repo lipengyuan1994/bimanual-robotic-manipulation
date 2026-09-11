@@ -170,6 +170,43 @@ profile is promoted to live control or generalization readiness from this pair.
 The next integration must resolve planner latency and fresh execution observations
 explicitly, and validate dinner objects and changed scenes beyond this practice block.
 
+## Frozen decision suite
+
+`src/bimanual/planner_decision_suite.py` adds the evaluation boundary needed for
+that next comparison. A case specification names a sealed recording, an exact
+frame, optional sealed higher-resolution sensor bundle, instruction context and
+accepted decision fields. `planner-suite-create` resolves those sources and
+writes a protocol once, before model inference. The protocol binds the model
+manifest and revision, source run and observation digests, sensor identity,
+expectations, case order and the two runtime source files that interpret it.
+
+The runner verifies and copies every frozen input before loading Qwen, loads the
+model once, and evaluates every case in order. A malformed or wrong response is
+retained as a failed case and does not hide later cases. Process completion and
+decision quality are separate: a complete run may have failed cases. Suite
+records always set `live_dispatch_authorized=false`, keep
+`manipulation_success=null`, and carry no evidence claims. They measure visual
+decision agreement only.
+
+Create a JSON list whose entries follow `PlannerDecisionCaseSpec`, then use:
+
+```sh
+.venv/bin/bimanual planner-suite-create \
+  --spec .artifacts/planner-cases-v1.json \
+  --model-root .artifacts/models/qwen3-vl-4b-instruct \
+  --destination docs/experiments/planner-decision-protocol-v1.json
+.venv/bin/bimanual planner-suite-check \
+  docs/experiments/planner-decision-protocol-v1.json
+PYTORCH_ENABLE_MPS_FALLBACK=0 .artifacts/reasoning-venv/bin/bimanual \
+  planner-suite-run docs/experiments/planner-decision-protocol-v1.json --device mps
+```
+
+The protocol is intentionally not frozen yet. Dinner skill-start frames need
+higher-resolution source bundles, and rendering or Qwen inference must wait for
+the active serial ACT training sequence to release the shared local job slot.
+Freezing after the inputs exist prevents choosing expectations after seeing model
+answers.
+
 ## Small learning exercise
 
 Read a probe's `response.txt` and `proposal.json` alongside its three images.
