@@ -26,7 +26,10 @@ enclosing workflow run to `failed`. Later task steps remain visible as
 
 `execution_complete=true` means all declared supervised steps ended successfully.
 `independent_task_success` remains `null`; the frozen dinner evaluator must make
-that separate finding from physical scene state.
+that separate finding from physical scene state. During that evaluation, the
+report is joined again with the worker's zero-intervention declaration, canonical
+checkpoint profile, final supervisor and action ownership. This establishes
+learned execution provenance for a complete run without replacing physical scoring.
 
 Focused validation:
 

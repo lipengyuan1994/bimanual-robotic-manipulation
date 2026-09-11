@@ -46,7 +46,9 @@ fresh-observation recovery and at most two retries. Its lifecycle and fault test
 do not substitute for physical learned-workflow outcomes; explicit failed-grasp
 classification is implemented. Integrated runs now seal a fail-closed
 [per-step outcome and latency report](WORKFLOW_STEP_REPORT.md); actual learned
-seven-step evidence remains pending the local checkpoint cohort.
+seven-step evidence remains pending the local checkpoint cohort. The evaluator
+also requires source-bound zero-intervention and learned-checkpoint provenance
+before a completed workflow can pass physical scoring.
 
 ## Official 100-point rubric
 

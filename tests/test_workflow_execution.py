@@ -104,6 +104,14 @@ def harness(monkeypatch, tmp_path):
                 "events": [],
             }
             self.supervisor = SimpleNamespace(snapshot=lambda: self.current)
+            (directory / "worker.json").write_bytes(
+                canonical(
+                    {
+                        "teacher_schedule_used": False,
+                        "instrumentation": execution.DINNER_WORKER_INSTRUMENTATION,
+                    }
+                )
+            )
             state.worker = self
 
         def cancel(self, reason):

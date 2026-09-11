@@ -1,10 +1,12 @@
 import json
+import shutil
 
 import pytest
 
 from bimanual.contracts import Observation
+from bimanual.dinner_control import DINNER_WORKER_INSTRUMENTATION
 from bimanual.dual_arm import CAMERAS
-from bimanual.evidence import canonical
+from bimanual.evidence import EvidenceStore, canonical
 from bimanual.skill_registry import dinner_capability
 from bimanual.supervisor import Attempt, AttemptResult, Snapshot, StepSpec, TaskSpec
 from bimanual.workflow_step_report import build_workflow_step_report
@@ -234,3 +236,40 @@ def test_retry_without_immediate_failed_predecessor_is_rejected(evidence):
     write_json(planning / "job.json", job)
     with pytest.raises(ValueError, match="Retry does not bind"):
         build_workflow_step_report(evidence)
+
+
+def test_source_bound_learned_execution_audit(evidence, tmp_path, monkeypatch):
+    import bimanual.dinner_evaluation as evaluation
+
+    report = build_workflow_step_report(evidence)
+    write_json(evidence / "step-report.json", report.model_dump(mode="json"))
+    write_json(
+        evidence / "worker" / "worker.json",
+        {
+            "teacher_schedule_used": False,
+            "instrumentation": DINNER_WORKER_INSTRUMENTATION,
+        },
+    )
+    store = EvidenceStore(tmp_path.parent / f"{tmp_path.name}-store")
+    directory = store.new_run()
+    shutil.copytree(evidence, directory, dirs_exist_ok=True)
+    source = store.seal(
+        directory,
+        kind="dinner_workflow_execution",
+        outcome="completed",
+        config={},
+        metrics={
+            "execution_complete": True,
+            "instrumentation": DINNER_WORKER_INSTRUMENTATION,
+        },
+        source={},
+        claims=[],
+    )
+    monkeypatch.setattr(evaluation, "SKILLS", (SKILL,))
+    audit = evaluation._learned_execution_audit(directory, source)
+    assert audit == {
+        "profile": "learned_dinner_execution_audit_v1",
+        "verified": True,
+        "applicable": True,
+        "reasons": [],
+    }

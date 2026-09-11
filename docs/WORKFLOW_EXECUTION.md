@@ -74,7 +74,10 @@ can establish execution completion. This still does not establish physical task
 success. Each child that reaches worker creation also seals `step-report.json`,
 which joins planner, camera, supervisor, ACT-inference and action evidence for
 every attempt. Any ambiguous or contradictory join downgrades the child run to
-failed. See [workflow step evidence](WORKFLOW_STEP_REPORT.md). One spawned worker
+failed. The source manifest repeats the worker's sealed zero-intervention counters;
+the independent evaluator requires them together with the step report before it
+recognizes learned execution. See [workflow step evidence](WORKFLOW_STEP_REPORT.md).
+One spawned worker
 owns the simulation, supervised by a separate guardian.
 The guardian monitors the original parent's process handle and can terminate a
 worker stuck in a native call after parent loss. A common filesystem lease prevents

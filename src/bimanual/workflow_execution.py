@@ -13,7 +13,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from bimanual.dinner_control import DinnerControlWorker
+from bimanual.dinner_control import DINNER_WORKER_INSTRUMENTATION, DinnerControlWorker
 from bimanual.evidence import EvidenceStore, Manifest, canonical, provenance
 from bimanual.live_planning import LivePlanningSession
 from bimanual.planner import LocalQwenPlanner, verify_model
@@ -344,6 +344,20 @@ def run_workflow_execution(
             except (Exception, KeyboardInterrupt) as cleanup:
                 metrics["cleanup_errors"].append(
                     f"step_report: {type(cleanup).__name__}: {cleanup}"
+                )
+            try:
+                worker_declaration = json.loads((directory / "worker" / "worker.json").read_bytes())
+                if worker_declaration.get("instrumentation") != DINNER_WORKER_INSTRUMENTATION:
+                    raise ValueError("Worker instrumentation declaration is missing or changed")
+                if worker_declaration.get("teacher_schedule_used") is not False:
+                    raise ValueError("Workflow worker does not prove teacher schedule exclusion")
+                metrics["instrumentation"] = dict(DINNER_WORKER_INSTRUMENTATION)
+                metrics["instrumentation_evidence"] = (
+                    "Sealed workflow worker declaration bound to guarded learned-policy execution"
+                )
+            except (Exception, KeyboardInterrupt) as cleanup:
+                metrics["cleanup_errors"].append(
+                    f"instrumentation: {type(cleanup).__name__}: {cleanup}"
                 )
         if metrics["cleanup_errors"]:
             metrics["state_before_cleanup_failure"] = metrics["state"]

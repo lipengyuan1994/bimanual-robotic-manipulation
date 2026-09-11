@@ -105,8 +105,14 @@ preserves the source terminal outcome. A clarification, cancellation or failed
 run cannot become a successful evaluation. Missing files or intervention metadata
 remain failures; zero interventions are never inferred from a quiet trace.
 A supplied instrumentation audit must bind the exact source manifest as before.
-This scorer does not certify that a learned model produced the actions, nor does
-one physical pass establish generalization or release readiness.
+New workflow workers seal a versioned zero-intervention declaration in both
+`worker/worker.json` and the source manifest. The evaluator independently joins
+that declaration with the frozen execution profile, final supervisor state,
+`step-report.json`, checkpoint identities and every action's attempt ownership.
+Only a complete, consistent seven-step source sets
+`learned_execution_verified: true`; missing or contradictory evidence keeps it
+false and prevents a workflow evaluation from passing. One physical pass still
+does not establish generalization or release readiness.
 
 Learning checkpoint: suppose all seven skills report completion, but the plate
 slides out of its target during the final hold. The workflow finished, yet the

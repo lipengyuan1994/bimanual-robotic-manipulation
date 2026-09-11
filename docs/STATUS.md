@@ -119,6 +119,17 @@ pass43tests; the broader non-render workflow group passes137tests. No trained
 seven-step workflow has produced this evidence yet.
 [Report contract](WORKFLOW_STEP_REPORT.md).
 
+The independent dinner evaluator now has a source-bound learned-execution audit.
+New workflow workers seal zero object-state edits, artificial attachments,
+external object-force samples and teacher actions. Evaluation requires that exact
+declaration in both worker and source records, then rechecks all seven ordered
+steps, checkpoint/capability bindings, supervisor attempts, ACT inference samples,
+action ownership/counts and terminal physical/readiness evidence. A workflow
+cannot pass physical dinner evaluation unless this audit verifies. The focused
+step/workflow/evaluator group passes65tests; the broader non-render control,
+workflow, process and evaluation group passes168tests. This is audit capability;
+no complete learned dinner run exists yet.
+
 A generic teacher-prepared component evaluator is now implemented. It verifies the
 nominal-v2 source and skill boundary, executes the sealed teacher prefix through
 real collision/contact physics, and then permits checkpoint actions only. Component
@@ -134,7 +145,7 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `50e30d1d176463979b853ce51f65aae02ae08751f35adfaf0946268b4e66c246`.
+seal `72f8d1d14696f95db73045f7e9603940befc60971dd18ecf98eb59f598ff6af7`.
 It binds the training cohort and 99 package/runtime and authored-scene/SO-101 asset
 files,
 final-update20,000 selection,

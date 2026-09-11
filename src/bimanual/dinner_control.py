@@ -29,6 +29,15 @@ PLANNER_PROFILES = {
     "overhead1920_wrist480_v1": ((1920, 1080), (480, 270), (480, 270)),
 }
 
+DINNER_WORKER_INSTRUMENTATION = {
+    "profile": "dinner_worker_instrumentation_v1",
+    "physics_hz": 1000,
+    "object_state_edits": 0,
+    "artificial_attachments": 0,
+    "external_object_force_samples": 0,
+    "teacher_action_samples": 0,
+}
+
 
 class LivePlannerCapture(Contract):
     mode: Literal["live_paused_v1"] = "live_paused_v1"
@@ -119,6 +128,7 @@ class DinnerControlWorker:
                         "physics_hz": 1000,
                         "control_hz": 20,
                         "teacher_schedule_used": False,
+                        "instrumentation": DINNER_WORKER_INSTRUMENTATION,
                         "manipulation_success": None,
                         "operating_inputs": ["three RGB cameras", "twelve joint positions"],
                         "safety_guard_uses_simulator_state": True,

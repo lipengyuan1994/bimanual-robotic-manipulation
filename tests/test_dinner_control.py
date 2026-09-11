@@ -351,7 +351,7 @@ def test_auxiliary_arm_ownership_does_not_grant_object_contact(tmp_path):
 
 
 def test_layout_is_recorded_for_scoring_without_policy_truth(worker):
-    from bimanual.dinner_control import ASSETS
+    from bimanual.dinner_control import ASSETS, DINNER_WORKER_INSTRUMENTATION
     from bimanual.evidence import digest_file
 
     instance, _, _, _ = worker
@@ -361,6 +361,8 @@ def test_layout_is_recorded_for_scoring_without_policy_truth(worker):
     metadata = json.loads((instance.directory / "worker.json").read_text())
     assert metadata["layout_sha256"] == digest_file(ASSETS / "layout.json")
     assert metadata["layout_usage"] == "independent_scoring_only"
+    assert metadata["teacher_schedule_used"] is False
+    assert metadata["instrumentation"] == DINNER_WORKER_INSTRUMENTATION
     observation = instance.capture()
     assert not any(
         "layout" in key or "object" in key for key in instance.policy_inputs(observation)
