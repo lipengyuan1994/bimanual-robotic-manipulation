@@ -8,7 +8,11 @@ from pathlib import Path
 from bimanual.evidence import EvidenceStore, digest_file
 from bimanual.skill_physical_evaluation import (
     SkillPhysicalEvaluationConfig,
-    run_skill_physical_evaluation,
+)
+from bimanual.skill_physical_process import (
+    PROCESS_KIND,
+    SkillPhysicalProcessConfig,
+    run_skill_physical_process,
 )
 from bimanual.skill_physical_protocol import load_skill_physical_protocol
 from bimanual.training import ACTTrainingConfig
@@ -80,19 +84,19 @@ def run_skill_physical_protocol(protocol_path: Path, skill_id: str, training_att
     )
     with WorkerLease.acquire(store.root / ".skill-physical-coordinator.lock"):
         matches = []
+        process_matches = []
         expected = config.model_dump(mode="json")
         for manifest_path in (store.root / "runs").glob("*/manifest.json"):
             try:
                 with manifest_path.open() as stream:
                     header = stream.read(131072)
-                if not all(
-                    token in header
-                    for token in (
-                        KIND,
-                        protocol.manifest_sha256,
-                        skill_id,
-                        str(training_run),
+                if (
+                    not all(
+                        token in header
+                        for token in (protocol.manifest_sha256, skill_id, str(training_run))
                     )
+                    or KIND not in header
+                    and PROCESS_KIND not in header
                 ):
                     continue
                 recorded = json.loads(manifest_path.read_text())
@@ -106,8 +110,39 @@ def run_skill_physical_protocol(protocol_path: Path, skill_id: str, training_att
                 and recorded["config"].get("training_run") == str(training_run)
             ):
                 matches.append(store.verify(manifest_path.parent.name))
+            if (
+                recorded.get("kind") == PROCESS_KIND
+                and recorded.get("config", {})
+                .get("evaluation", {})
+                .get("evaluation_protocol_sha256")
+                == protocol.manifest_sha256
+                and recorded["config"]["evaluation"].get("skill_id") == skill_id
+                and recorded["config"]["evaluation"].get("training_run") == str(training_run)
+            ):
+                process_matches.append(store.verify(manifest_path.parent.name))
         if len(matches) > 1:
             raise RuntimeError("Ambiguous repeated physical evaluations for one frozen candidate")
+        if len(process_matches) > 1:
+            raise RuntimeError("Ambiguous repeated physical evaluation processes")
+        if process_matches:
+            process = process_matches[0]
+            process_expected = SkillPhysicalProcessConfig(evaluation=config).model_dump(mode="json")
+            if process.config != process_expected:
+                raise ValueError("Existing physical process contradicts the frozen request")
+            child_id = process.metrics.get("child_run_id")
+            if child_id is None:
+                if matches:
+                    raise ValueError("Physical process omitted the discovered child evaluation")
+                return process
+            child_result = store.verify(child_id)
+            if (
+                process.metrics.get("child_manifest_verified") is not True
+                or process.metrics.get("child_manifest_sha256") != child_result.manifest_sha256
+                or len(matches) != 1
+                or matches[0] != child_result
+            ):
+                raise ValueError("Physical process child binding is incomplete or contradictory")
+            return child_result
         if matches:
             candidate = matches[0]
             if candidate.config != expected or (
@@ -116,13 +151,16 @@ def run_skill_physical_protocol(protocol_path: Path, skill_id: str, training_att
             ):
                 raise ValueError("Existing physical evaluation contradicts the frozen request")
             return candidate
-        result = run_skill_physical_evaluation(
-            config,
+        process = run_skill_physical_process(
+            SkillPhysicalProcessConfig(evaluation=config),
             store=store,
             project_root=Path(__file__).resolve().parents[2],
         )
+        child_id = process.metrics.get("child_run_id")
+        result = store.verify(child_id) if isinstance(child_id, str) else process
         if result.config != expected:
-            raise ValueError("Physical evaluation result changed its frozen configuration")
+            if result.kind != PROCESS_KIND or result.config.get("evaluation") != expected:
+                raise ValueError("Physical evaluation result changed its frozen configuration")
         if wrapper != store.verify(wrapper.run_id) or child != child_store.verify(child.run_id):
             raise ValueError("Training candidate changed during physical evaluation")
         return result

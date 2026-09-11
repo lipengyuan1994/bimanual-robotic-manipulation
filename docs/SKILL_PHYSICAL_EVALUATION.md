@@ -24,7 +24,7 @@ is active.
 
 The six-skill suite was frozen before any of those checkpoints completed at
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `f822cbdda7c9936f5ffab18d37edfa89a3c02e4a9bc37b5b0ab7c7b4d9e35b2c`.
+seal `f3c098e6986f57e87e04d47ba935c646c506913fa8a4073439c69d4aed42b797`.
 It selects final-update20,000 checkpoints, MPS, a two-action execution prefix,
 the authored nominal-v2 scene, exact teacher preparation, per-skill action budgets
 equal to twice the nominal duration, and a1,200-second wall limit. It requires one
@@ -41,9 +41,11 @@ PYTORCH_ENABLE_MPS_FALLBACK=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
 ```
 
 The protocol runner verifies the cohort, exact training child, checkpoint source,
-and nineteen evaluator, runner, control, scoring, policy, contract, and checkpoint
-source files. It returns an existing sealed result instead of retrying it;
-multiple matching results stop as ambiguous. A failed physical result stays failed.
+and25 evaluator, process, runner, control, scoring, policy, contract, checkpoint and
+evidence source files. It runs the evaluator below a separate guardian and worker,
+then independently verifies the child result after both processes are reaped. It
+returns an existing sealed result instead of retrying it; multiple matching results
+stop as ambiguous. A failed or timed-out physical attempt stays failed.
 
 After all six declared evaluations have run, seal their complete result table:
 
@@ -68,7 +70,9 @@ PYTORCH_ENABLE_MPS_FALLBACK=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
   --execute-chunk-steps 2 --max-actions 2000
 ```
 
-This first command path runs in the calling process. The existing full-workflow
-runner has guardian-based native-hang cleanup; bringing the same process boundary
-to component evaluations remains an operational hardening task. Until then, a
-component evaluation is a development diagnostic rather than a release runner.
+The direct `skill-physical-eval` command runs in the calling process and remains a
+development diagnostic. The frozen protocol command uses a non-daemon guardian and
+spawned worker with bounded cancellation, terminate and kill escalation. It handles
+operator timeout and original-parent loss, reaps the native worker, verifies the
+shared model lease is released, and never converts a process completion into a
+physical component pass.

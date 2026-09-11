@@ -10,7 +10,13 @@ from bimanual.training_cohort import COHORT_SKILLS
 from bimanual.training_cohort_runner import KIND as TRAINING_KIND
 
 
-def setup(tmp_path, monkeypatch, *, evaluation_outcome="failed"):
+def setup(
+    tmp_path,
+    monkeypatch,
+    *,
+    evaluation_outcome="failed",
+    process_without_child=False,
+):
     skill = COHORT_SKILLS[0]
     documents = tmp_path / "docs"
     documents.mkdir()
@@ -84,12 +90,29 @@ def setup(tmp_path, monkeypatch, *, evaluation_outcome="failed"):
     )
     calls = []
 
-    def evaluate(config, *, store, **kwargs):
+    def evaluate(process_config, *, store, **kwargs):
+        config = process_config.evaluation
         calls.append(config)
-        directory = store.new_run()
-        (directory / "fixture.txt").write_text("No physical evaluation")
-        return store.seal(
-            directory,
+        if process_without_child:
+            process_directory = store.new_run()
+            (process_directory / "fixture.txt").write_text("Timed out before child result")
+            return store.seal(
+                process_directory,
+                kind=module.PROCESS_KIND,
+                outcome="timed_out",
+                config=process_config.model_dump(mode="json"),
+                metrics={
+                    "child_run_id": None,
+                    "child_manifest_verified": False,
+                    "child_manifest_sha256": None,
+                },
+                source={},
+                claims=[],
+            )
+        child_directory = store.new_run()
+        (child_directory / "fixture.txt").write_text("No physical evaluation")
+        child = store.seal(
+            child_directory,
             kind=module.KIND,
             outcome=evaluation_outcome,
             config=config.model_dump(mode="json"),
@@ -97,8 +120,23 @@ def setup(tmp_path, monkeypatch, *, evaluation_outcome="failed"):
             source={},
             claims=[],
         )
+        process_directory = store.new_run()
+        (process_directory / "fixture.txt").write_text("No spawned process")
+        return store.seal(
+            process_directory,
+            kind=module.PROCESS_KIND,
+            outcome=evaluation_outcome,
+            config=process_config.model_dump(mode="json"),
+            metrics={
+                "child_run_id": child.run_id,
+                "child_manifest_verified": True,
+                "child_manifest_sha256": child.manifest_sha256,
+            },
+            source={},
+            claims=[],
+        )
 
-    monkeypatch.setattr(module, "run_skill_physical_evaluation", evaluate)
+    monkeypatch.setattr(module, "run_skill_physical_process", evaluate)
     return protocol_path, skill, wrapper, calls
 
 
@@ -129,6 +167,14 @@ def test_rejects_wrong_training_skill_before_evaluation(tmp_path, monkeypatch):
     else:
         raise AssertionError("Tampered training wrapper was accepted")
     assert calls == []
+
+
+def test_timed_out_process_is_preserved_without_automatic_retry(tmp_path, monkeypatch):
+    protocol_path, skill, wrapper, calls = setup(tmp_path, monkeypatch, process_without_child=True)
+    first = module.run_skill_physical_protocol(protocol_path, skill, wrapper.run_id)
+    second = module.run_skill_physical_protocol(protocol_path, skill, wrapper.run_id)
+    assert first == second and first.kind == module.PROCESS_KIND
+    assert first.outcome == "timed_out" and len(calls) == 1
 
 
 def test_protocol_run_cli_preserves_failed_component(tmp_path, monkeypatch, capsys):

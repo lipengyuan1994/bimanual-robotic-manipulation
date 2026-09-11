@@ -50,13 +50,12 @@ class _FileSender:
 _worker_lease = None
 
 
-def _leased_child(exported_lease, *args):
+def _leased_child(exported_lease, child_entrypoint, *args):
     global _worker_lease
-    from bimanual.workflow_process import _child
 
     if exported_lease is not None:
         _worker_lease = WorkerLease.from_spawn(exported_lease)
-    _child(*args)
+    child_entrypoint(*args)
 
 
 def guardian_entry(
@@ -72,6 +71,7 @@ def guardian_entry(
     terminate_grace,
     poll_interval,
     lease_path=None,
+    child_entrypoint=None,
 ):
     """Own exactly one worker, journal its outcome only after it is reaped.
 
@@ -154,6 +154,10 @@ def guardian_entry(
             raise RuntimeError("Worker remains alive; terminal evidence must not be published")
 
     try:
+        if child_entrypoint is None:
+            from bimanual.workflow_process import _child
+
+            child_entrypoint = _child
         if not math.isfinite(absolute_deadline):
             raise ValueError("Guardian deadline must be finite")
         if os.name != "posix":
@@ -179,6 +183,7 @@ def guardian_entry(
                 target=_leased_child,
                 args=(
                     lease.export_for_spawn() if lease is not None else None,
+                    child_entrypoint,
                     config_data,
                     child_root,
                     project_root,
@@ -186,6 +191,7 @@ def guardian_entry(
                     _FileSender(root / "worker-result.json"),
                     interpreter,
                     entrypoint,
+                    lease_path,
                 ),
                 daemon=True,
                 name="bimanual-guarded-worker",

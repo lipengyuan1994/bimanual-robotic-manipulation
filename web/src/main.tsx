@@ -400,6 +400,8 @@ function App() {
                             ? "ACT skill training attempt"
                           : run.kind === "learned_skill_teacher_prepared_physical_evaluation"
                             ? "Learned skill physical check"
+                          : run.kind === "learned_skill_teacher_prepared_physical_evaluation_process"
+                            ? "Guarded learned skill check"
                           : run.kind === "six_skill_teacher_prepared_physical_suite_report"
                             ? "Six-skill physical suite"
                           : run.kind === "dinner_workflow_process"

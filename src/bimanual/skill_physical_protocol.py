@@ -27,6 +27,8 @@ _SOURCES = (
     "skill_registry.py",
     "skill_physical_protocol.py",
     "skill_physical_protocol_runner.py",
+    "skill_physical_process.py",
+    "skill_physical_suite.py",
     "skill_policy.py",
     "policy_rollout.py",
     "supervised_control.py",
@@ -35,6 +37,10 @@ _SOURCES = (
     "dual_arm.py",
     "supervisor.py",
     "training.py",
+    "workflow_guardian.py",
+    "workflow_process.py",
+    "worker_lease.py",
+    "evidence.py",
 )
 
 
