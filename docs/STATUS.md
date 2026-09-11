@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 11, 2026. Latest implementation checkpoint: `9813f1e` on
+Updated September 11, 2026. Latest implementation checkpoint: `f3a02f8` on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -67,16 +67,30 @@ active-owner wait can idle behind the current model lease and then resume the fr
 sequence; it does not inspect model state, bypass ownership, retry failures or catch
 unrelated runtime errors.
 
-`bar_place_and_return` cohort attempt `20260911T204632-867e6f75a36e` is active;
-child training run `20260911T204632-a60b589a1eea` is configured for20,000native-MPS
-updates under shared model-job ownership. Session56052; log
-`.artifacts/cohort-bar-place-training.log`; 15,154updates were present at the latest
-inspection. Poll this handle and do not launch any other model, inference or render
-job. Training progress and loss are not physical skill success. After the bounded
-coordinator was pushed at `ed225e3`, session89794 began a7,200-second bounded wait
-on this lease. It will reverify/reuse the bar attempt and then train cup, plate,
-drawer, spoon and fork serially. Log `.artifacts/cohort-remaining-sequence.log`.
-Do not start a competing model job or restart either live session.
+`bar_place_and_return` cohort attempt `20260911T204632-867e6f75a36e` completed and
+sealed all20,000native-MPS updates. Wrapper seal
+`828147c082bb2bd0e682ffe641a7e805c1e2ee4729a2fe0c0114d57c2acbf9a0`;
+child `20260911T204632-a60b589a1eea`, seal
+`5ec8946b9174db540e5a03aebc20e068a19e5cb964b7c7975079b406bd6a5ebf`;
+checkpoint `b3363d5980efa1a3d04f0f1aa7350823a73500d7a1ce0910d872f54db195aa07`.
+This proves training completion only.
+
+The waiting coordinator then allocated cup attempt
+`20260911T222550-b516bc6370d5`, but its restricted process could not see Metal and
+failed before update1 with `Requested MPS unavailable; no fallback`; it stopped
+the sequence and exited1. The exact native interpreter reports ARM64, MPS built,
+MPS available and one device when run outside that restriction. Preserve the
+failed attempt as infrastructure evidence. Before a replacement, implement and
+seal an explicit zero-update preflight adjudication, then launch the remaining
+sequence with native Metal access. No model, inference or render job is active.
+
+The next seven-checkpoint manifest version now seals the per-skill execution
+profile alongside checkpoint lineage: all seven ordered skill/capability IDs,
+checkpoint digests, exact twice-nominal-v2 action budgets, prefix2 and no temporal
+ensemble. Legacy manifests remain verifiable but cannot execute. The runtime rejects
+missing, reordered or changed profiles before model loading; fresh executors inherit
+the bound prefix and budget. The focused manifest/execution/executor checks pass75
+tests. This is interface integrity, not learned workflow success.
 
 A generic teacher-prepared component evaluator is now implemented. It verifies the
 nominal-v2 source and skill boundary, executes the sealed teacher prefix through
@@ -93,7 +107,7 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `64458379864025808a3d106fa152bb8f6dd11701783d11e196f0cbdd040a2bc3`.
+seal `063b5f6a4427c1396b04caf0ae55c8c8a7dcb70f577e4ad1f6112bc32d6c3493`.
 It binds the training cohort and 97 package/runtime and authored-scene/SO-101 asset
 files,
 final-update20,000 selection,
@@ -332,13 +346,13 @@ worker-lease release. Required full regression52845 exited0:1,093passed,18option
 deselections,2warnings in504.38seconds; log
 `.artifacts/checks-guardian-integration.log`. It predates the additional parent-loss
 test and24visual-protocol tests, which passed separately. Scope is POSIX/Python3.12, one worker with threads;
-independently launched subprocess trees and parent-record reconstruction remain
-unsupported. The portal was not restarted. Frozen physical prefix2 evaluation
-session30402 is the only active model/render job.
+  independently launched subprocess trees and parent-record reconstruction remain
+unsupported. The portal was not restarted. No model/render job is active.
 
-Uncommitted shared model-job ownership now makes training and the default workflow
-use the same `.model-job.lock`. Two focused tests pass: a competing training start
-is rejected before run allocation, the lease becomes available after the owner
-exits, and nested cohort evidence borrows the continuously held top-level lease.
-All84 existing training tests pass with13 optional-dependency skips;47 earlier
-cohort/process tests pass. Full regression for this working tree is still required.
+Training and the default workflow use the same `.model-job.lock`. A competing
+start is rejected before run allocation, the lease becomes available after the
+owner exits, and nested cohort evidence borrows the continuously held top-level
+lease. The cup preflight exposed an additional operational rule: an MPS coordinator
+must itself run with Metal access. The failed zero-update record is retained and
+requires explicit adjudication before any replacement. Full regression for the
+current workflow-profile changes remains required.

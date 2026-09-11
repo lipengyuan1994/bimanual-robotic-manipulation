@@ -52,7 +52,6 @@ class WorkflowExecutionConfig(BaseModel):
     camera_profile: Literal["policy480_v1", "overhead1920_wrist480_v1"] = "policy480_v1"
     wall_timeout_seconds: float = Field(default=1800, gt=0, le=86400)
     step_timeout_seconds: float = Field(default=300, gt=0, le=86400)
-    max_actions_per_skill: int = Field(default=2000, strict=True, ge=1, le=100000)
     max_tokens: int = Field(default=384, strict=True, ge=1, le=1024)
 
     @model_validator(mode="after")
@@ -172,8 +171,12 @@ def run_workflow_execution(
         if (
             tuple(binding.view.skill_id for binding in verified.bindings) != SKILLS
             or tuple(binding.capability for binding in verified.bindings) != registry
+            or verified.manifest.execution is None
+            or tuple(row.skill_id for row in verified.manifest.execution) != SKILLS
         ):
-            raise ValueError("Cohort does not match the canonical seven-step dinner workflow")
+            raise ValueError(
+                "Cohort and execution profile do not match the canonical dinner workflow"
+            )
         for binding in verified.bindings:
             if any(
                 store.root.is_relative_to(path)
@@ -186,6 +189,18 @@ def run_workflow_execution(
             ):
                 raise ValueError("Evidence store must be outside immutable cohort sources")
         (directory / "cohort.json").write_bytes(canonical(verified.report()))
+        metrics["execution_profile_sha256"] = verified.manifest.execution_profile_sha256
+        (directory / "execution-profile.json").write_bytes(
+            canonical(
+                {
+                    "execution_profile_sha256": verified.manifest.execution_profile_sha256,
+                    "entries": [
+                        row.model_dump(mode="json", exclude_none=True)
+                        for row in verified.manifest.execution
+                    ],
+                }
+            )
+        )
         model_manifest = verify_model(config.planner_model_directory)
         (directory / "planner-model.json").write_bytes(canonical(model_manifest))
         check()
@@ -219,7 +234,7 @@ def run_workflow_execution(
             max_planning_ns=max(1, int(min(300, deadline - time.monotonic()) * 1e9)),
         )
         planner_runner = LocalPlannerRunner(session, planner, max_tokens=config.max_tokens)
-        factories = loaded.executor_factories(worker, max_actions=config.max_actions_per_skill)
+        factories = loaded.executor_factories(worker)
         workflow = DinnerWorkflowRunner(worker, planner_runner, factories)
         task = TaskSpec(
             task_id=directory.name,

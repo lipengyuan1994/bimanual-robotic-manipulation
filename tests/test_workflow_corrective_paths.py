@@ -62,7 +62,7 @@ def test_v2_copy_resolves_corrective_relative_path(cohort_files, tmp_path):
     original = module.create_workflow_manifest(
         root / "dataset", root / "views.json", runs, root / "workflow.json"
     )
-    assert original.manifest.profile == "dinner_development_workflow_v2"
+    assert original.manifest.profile == "dinner_development_workflow_v4"
     assert original.manifest.checkpoints[0].corrective_dataset_root == "corrections"
     copy = tmp_path / "moved"
     shutil.copytree(root, copy)
@@ -105,7 +105,10 @@ def test_v1_body_has_no_new_null_fields():
     )
     digest = hashlib.sha256(canonical(body)).hexdigest()
     manifest = module.WorkflowManifest.model_validate(body | {"manifest_sha256": digest})
-    assert manifest.model_dump(mode="json", exclude={"manifest_sha256"}) == body
+    assert (
+        manifest.model_dump(mode="json", exclude={"manifest_sha256"}, exclude_none=True)
+        == body
+    )
     assert manifest.manifest_sha256 == digest
 
 

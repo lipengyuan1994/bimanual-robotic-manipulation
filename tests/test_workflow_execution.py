@@ -42,6 +42,16 @@ def harness(monkeypatch, tmp_path):
     class Verified:
         def __init__(self):
             self.bindings = bindings
+            self.manifest = SimpleNamespace(
+                execution=tuple(
+                    SimpleNamespace(
+                        skill_id=skill,
+                        model_dump=lambda skill=skill, **kwargs: {"skill_id": skill},
+                    )
+                    for skill in SKILLS
+                ),
+                execution_profile_sha256="e" * 64,
+            )
 
         def report(self):
             return {"fixture": True, "skills": list(SKILLS)}
@@ -205,7 +215,7 @@ def test_load_order_canonical_task_and_terminal_clarification(harness):
     assert all(step.max_retries == 2 for step in task.steps)
     assert all(step.timeout_ns == 300_000_000_000 for step in task.steps)
     assert [step.prerequisites for step in task.steps] == [()] + [(skill,) for skill in SKILLS[:-1]]
-    assert h.state.factory_options == {"max_actions": 2000}
+    assert h.state.factory_options == {}
     assert h.state.planner_options == {"max_tokens": 384}
     assert result.outcome == "needs_clarification"
     assert result.metrics["independent_task_success"] is None
@@ -349,6 +359,20 @@ def test_cohort_identity_mismatch_rejected_before_models(harness, monkeypatch):
     assert result.outcome == "failed" and harness.calls == ["verify_cohort"]
 
 
+def test_legacy_cohort_without_execution_profile_rejected_before_models(harness, monkeypatch):
+    original = execution.load_workflow_manifest
+
+    def legacy(path):
+        value = original(path)
+        value.manifest = SimpleNamespace(execution=None)
+        return value
+
+    monkeypatch.setattr(execution, "load_workflow_manifest", legacy)
+    result = harness.run()
+    assert result.outcome == "failed" and harness.calls == ["verify_cohort"]
+    assert "execution profile" in result.metrics["reason"]
+
+
 def test_task_file_and_events_are_part_of_the_seal(harness):
     result = harness.run()
     directory = harness.store.directory(result.run_id)
@@ -359,15 +383,16 @@ def test_task_file_and_events_are_part_of_the_seal(harness):
         "task.json",
         "workflow-snapshot.json",
         "cohort.json",
+        "execution-profile.json",
         "planner-model.json",
     } <= result.files.keys()
+    assert result.metrics["execution_profile_sha256"] == "e" * 64
 
 
 @pytest.mark.parametrize(
     "field,value",
     [
         ("max_tokens", 0),
-        ("max_actions_per_skill", True),
         ("wall_timeout_seconds", float("inf")),
         ("planner_device", "cuda"),
         ("instruction", ""),

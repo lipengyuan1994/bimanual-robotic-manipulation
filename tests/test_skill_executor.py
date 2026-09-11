@@ -46,10 +46,19 @@ def setup(tmp_path, request):
     attempt = worker.supervisor.dispatch(observation)
     policy = FixturePolicy()
     options = getattr(request, "param", {})
-    executor = DinnerSkillExecutor(worker, policy, max_actions=options.get("max_actions", 1))
-    executor.start(
-        attempt.attempt_id, observation, execute_chunk_steps=options.get("execute_chunk_steps", 1)
+    configured_prefix = options.get("configured_execute_chunk_steps")
+    executor = DinnerSkillExecutor(
+        worker,
+        policy,
+        max_actions=options.get("max_actions", 1),
+        **({"execute_chunk_steps": configured_prefix} if configured_prefix is not None else {}),
     )
+    start_options = (
+        {}
+        if configured_prefix is not None
+        else {"execute_chunk_steps": options.get("execute_chunk_steps", 1)}
+    )
+    executor.start(attempt.attempt_id, observation, **start_options)
     assert executor._monitor.max_actions == executor.max_actions + 1
     yield worker, executor, policy
     worker.close()
@@ -351,3 +360,13 @@ def test_chunk_prefix_reuses_forecast_but_advances_checked_actions(setup):
     assert not worker.control.pending
     assert executor.tick().state == "failed"
     assert worker._env.data.time == before
+
+
+@pytest.mark.parametrize(
+    "setup", [{"max_actions": 4, "configured_execute_chunk_steps": 2}], indirect=True
+)
+def test_constructor_profile_supplies_default_execution_prefix(setup):
+    worker, executor, policy = setup
+    assert executor.tick().applied_actions == 1
+    assert executor.tick().applied_actions == 2
+    assert len(policy.inputs) == 1 and not worker.control.pending

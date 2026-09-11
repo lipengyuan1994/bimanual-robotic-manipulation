@@ -26,7 +26,7 @@ def cohort(tmp_path_factory, dataset):  # noqa: F811
 
 
 def mutated(cohort, tmp_path, mutate):
-    body = cohort.manifest.model_dump(mode="json", exclude={"manifest_sha256"})
+    body = cohort.manifest.model_dump(mode="json", exclude={"manifest_sha256"}, exclude_none=True)
     # Relocated diagnostic manifests explicitly resolve the original artifact paths.
     for name in ("dataset_root", "skill_views_path"):
         body[name] = str((cohort.path.parent / body[name]).resolve())
@@ -44,6 +44,17 @@ def test_complete_cohort_binds_seven_checkpoints_and_final_parking(cohort):
     assert tuple(r.final_parking for r in cohort.successor_references) == (False,) * 6 + (True,)
     assert cohort.successor_references[-1].successor_skill_id is None
     assert cohort.reverify() == cohort
+    assert tuple(row.skill_id for row in cohort.manifest.execution) == SKILLS
+    assert [row.max_actions for row in cohort.manifest.execution] == [
+        1260,
+        1900,
+        1038,
+        1964,
+        1120,
+        1408,
+        1408,
+    ]
+    assert all(row.execute_chunk_steps == 2 for row in cohort.manifest.execution)
     report = cohort.report()
     assert report["release_available"] is False
     assert report["learned_workflow_success"] is None
@@ -70,7 +81,7 @@ def test_incomplete_duplicate_or_reordered_cohort_rejected(cohort, tmp_path, mut
 @pytest.mark.parametrize("field", ["checkpoint_sha256", "training_manifest_sha256"])
 def test_exact_checkpoint_identity_required(cohort, tmp_path, field):
     path = mutated(cohort, tmp_path, lambda b: b["checkpoints"][0].update({field: "0" * 64}))
-    with pytest.raises(ValueError, match="identity"):
+    with pytest.raises(ValueError, match="identity|execution settings"):
         load_workflow_manifest(path)
 
 
@@ -79,6 +90,24 @@ def test_changed_manifest_does_not_pass_old_body_seal(cohort):
     value["dataset_root"] += "-changed"
     with pytest.raises(ValueError, match="body seal"):
         WorkflowManifest.model_validate(value)
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda body: body["execution"].reverse(),
+        lambda body: body["execution"][0].update(max_actions=9999),
+        lambda body: body["execution"][0].update(execute_chunk_steps=1),
+        lambda body: body["execution"][0].update(capability_id="wrong"),
+        lambda body: body.update(execution_profile_sha256="0" * 64),
+    ],
+)
+def test_execution_profile_change_rejected(cohort, mutation):
+    body = cohort.manifest.model_dump(mode="json", exclude={"manifest_sha256"}, exclude_none=True)
+    mutation(body)
+    body["manifest_sha256"] = hashlib.sha256(canonical(body)).hexdigest()
+    with pytest.raises(ValueError, match="execution"):
+        WorkflowManifest.model_validate(body)
 
 
 def test_dataset_hash_mismatch_stops_before_checkpoint_load(cohort, tmp_path, monkeypatch):
@@ -150,11 +179,21 @@ def test_factories_bind_each_skill_and_ref_without_cross_worker_sharing(cohort, 
     monkeypatch.setattr("bimanual.skill_executor.DinnerSkillExecutor", lambda w, p, **k: (w, p, k))
     with pytest.raises(ValueError, match="already belong"):
         LoadedWorkflow(cohort, policies)
-    factories = loaded.executor_factories(worker, max_actions=1200)
-    for binding, ref in zip(cohort.bindings, cohort.successor_references, strict=True):
+    factories = loaded.executor_factories(worker)
+    for binding, ref, settings in zip(
+        cohort.bindings,
+        cohort.successor_references,
+        cohort.manifest.execution,
+        strict=True,
+    ):
         w, policy, options = factories[binding.capability.capability_id]()
         assert w is worker and policy is policies[binding.view.skill_id]
-        assert options == {"max_actions": 1200, "successor_reference": ref}
+        assert options == {
+            "max_actions": settings.max_actions,
+            "successor_reference": ref,
+            "execute_chunk_steps": 2,
+            "temporal_ensemble_coefficient": None,
+        }
     with pytest.raises(ValueError, match="shared across workers"):
         loaded.executor_factories(object())
     policies[SKILLS[0]].binding = replace(cohort.bindings[0], checkpoint_sha256="0" * 64)

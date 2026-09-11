@@ -210,7 +210,6 @@ def main(argv: list[str] | None = None) -> int:
         default="policy480_v1",
     )
     workflow_run.add_argument("--wall-timeout-seconds", type=float, default=1800)
-    workflow_run.add_argument("--max-actions-per-skill", type=int, default=2000)
     workflow_run.add_argument("--max-tokens", type=int, default=384)
     workflow_run.add_argument("--step-timeout-seconds", type=float, default=300)
     workflow_run.add_argument(
@@ -655,7 +654,6 @@ def main(argv: list[str] | None = None) -> int:
                 planner_device=args.planner_device,
                 camera_profile=args.camera_profile,
                 wall_timeout_seconds=args.wall_timeout_seconds,
-                max_actions_per_skill=args.max_actions_per_skill,
                 step_timeout_seconds=args.step_timeout_seconds,
                 max_tokens=args.max_tokens,
             )

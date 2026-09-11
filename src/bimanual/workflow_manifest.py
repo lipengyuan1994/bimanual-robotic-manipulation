@@ -13,11 +13,12 @@ from pydantic import Field, model_validator
 
 from bimanual.contracts import Contract, Digest
 from bimanual.evidence import canonical, digest_file
-from bimanual.skill_registry import SkillCheckpointBinding, load_skill_checkpoint
-from bimanual.skill_views import INTERVALS, load_skill_views
+from bimanual.skill_registry import SkillCheckpointBinding, dinner_capability, load_skill_checkpoint
+from bimanual.skill_views import INTERVALS, INTERVALS_V2, load_skill_views
 from bimanual.successor_readiness import SuccessorReference, load_successor_reference
 
 SKILLS = tuple(row[0] for row in INTERVALS)
+_ACTION_BUDGETS = {skill: 2 * (end - start) for skill, start, end in INTERVALS_V2}
 
 
 class WorkflowCheckpoint(Contract):
@@ -40,10 +41,22 @@ class CorrectiveWorkflowCheckpoint(WorkflowCheckpoint):
         return self
 
 
+class WorkflowSkillExecution(Contract):
+    skill_id: str
+    capability_id: str
+    checkpoint_sha256: Digest
+    max_actions: int = Field(strict=True, ge=1, le=20000)
+    execute_chunk_steps: int = Field(strict=True, ge=1, le=100)
+    temporal_ensemble_coefficient: None = None
+
+
 class WorkflowManifest(Contract):
-    profile: Literal["dinner_development_workflow_v1", "dinner_development_workflow_v2"] = (
-        "dinner_development_workflow_v1"
-    )
+    profile: Literal[
+        "dinner_development_workflow_v1",
+        "dinner_development_workflow_v2",
+        "dinner_development_workflow_v3",
+        "dinner_development_workflow_v4",
+    ] = "dinner_development_workflow_v1"
     dataset_root: str = Field(min_length=1)
     export_file_sha256: Digest
     skill_views_path: str = Field(min_length=1)
@@ -51,6 +64,8 @@ class WorkflowManifest(Contract):
     checkpoints: tuple[CorrectiveWorkflowCheckpoint | WorkflowCheckpoint, ...] = Field(
         min_length=7, max_length=7
     )
+    execution: tuple[WorkflowSkillExecution, ...] | None = None
+    execution_profile_sha256: Digest | None = None
     manifest_sha256: Digest
 
     @model_validator(mode="after")
@@ -60,9 +75,33 @@ class WorkflowManifest(Contract):
         has_corrections = any(
             isinstance(item, CorrectiveWorkflowCheckpoint) for item in self.checkpoints
         )
-        if has_corrections != (self.profile == "dinner_development_workflow_v2"):
+        if has_corrections != self.profile.endswith(("v2", "v4")):
             raise ValueError("Workflow profile and corrective entries disagree")
-        body = self.model_dump(mode="json", exclude={"manifest_sha256"})
+        has_execution = self.execution is not None or self.execution_profile_sha256 is not None
+        if has_execution != self.profile.endswith(("v3", "v4")):
+            raise ValueError("Workflow profile and execution settings disagree")
+        if has_execution:
+            if self.execution is None or self.execution_profile_sha256 is None:
+                raise ValueError("Execution settings and seal must be supplied together")
+            expected = tuple(
+                WorkflowSkillExecution(
+                    skill_id=entry.skill_id,
+                    capability_id=dinner_capability(entry.skill_id).capability_id,
+                    checkpoint_sha256=entry.checkpoint_sha256,
+                    max_actions=_ACTION_BUDGETS[entry.skill_id],
+                    execute_chunk_steps=2,
+                    temporal_ensemble_coefficient=None,
+                )
+                for entry in self.checkpoints
+            )
+            if self.execution != expected:
+                raise ValueError("Workflow execution settings do not match the frozen profile")
+            expected_sha256 = hashlib.sha256(
+                canonical([row.model_dump(mode="json", exclude_none=True) for row in expected])
+            ).hexdigest()
+            if expected_sha256 != self.execution_profile_sha256:
+                raise ValueError("Workflow execution profile seal mismatch")
+        body = self.model_dump(mode="json", exclude={"manifest_sha256"}, exclude_none=True)
         if hashlib.sha256(canonical(body)).hexdigest() != self.manifest_sha256:
             raise ValueError("Workflow manifest body seal mismatch")
         return self
@@ -84,6 +123,12 @@ class VerifiedWorkflow:
             "manifest_sha256": self.manifest.manifest_sha256,
             "checkpoints": [binding.report() for binding in self.bindings],
             "successor_references": [ref.report() for ref in self.successor_references],
+            "execution_profile_sha256": self.manifest.execution_profile_sha256,
+            "execution": (
+                [row.model_dump(mode="json") for row in self.manifest.execution]
+                if self.manifest.execution is not None
+                else None
+            ),
             "release_available": False,
             "learned_workflow_success": None,
             "scope": "Verified lineage only; all policies must pass physical evaluation",
@@ -206,9 +251,9 @@ def create_workflow_manifest(
     body = dict(
         schema_version=1,
         profile=(
-            "dinner_development_workflow_v2"
+            "dinner_development_workflow_v4"
             if any("corrective_dataset_root" in e for e in entries)
-            else "dinner_development_workflow_v1"
+            else "dinner_development_workflow_v3"
         ),
         dataset_root=os.path.relpath(dataset_root, destination.parent),
         export_file_sha256=digest_file(dataset_root / "export_manifest.json"),
@@ -216,6 +261,18 @@ def create_workflow_manifest(
         skill_views_file_sha256=digest_file(skill_views_path),
         checkpoints=entries,
     )
+    execution = [
+        WorkflowSkillExecution(
+            skill_id=entry["skill_id"],
+            capability_id=dinner_capability(entry["skill_id"]).capability_id,
+            checkpoint_sha256=entry["checkpoint_sha256"],
+            max_actions=_ACTION_BUDGETS[entry["skill_id"]],
+            execute_chunk_steps=2,
+        ).model_dump(mode="json", exclude_none=True)
+        for entry in entries
+    ]
+    body["execution"] = execution
+    body["execution_profile_sha256"] = hashlib.sha256(canonical(execution)).hexdigest()
     manifest = WorkflowManifest.model_validate(
         body | {"manifest_sha256": hashlib.sha256(canonical(body)).hexdigest()}
     )
@@ -245,7 +302,7 @@ class LoadedWorkflow:
         for policy in self.policies.values():
             policy._workflow_cohort_owner = self._ownership
 
-    def _executor(self, worker, binding, reference, max_actions):
+    def _executor(self, worker, binding, reference, settings):
         from bimanual.skill_executor import DinnerSkillExecutor
 
         policy = self.policies[binding.view.skill_id]
@@ -256,22 +313,30 @@ class LoadedWorkflow:
         ):
             raise ValueError("Loaded policy binding or ownership changed before execution")
         return DinnerSkillExecutor(
-            worker, policy, max_actions=max_actions, successor_reference=reference
+            worker,
+            policy,
+            max_actions=settings.max_actions,
+            successor_reference=reference,
+            execute_chunk_steps=settings.execute_chunk_steps,
+            temporal_ensemble_coefficient=settings.temporal_ensemble_coefficient,
         )
 
-    def executor_factories(self, worker, *, max_actions=2000):
+    def executor_factories(self, worker):
         if self._worker is not None and self._worker is not worker:
             raise ValueError("Loaded policies cannot be shared across workers")
         if worker.supervisor.snapshot().active is not None:
             raise ValueError("Prepare workflow factories before dispatch")
         self._worker = worker
+        execution = self.verified.manifest.execution
+        if execution is None:
+            raise ValueError("Workflow execution requires a sealed execution profile")
         factories = {}
-        for binding, reference in zip(
-            self.verified.bindings, self.verified.successor_references, strict=True
+        for binding, reference, settings in zip(
+            self.verified.bindings, self.verified.successor_references, execution, strict=True
         ):
             factories[binding.capability.capability_id] = (
-                lambda binding=binding, reference=reference: self._executor(
-                    worker, binding, reference, max_actions
+                lambda binding=binding, reference=reference, settings=settings: self._executor(
+                    worker, binding, reference, settings
                 )
             )
         return MappingProxyType(factories)

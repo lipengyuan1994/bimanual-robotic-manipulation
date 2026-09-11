@@ -39,11 +39,12 @@ HF_HOME="$PWD/.artifacts/huggingface" HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
   --planner-model .artifacts/models/qwen3-vl-4b-instruct \
   --instruction "Set the dinner table with the plate, cup, spoon and fork, including the hand-off" \
   --policy-device cpu --planner-device cpu \
-  --wall-timeout-seconds 1800 --step-timeout-seconds 300 \
-  --max-actions-per-skill 2000
+  --wall-timeout-seconds 1800 --step-timeout-seconds 300
 ```
 
-The command uses the canonical seven-skill sequence and its prerequisite chain.
+The command uses the canonical seven-skill sequence, prerequisite chain, and the
+per-skill action budgets and execution prefix sealed inside the workflow manifest.
+The operator cannot replace those settings with one global command-line budget.
 An instruction does not grant arbitrary motions: each camera-grounded proposal
 must match the next registered step, stop, or request clarification. Each attempt
 has its own action budget and step timeout; the supervisor retains its two-retry

@@ -44,8 +44,6 @@ def test_workflow_cli_forwards_limits_and_preserves_failure(
             "900",
             "--step-timeout-seconds",
             "120",
-            "--max-actions-per-skill",
-            "800",
             "--max-tokens",
             "200",
             *(["--in-process"] if in_process else []),
@@ -59,7 +57,7 @@ def test_workflow_cli_forwards_limits_and_preserves_failure(
     assert config.policy_device == "cpu" and config.planner_device == "mps"
     assert config.camera_profile == "overhead1920_wrist480_v1"
     assert config.wall_timeout_seconds == 900 and config.step_timeout_seconds == 120
-    assert config.max_actions_per_skill == 800 and config.max_tokens == 200
+    assert config.max_tokens == 200
 
 
 def test_workflow_create_forwards_corrective_location(tmp_path, monkeypatch):
@@ -69,7 +67,7 @@ def test_workflow_create_forwards_corrective_location(tmp_path, monkeypatch):
 
     def create(*args, **kwargs):
         seen.append(kwargs)
-        return SimpleNamespace(report=lambda: {"profile": "dinner_development_workflow_v2"})
+        return SimpleNamespace(report=lambda: {"profile": "dinner_development_workflow_v4"})
 
     monkeypatch.setattr(workflow_manifest, "create_workflow_manifest", create)
     args = [

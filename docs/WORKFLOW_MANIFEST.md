@@ -7,6 +7,15 @@ manifest. There is no automatic selection of a latest checkpoint. A complete
 manifest is an integrity/compatibility record, not evidence that the skills work.
 There is currently **no physically validated seven-checkpoint cohort**.
 
+New manifests also carry a sealed execution profile. For each checkpoint it binds
+the skill and capability IDs, checkpoint digest, a two-action execution prefix,
+no temporal ensemble, and this per-skill action budget: hand-off 1,260; bar 1,900;
+cup 1,038; plate 1,964; drawer 1,120; spoon 1,408; fork 1,408. These are twice the
+recorded nominal-v2 skill lengths and match the frozen component protocol. Legacy
+v1/v2 manifests still verify for lineage, but `workflow-run` rejects them before
+model loading because they lack this profile. New non-corrective/corrective
+manifests use v3/v4 respectively.
+
 Create a new version after explicitly choosing all seven runs:
 
 ```sh
@@ -28,6 +37,8 @@ every referenced artifact; moving the JSON alone does not move its dependencies.
 Neither command imports a model checkpoint into an inference backend or runs the
 robot. A changed manifest body, dataset file, skill view, checkpoint, or training
 seal is rejected. Missing, repeated or reordered skills cannot form a cohort.
+Changing an execution entry, its order, its checkpoint binding or its profile seal
+also fails verification.
 
 The manifest keeps **file digests and canonical body seals distinct**. The
 export file digest binds exact JSON bytes. Successor references carry the
@@ -49,7 +60,8 @@ executor per capability, using models already loaded into memory. One loaded
 cohort belongs to one worker; sharing mutable ACT policy state across workers is
 rejected. Construct each executor before starting visual planning, because
 reference verification reads files and may take longer than a camera's freshness
-window. The workflow runner then starts it with the exact authorized observation.
+window. The workflow runner starts it with the exact authorized observation and the
+constructor applies that skill's sealed prefix and action budget.
 
 Tests use sealed synthetic dataset/checkpoint fixtures to cover all seven
 bindings, final parking, pinned digest failures, missing skills, manifest tampering,

@@ -13,6 +13,8 @@ from bimanual.skill_outcomes import SkillOutcomeMonitor
 from bimanual.skill_registry import dinner_capability
 from bimanual.successor_readiness import SuccessorReadinessMonitor, SuccessorReference
 
+_DEFAULT = object()
+
 
 @dataclass(frozen=True)
 class SkillExecutionResult:
@@ -35,9 +37,22 @@ class DinnerSkillExecutor:
     is checked again before any action. No teacher actions or fallback are loaded.
     """
 
-    def __init__(self, worker, policy, *, max_actions: int = 2000, successor_reference=None):
+    def __init__(
+        self,
+        worker,
+        policy,
+        *,
+        max_actions: int = 2000,
+        successor_reference=None,
+        execute_chunk_steps: int = 1,
+        temporal_ensemble_coefficient=None,
+    ):
         if type(max_actions) is not int or not 1 <= max_actions <= 20000:
             raise ValueError("Skill action budget must be between one and 20000")
+        if type(execute_chunk_steps) is not int or not 1 <= execute_chunk_steps <= 100:
+            raise ValueError("Execution prefix must be between one and 100 actions")
+        if temporal_ensemble_coefficient is not None and execute_chunk_steps != 1:
+            raise ValueError("Temporal execution requires a one-step prefix")
         manifest = json.loads((ASSETS / "manifest.json").read_text())
         if digest_file(ASSETS / "layout.json") != manifest["files"]["layout.json"]:
             raise ValueError("Frozen scoring layout integrity mismatch")
@@ -45,6 +60,8 @@ class DinnerSkillExecutor:
         if digest_file(worker.directory / "scene.xml") != self._layout["scene_sha256"]:
             raise ValueError("Physical outcome layout does not match worker scene")
         self.worker, self.policy, self.max_actions = worker, policy, max_actions
+        self.execute_chunk_steps = execute_chunk_steps
+        self.temporal_ensemble_coefficient = temporal_ensemble_coefficient
         self._attempt = self._monitor = self._result = None
         self._count = 0
         self._trace_offset = None
@@ -66,11 +83,15 @@ class DinnerSkillExecutor:
         attempt_id,
         observation,
         *,
-        temporal_ensemble_coefficient=None,
-        execute_chunk_steps: int = 1,
+        temporal_ensemble_coefficient=_DEFAULT,
+        execute_chunk_steps=_DEFAULT,
     ):
         if self._attempt is not None:
             raise RuntimeError("Executor is single-attempt; create another for a supervisor retry")
+        if execute_chunk_steps is _DEFAULT:
+            execute_chunk_steps = self.execute_chunk_steps
+        if temporal_ensemble_coefficient is _DEFAULT:
+            temporal_ensemble_coefficient = self.temporal_ensemble_coefficient
         active = self.worker.supervisor.snapshot().active
         if active is None or active.attempt_id != attempt_id:
             raise ValueError("Executor requires the canonical active attempt")
