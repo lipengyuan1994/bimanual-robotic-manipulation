@@ -130,6 +130,14 @@ returns an existing complete suite unchanged, and rejects ambiguous duplicates
 instead of selecting the newest. Four suite fixtures pass. No model or evaluation
 is invoked by preparation.
 
+Actual prepared suite `20260911T235826-bd7f6e295f30`, seal
+`e412f79eeb513c190e4955dd6cc06feb787a04c11fb3945a9e73dd48bbb4c2ab`,
+contains all16ordered frozen inputs from `placement-29001` through
+`combined-30010`. Independent reload verifies every child manifest, scene and
+layout; a second preparation call returned the same suite without allocating a
+duplicate. Its `evaluation_attempted=false` and `task_success=null` remain
+unchanged. These inputs await a completed seven-checkpoint candidate.
+
 The next seven-checkpoint manifest version now seals the per-skill execution
 profile alongside checkpoint lineage: all seven ordered skill/capability IDs,
 checkpoint digests, exact twice-nominal-v2 action budgets, prefix2 and no temporal
