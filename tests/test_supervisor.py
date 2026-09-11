@@ -539,3 +539,87 @@ def test_auxiliary_arm_order_is_canonical():
         auxiliary_arms=("left",),
     )
     assert capability.execution_arms == ("left", "right")
+
+
+def stationary_boundary(core, outcome="succeeded"):
+    supervisor, clock, _ = core
+    supervisor.load_task(task(steps=2))
+    attempt = supervisor.dispatch(observation())
+    clock.now = 110
+    terminal = observation(1, captured=110)
+    supervisor.finish(
+        attempt.attempt_id, terminal, executor_outcome=outcome, reason="Test boundary"
+    )
+    clock.now = 111
+    payload = observation(1, captured=111).model_dump()
+    for frame in payload["frames"]:
+        frame["artifact"]["path"] = "recapture/" + frame["artifact"]["path"]
+    return terminal, Observation.model_validate(payload)
+
+
+def test_stationary_recapture_dispatches_successor_without_unowned_physics(core):
+    previous, fresh = stationary_boundary(core)
+    supervisor, clock, _ = core
+    with pytest.raises(ValueError):
+        supervisor.dispatch(fresh)
+    successor = supervisor.dispatch_stationary(fresh, previous_observation=previous)
+    assert successor.step_id == "pick" and successor.observation.simulation_seconds == 0.05
+    assert supervisor.authorize(successor.attempt_id, fresh) == successor
+    assert any(e.kind == "stationary_recapture" for e in supervisor.snapshot().events)
+    with pytest.raises(ValueError, match="fresh post-action"):
+        supervisor.finish(
+            successor.attempt_id, fresh, executor_outcome="succeeded", reason="No move"
+        )
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "old_file",
+        "old_capture",
+        "pixels",
+        "joints",
+        "velocity",
+        "sequence",
+        "time",
+        "identity",
+        "stale",
+        "future",
+    ],
+)
+def test_stationary_transition_rejects_changed_or_reused_evidence(core, change):
+    previous, fresh = stationary_boundary(core)
+    supervisor, clock, _ = core
+    payload = fresh.model_dump()
+    if change == "old_file":
+        payload["frames"][0]["artifact"]["path"] = previous.frames[0].artifact.path
+    elif change == "pixels":
+        payload["frames"][0]["artifact"]["sha256"] = "a" * 64
+    elif change in {"joints", "velocity"}:
+        key = "joint_position_rad" if change == "joints" else "joint_velocity_rad_s"
+        payload[key] = [0.1] * 12
+    elif change == "identity":
+        payload["instruction_revision"] = 1
+    elif change == "stale":
+        clock.now = 200
+    else:
+        key, value = {
+            "old_capture": ("observed_monotonic_ns", 110),
+            "future": ("observed_monotonic_ns", 112),
+            "sequence": ("sequence", 2),
+            "time": ("simulation_seconds", 0.1),
+        }[change]
+        payload[key] = value
+        for frame in payload["frames"]:
+            frame[key] = value
+    with pytest.raises(ValueError):
+        supervisor.dispatch_stationary(
+            Observation.model_validate(payload), previous_observation=previous
+        )
+    assert supervisor.snapshot().active is None
+
+
+def test_stationary_transition_cannot_bypass_recovery_or_predecessor(core):
+    previous, fresh = stationary_boundary(core, outcome="failed")
+    with pytest.raises(ValueError, match="successful predecessor"):
+        core[0].dispatch_stationary(fresh, previous_observation=previous)

@@ -183,3 +183,12 @@ all 35 tests in the native LeRobot environment. See [status](STATUS.md) for the
 current full-suite result. These validate the control contract, not a
 learned dinner policy. The worker must serialize these calls with physical
 stepping; this bridge is not a thread-safe physical actor by itself.
+
+## Successful stationary transition
+
+`dispatch_stationary` is an explicit trusted-worker entry point for a newly
+rendered capture after a successful step while physics remains paused. It requires
+the actual predecessor terminal, unchanged state and camera digests, distinct
+artifact paths and capture after the finish. It records the exception and leaves
+normal dispatch, recovery and completion rules intact. See
+[continuous dinner control](DINNER_CONTROL.md) for the worker responsibilities.

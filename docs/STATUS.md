@@ -127,11 +127,11 @@ and portal are committed at `bdcd4e4`. Use `git rev-parse HEAD` for the latest
 handoff commit; subsequent sampler changes do not alter the sealed teacher run. [Draft PR #1](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/pull/1)
 is open and unmerged.
 
-Latest `scripts/check.sh`: **553 passed, thirteen explicit optional-training skips,
+Latest `scripts/check.sh`: **612 passed, thirteen explicit optional-training skips,
 eight rendering tests deselected**, with Ruff, formatting, docs and README checks.
-Log: `.artifacts/checks-supervised-control-final.log`; two subsequently added
-auxiliary-arm integration cases also pass in the 29-test bridge suite
-(`.artifacts/supervised-control-final-focused.log`). The preceding dinner-only
+Log: `.artifacts/checks-continuous-control.log`; all current auxiliary-arm,
+stationary transition, registry, policy adapter and worker cases are included.
+The preceding dinner-only
 checkpoint had 403 passing tests. The preceding seven actual
 rendering tests and the additional sensor integration rendering test passed
 separately; do not count deselections/skips as passes. Four actual sensor bundles
@@ -169,8 +169,9 @@ without checking their actual state.
 2. Keep the verified full export and seven skill views as one nominal training
    scene. The data/trainer integration passes full checks and the actual CPU
    test, but no learned dinner capability is available yet.
-3. Implement explicit ownership-aware, incremental learned skill execution in the
-   continuous dinner environment, then the live planner revalidation bridge.
+3. Connect measured skill termination/recovery and live visual planning to the
+   incremental dinner worker. Train/evaluate the bounded dinner checkpoints before
+   advertising availability; the one-update fixture only tests integration.
    Do not expose unsupported skills or silently substitute the teacher.
 
 Verify the current teacher evidence with
@@ -351,14 +352,13 @@ deselections. Handle 13759 is terminal; log `.artifacts/checks-skill-training.lo
 creation/CPU-test handles 99921, 78500, 40623 and 56003 are terminal.
 
 
-Explicit owned queues and a supervisor control bridge are implemented in the
-working tree. Fixed left/right/both permissions come from the canonical active
+Explicit owned queues and a supervisor control bridge are committed at
+`d99bcdc`. Fixed left/right/both permissions come from the canonical active
 attempt, never model outputs. Invalid operations fail that attempt and cannot
-silently rebind/retry; lifecycle changes clear temporal history. Focused tests:
-The final bridge-focused suite passes 29 tests, including both auxiliary-arm
+silently rebind/retry; lifecycle changes clear temporal history. The final bridge-focused suite passes 29 tests, including both auxiliary-arm
 directions. Native temporal suite: all 35 passed. The preceding full check
-(541 passes) under handle 61834 is terminal; the final regression check is under
-handle 83108 is terminal: **553 passed, thirteen optional skips, eight render
+(541 passes) under handle 61834 is terminal; final regression handle 83108
+is terminal: **553 passed, thirteen optional skips, eight render
 deselections**, 207.65 seconds, 340 documentation links and README synchronization
 passed (`.artifacts/checks-supervised-control-final.log`). Two subsequently added
 auxiliary integration cases pass in the 29-test focused suite; they were not
@@ -378,3 +378,46 @@ operations close the attempt, preserving the supervisor timeout/retry record.
 `docs/project.json` reflects this integration; README synchronization passes.
 The fixed MPS run is still active under 61071; 9,551 updates were observed this
 turn. Its final checkpoint and frozen quality gates remain pending.
+
+
+## Continuous learned-control integration in progress
+
+The preceding goal turn made implementation progress at `d99bcdc`; the full
+objective remains active. The development checkpoint registry verifies sealed
+training, exact skill/view lineage, sampler boundaries, normalization and ACT
+interfaces. A local inference adapter binds the checkpoint package to the exact
+registered capability and exposes only cameras/joints to ACT.
+
+Actual one-update CPU bar-view training `20260911T031045-ba4157987d18` completed
+in 21.19 seconds. Runtime check `20260911T031612-91ae14d2402a` loaded that saved
+checkpoint and predicted a finite 10-by-12 forecast from original training frame
+630. Load/verification took 18.16 seconds and one CPU inference 0.103 seconds,
+with four CPU threads. Zero physical actions were applied and no learned-quality
+claim is made. Source dirty state is recorded honestly. CLI `skill-checkpoint`
+verified this same artifact.
+
+The incremental physical worker and successful stationary handover pass
+focused tests and review. Stationary dispatch requires newly rendered image artifacts after a
+successful predecessor, unchanged physical state, and a worker-owned pause;
+normal dispatch and failed-step recovery retain their existing rules.
+See [continuous dinner control](DINNER_CONTROL.md). Full checks passed under terminal handle 96318: 612 tests, thirteen optional
+skips, eight render deselections, 344 documentation links and README
+synchronization (`.artifacts/checks-continuous-control.log`, 222.21 seconds). The MPS run remains active under 61071 (13,391 updates
+observed); do not duplicate or promote it before the fixed final assessment.
+
+
+Actual worker camera/control check `20260911T032007-745257453221` completed: six
+real images, one held-target control step (0.05 simulated seconds), then explicit
+cancellation. Seal and image artifacts verify; overhead and both wrist views
+were inspected. This tests worker plumbing, with no learned policy or task
+completion claim. CPU check 57476, inference check 75406, CLI check 74832 and
+camera check 1635 are terminal. Focused combined registry/policy/supervisor tests
+pass 100 cases; worker/bridge tests pass 47 separately (overlapping suites, not
+147 independent tests). The only active model job remains 61071.
+
+
+Continuous worker/registry/inference integration is ready for a feature-branch
+checkpoint. Full checks include the latest stationary and model-integrity guards.
+The actual camera diagnostic and CPU inference evidence are separate from those
+base tests; neither establishes learned task quality. Next executable model work
+remains the unchanged final offline gate for 61071 once its 20,000 updates seal.

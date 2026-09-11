@@ -99,6 +99,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     skill_views.add_argument("--dataset", type=Path, required=True)
     skill_views.add_argument("--destination", type=Path, required=True)
+    checkpoint = commands.add_parser(
+        "skill-checkpoint", help="Verify a development dinner checkpoint; not a quality approval"
+    )
+    checkpoint.add_argument("training_run", type=Path)
+    checkpoint.add_argument("--skill-id", required=True)
+    checkpoint.add_argument("--dataset", type=Path, required=True)
     probe = commands.add_parser(
         "training-probe", help="ACT optimizer/inference runtime check, not task training"
     )
@@ -393,6 +399,13 @@ def main(argv: list[str] | None = None) -> int:
 
             result = create_skill_views(args.dataset, args.destination)
             emit(result.model_dump(mode="json"))
+        elif args.command == "skill-checkpoint":
+            from bimanual.skill_registry import load_skill_checkpoint
+
+            binding = load_skill_checkpoint(
+                args.training_run, skill_id=args.skill_id, dataset_root=args.dataset
+            )
+            emit(binding.report())
         elif args.command == "status":
             emit(json.loads((root / "docs/project.json").read_text()))
         elif args.command == "planner-sensors":

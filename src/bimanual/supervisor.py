@@ -290,11 +290,63 @@ class TaskSupervisor:
     def dispatch(
         self, observation: Observation, *, proposal: SkillRequest | None = None
     ) -> Attempt | None:
+        return self._dispatch(observation, proposal=proposal)
+
+    def dispatch_stationary(
+        self,
+        observation: Observation,
+        *,
+        previous_observation: Observation,
+        proposal: SkillRequest | None = None,
+    ) -> Attempt | None:
+        """Trusted paused worker only: newly rendered images, unchanged physical state.
+
+        This does not authorize retimestamping old pixels. The worker must own the
+        pause, verify its complete simulator state and write fresh image artifacts.
+        Only a successful step boundary qualifies; recovery retains normal rules.
+        """
+        return self._dispatch(observation, proposal=proposal, stationary=previous_observation)
+
+    def _stationary_observation(self, observation, previous, now):
+        if not isinstance(observation, Observation) or not isinstance(previous, Observation):
+            raise TypeError("Stationary transition requires validated observations")
+        if (
+            self._state != "ready"
+            or not self._attempts
+            or self._attempts[-1].outcome != "succeeded"
+            or self._attempts[-1].attempt.task_id != self._task.task_id
+            or self._attempts[-1].observation != previous
+            or self._fresh_anchor != previous
+            or self._last_observation != previous
+        ):
+            raise ValueError("Stationary transition requires the successful predecessor terminal")
+        if (
+            observation.episode_id != previous.episode_id
+            or observation.instruction_revision != previous.instruction_revision
+            or observation.sequence != previous.sequence
+            or observation.simulation_seconds != previous.simulation_seconds
+            or observation.joint_position_rad != previous.joint_position_rad
+            or observation.joint_velocity_rad_s != previous.joint_velocity_rad_s
+            or not self._fresh_after < observation.observed_monotonic_ns <= now
+            or not 0 <= now - observation.observed_monotonic_ns <= self._max_age
+            or tuple((f.camera, f.artifact.sha256) for f in observation.frames)
+            != tuple((f.camera, f.artifact.sha256) for f in previous.frames)
+            or any(
+                a.artifact.path == b.artifact.path
+                for a, b in zip(observation.frames, previous.frames, strict=True)
+            )
+        ):
+            raise ValueError("Stationary transition requires fresh artifacts and unchanged state")
+
+    def _dispatch(self, observation, *, proposal=None, stationary=None):
         now = self._now()
         self._expire(now)
         if self._state not in {"ready", "awaiting_observation"} or self._active:
             raise RuntimeError("Task is not ready to dispatch a step")
-        self._observation(observation, now)
+        if stationary is None:
+            self._observation(observation, now)
+        else:
+            self._stationary_observation(observation, stationary, now)
         step = self._task.steps[len(self._completed)]
         if not set(step.prerequisites) <= set(self._completed):
             raise RuntimeError("Step prerequisites are incomplete")
@@ -322,7 +374,7 @@ class TaskSupervisor:
                 exclude={"explanation"}
             ):
                 raise ValueError("Planner proposal does not match the next registered step")
-        if self._fresh_after is not None:
+        if self._fresh_after is not None and stationary is None:
             anchor = self._fresh_anchor
             if not (
                 observation.observed_monotonic_ns > self._fresh_after
@@ -355,6 +407,12 @@ class TaskSupervisor:
         )
         self._last_observation, self._state = observation, "running"
         self._fresh_after, self._fresh_anchor = None, None
+        if stationary is not None:
+            self._event(
+                "stationary_recapture",
+                f"Successful stationary boundary; fresh capture at sequence {observation.sequence}",
+                now,
+            )
         self._event("attempt_started", f"Attempt {number}", now)
         return self._active
 

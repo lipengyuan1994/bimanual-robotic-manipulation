@@ -96,3 +96,6 @@ to their verified skill views and checkpoints, or create separately validated
 parking/manipulation skill boundaries. Do not infer extra permissions from predicted actions or silently
 ignore the other arm's demonstrated movements. The generic owned queue and
 supervised bridge preserve the canonical attempt permissions.
+
+The [development checkpoint registry](DINNER_CONTROL.md) binds selected training
+views to explicit capabilities without declaring a learned skill ready.
