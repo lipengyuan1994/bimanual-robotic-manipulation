@@ -72,6 +72,7 @@ def guardian_entry(
     poll_interval,
     lease_path=None,
     child_entrypoint=None,
+    exported_lease=None,
 ):
     """Own exactly one worker, journal its outcome only after it is reaped.
 
@@ -175,7 +176,13 @@ def guardian_entry(
         )
         reason = stop_reason()
         if reason is None:
-            if lease_path is not None:
+            if exported_lease is not None:
+                if lease_path is None:
+                    raise RuntimeError("Inherited worker lease requires its expected path")
+                lease = WorkerLease.from_spawn(exported_lease)
+                lease.assert_path(Path(lease_path))
+                record("worker_lease_inherited", path=str(lease_path))
+            elif lease_path is not None:
                 lease = WorkerLease.acquire(Path(lease_path))
                 record("worker_lease_acquired", path=str(lease_path))
             context = mp.get_context("spawn")

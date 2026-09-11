@@ -24,7 +24,7 @@ is active.
 
 The six-skill suite was frozen before any of those checkpoints completed at
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `f3c098e6986f57e87e04d47ba935c646c506913fa8a4073439c69d4aed42b797`.
+seal `64458379864025808a3d106fa152bb8f6dd11701783d11e196f0cbdd040a2bc3`.
 It selects final-update20,000 checkpoints, MPS, a two-action execution prefix,
 the authored nominal-v2 scene, exact teacher preparation, per-skill action budgets
 equal to twice the nominal duration, and a1,200-second wall limit. It requires one
@@ -41,11 +41,16 @@ PYTORCH_ENABLE_MPS_FALLBACK=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
 ```
 
 The protocol runner verifies the cohort, exact training child, checkpoint source,
-and25 evaluator, process, runner, control, scoring, policy, contract, checkpoint and
-evidence source files. It runs the evaluator below a separate guardian and worker,
-then independently verifies the child result after both processes are reaped. It
-returns an existing sealed result instead of retrying it; multiple matching results
-stop as ambiguous. A failed or timed-out physical attempt stays failed.
+every Python module in the package, and the authored nominal-v2 and SO-101 asset
+trees. It repeats protocol and source verification after execution. It reserves the
+shared model lease before allocating an attempt, transfers that lease through a
+separate guardian to the worker, and independently verifies the child after both
+processes are reaped. It exposes a child result only when the process wrapper proves
+clean exits, reaps, no forced interruption and complete child binding. It returns an
+existing sealed result instead of retrying it; multiple matches stop as ambiguous.
+A failed or timed-out physical attempt stays failed. If the root process dies before
+it can seal its own record, the preserved unsealed declaration requires manual
+adjudication and also blocks automatic retry.
 
 After all six declared evaluations have run, seal their complete result table:
 
@@ -54,9 +59,10 @@ After all six declared evaluations have run, seal their complete result table:
   docs/experiments/six-skill-physical-evaluation-protocol-v1.json
 ```
 
-The report requires exactly one verified result for every skill, rebinds each result
-to its sealed cohort wrapper and training child, and preserves every failure. It
-refuses a partial or ambiguous suite. Even when all six components pass, the report
+The report requires exactly one verified result and its clean process wrapper for
+every skill, rebinds each result to its sealed cohort wrapper and training child,
+and preserves every failure. It refuses a partial, interrupted or ambiguous suite.
+Even when all six components pass, the report
 keeps independent dinner-task success, autonomous-workflow success and release
 qualification unset because every component used a disclosed teacher prefix.
 

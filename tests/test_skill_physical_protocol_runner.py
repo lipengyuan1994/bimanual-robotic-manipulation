@@ -2,6 +2,8 @@
 
 from types import SimpleNamespace
 
+import pytest
+
 from bimanual import skill_physical_protocol_runner as module
 from bimanual.cli import main
 from bimanual.evidence import EvidenceStore
@@ -16,6 +18,7 @@ def setup(
     *,
     evaluation_outcome="failed",
     process_without_child=False,
+    interrupted_after_child=False,
 ):
     skill = COHORT_SKILLS[0]
     documents = tmp_path / "docs"
@@ -116,7 +119,7 @@ def setup(
             kind=module.KIND,
             outcome=evaluation_outcome,
             config=config.model_dump(mode="json"),
-            metrics={"component_passed": False},
+            metrics={"component_passed": evaluation_outcome == "completed"},
             source={},
             claims=[],
         )
@@ -131,6 +134,16 @@ def setup(
                 "child_run_id": child.run_id,
                 "child_manifest_verified": True,
                 "child_manifest_sha256": child.manifest_sha256,
+                "child_outcome": child.outcome,
+                "process_complete": not interrupted_after_child,
+                "child_reaped": True,
+                "child_exitcode": 0,
+                "guardian_terminal_verified": True,
+                "guardian_reaped": True,
+                "guardian_exitcode": 0,
+                "forced_interruption": interrupted_after_child,
+                "component_passed": evaluation_outcome == "completed"
+                and not interrupted_after_child,
             },
             source={},
             claims=[],
@@ -175,6 +188,47 @@ def test_timed_out_process_is_preserved_without_automatic_retry(tmp_path, monkey
     second = module.run_skill_physical_protocol(protocol_path, skill, wrapper.run_id)
     assert first == second and first.kind == module.PROCESS_KIND
     assert first.outcome == "timed_out" and len(calls) == 1
+
+
+def test_interrupted_process_cannot_expose_its_completed_child(tmp_path, monkeypatch):
+    protocol_path, skill, wrapper, calls = setup(
+        tmp_path,
+        monkeypatch,
+        evaluation_outcome="completed",
+        interrupted_after_child=True,
+    )
+    result = module.run_skill_physical_protocol(protocol_path, skill, wrapper.run_id)
+    assert result.kind == module.PROCESS_KIND
+    assert result.metrics["process_complete"] is False
+    assert result.metrics["forced_interruption"] is True
+    assert len(calls) == 1
+
+
+def test_interrupted_unsealed_process_blocks_automatic_retry(tmp_path, monkeypatch):
+    protocol_path, skill, wrapper, calls = setup(tmp_path, monkeypatch)
+    store = EvidenceStore(tmp_path / "evidence")
+    training_run = (
+        store.directory(wrapper.run_id) / "training-evidence/runs" / wrapper.metrics["child_run_id"]
+    )
+    evaluation = module.SkillPhysicalEvaluationConfig(
+        training_run=training_run,
+        dataset_root=(tmp_path / "dataset").resolve(),
+        skill_views_path=(tmp_path / "docs/views.json").resolve(),
+        skill_id=skill,
+        device="mps",
+        max_actions=1900,
+        execute_chunk_steps=2,
+        wall_timeout_seconds=1200,
+        evaluation_protocol_sha256="b" * 64,
+        evaluation_protocol_file_sha256=module.digest_file(protocol_path),
+    )
+    interrupted = store.new_run()
+    (interrupted / "config.json").write_text(
+        module.SkillPhysicalProcessConfig(evaluation=evaluation).model_dump_json()
+    )
+    with pytest.raises(RuntimeError, match="manual adjudication"):
+        module.run_skill_physical_protocol(protocol_path, skill, wrapper.run_id)
+    assert calls == []
 
 
 def test_protocol_run_cli_preserves_failed_component(tmp_path, monkeypatch, capsys):

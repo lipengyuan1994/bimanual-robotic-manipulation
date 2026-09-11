@@ -13,7 +13,7 @@ from bimanual.training_cohort import COHORT_SKILLS
 from bimanual.training_cohort_runner import KIND as TRAINING_KIND
 
 
-def setup_suite(tmp_path, monkeypatch, *, missing=(), failed=()):
+def setup_suite(tmp_path, monkeypatch, *, missing=(), failed=(), dirty_process=()):
     documents = tmp_path / "docs"
     documents.mkdir()
     protocol_path = documents / "physical.json"
@@ -117,24 +117,48 @@ def setup_suite(tmp_path, monkeypatch, *, missing=(), failed=()):
         passed = skill not in failed
         directory = store.new_run()
         (directory / "fixture.txt").write_text("No physical execution")
-        evaluations.append(
-            store.seal(
-                directory,
-                kind=module.EVALUATION_KIND,
-                outcome="completed" if passed else "failed",
-                config=config.model_dump(mode="json"),
-                metrics={
-                    "component_passed": passed,
-                    "teacher_actions_used": True,
-                    "teacher_prefix_actions": index,
-                    "autonomous_skill_actions": 10 + index,
-                    "independent_task_success": None,
-                    "autonomous_workflow_success": None,
-                    "release_qualified": False,
-                },
-                source={},
-                claims=[],
-            )
+        evaluation = store.seal(
+            directory,
+            kind=module.EVALUATION_KIND,
+            outcome="completed" if passed else "failed",
+            config=config.model_dump(mode="json"),
+            metrics={
+                "component_passed": passed,
+                "teacher_actions_used": True,
+                "teacher_prefix_actions": index,
+                "autonomous_skill_actions": 10 + index,
+                "independent_task_success": None,
+                "autonomous_workflow_success": None,
+                "release_qualified": False,
+            },
+            source={},
+            claims=[],
+        )
+        evaluations.append(evaluation)
+        process_directory = store.new_run()
+        (process_directory / "fixture.txt").write_text("Clean CPU process wrapper")
+        clean = skill not in dirty_process
+        store.seal(
+            process_directory,
+            kind=module.PROCESS_KIND,
+            outcome=evaluation.outcome if clean else "timed_out",
+            config=module.SkillPhysicalProcessConfig(evaluation=config).model_dump(mode="json"),
+            metrics={
+                "process_complete": clean,
+                "child_run_id": evaluation.run_id,
+                "child_manifest_verified": True,
+                "child_manifest_sha256": evaluation.manifest_sha256,
+                "child_outcome": evaluation.outcome,
+                "child_reaped": True,
+                "child_exitcode": 0,
+                "guardian_terminal_verified": True,
+                "guardian_reaped": True,
+                "guardian_exitcode": 0,
+                "forced_interruption": not clean,
+                "component_passed": passed and clean,
+            },
+            source={},
+            claims=[],
         )
     return protocol_path, store, evaluations
 
@@ -189,6 +213,13 @@ def test_duplicate_result_is_ambiguous(tmp_path, monkeypatch):
         claims=[],
     )
     with pytest.raises(RuntimeError, match="Ambiguous repeated"):
+        module.run_skill_physical_suite_report(protocol_path)
+
+
+def test_interrupted_process_child_cannot_enter_suite(tmp_path, monkeypatch):
+    dirty = COHORT_SKILLS[1]
+    protocol_path, _, _ = setup_suite(tmp_path, monkeypatch, dirty_process={dirty})
+    with pytest.raises(ValueError, match="did not finish cleanly"):
         module.run_skill_physical_suite_report(protocol_path)
 
 

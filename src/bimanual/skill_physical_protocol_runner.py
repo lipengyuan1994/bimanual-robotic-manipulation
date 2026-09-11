@@ -23,6 +23,35 @@ from bimanual.worker_lease import WorkerLease
 KIND = "learned_skill_teacher_prepared_physical_evaluation"
 
 
+def _clean_process_child(process, child) -> bool:
+    """Return true only when the process wrapper certifies a clean child result."""
+
+    return (
+        process.kind == PROCESS_KIND
+        and process.metrics.get("process_complete") is True
+        and process.metrics.get("child_manifest_verified") is True
+        and process.metrics.get("child_run_id") == child.run_id
+        and process.metrics.get("child_manifest_sha256") == child.manifest_sha256
+        and process.metrics.get("child_outcome") == child.outcome
+        and process.metrics.get("child_reaped") is True
+        and process.metrics.get("child_exitcode") == 0
+        and process.metrics.get("guardian_terminal_verified") is True
+        and process.metrics.get("guardian_reaped") is True
+        and process.metrics.get("guardian_exitcode") == 0
+        and process.metrics.get("forced_interruption") is False
+        and process.metrics.get("component_passed")
+        == (child.metrics.get("component_passed") is True)
+        and process.outcome == child.outcome
+    )
+
+
+def _reverify_protocol(path: Path, file_sha256: str, manifest_sha256: str) -> None:
+    if digest_file(path) != file_sha256:
+        raise ValueError("Physical evaluation protocol file changed during execution")
+    if load_skill_physical_protocol(path).manifest_sha256 != manifest_sha256:
+        raise ValueError("Physical evaluation protocol sources changed during execution")
+
+
 def _training_child(store: EvidenceStore, wrapper, expected: ACTTrainingConfig, cohort_sha256: str):
     if (
         wrapper.kind != TRAINING_ATTEMPT_KIND
@@ -86,6 +115,31 @@ def run_skill_physical_protocol(protocol_path: Path, skill_id: str, training_att
         matches = []
         process_matches = []
         expected = config.model_dump(mode="json")
+        process_expected = SkillPhysicalProcessConfig(evaluation=config).model_dump(mode="json")
+        interrupted = []
+        for config_path in (store.root / "runs").glob("*/config.json"):
+            if (config_path.parent / "manifest.json").exists():
+                continue
+            try:
+                with config_path.open() as stream:
+                    header = stream.read(131072)
+                if not all(
+                    token in header
+                    for token in (protocol.manifest_sha256, skill_id, str(training_run))
+                ):
+                    continue
+                recorded = json.loads(config_path.read_text())
+            except (OSError, ValueError):
+                raise ValueError(
+                    "Matching interrupted physical process config is unreadable"
+                ) from None
+            if recorded != process_expected:
+                raise ValueError("Interrupted physical process contradicts the frozen request")
+            interrupted.append(config_path.parent.name)
+        if interrupted:
+            raise RuntimeError(
+                "Interrupted physical process requires manual adjudication; no automatic retry"
+            )
         for manifest_path in (store.root / "runs").glob("*/manifest.json"):
             try:
                 with manifest_path.open() as stream:
@@ -126,13 +180,15 @@ def run_skill_physical_protocol(protocol_path: Path, skill_id: str, training_att
             raise RuntimeError("Ambiguous repeated physical evaluation processes")
         if process_matches:
             process = process_matches[0]
-            process_expected = SkillPhysicalProcessConfig(evaluation=config).model_dump(mode="json")
             if process.config != process_expected:
                 raise ValueError("Existing physical process contradicts the frozen request")
             child_id = process.metrics.get("child_run_id")
             if child_id is None:
                 if matches:
                     raise ValueError("Physical process omitted the discovered child evaluation")
+                _reverify_protocol(
+                    protocol_path, protocol_file_sha256, protocol.manifest_sha256
+                )
                 return process
             child_result = store.verify(child_id)
             if (
@@ -142,22 +198,29 @@ def run_skill_physical_protocol(protocol_path: Path, skill_id: str, training_att
                 or matches[0] != child_result
             ):
                 raise ValueError("Physical process child binding is incomplete or contradictory")
-            return child_result
+            _reverify_protocol(
+                protocol_path, protocol_file_sha256, protocol.manifest_sha256
+            )
+            return child_result if _clean_process_child(process, child_result) else process
         if matches:
-            candidate = matches[0]
-            if candidate.config != expected or (
-                (candidate.outcome == "completed")
-                != (candidate.metrics.get("component_passed") is True)
-            ):
-                raise ValueError("Existing physical evaluation contradicts the frozen request")
-            return candidate
+            raise RuntimeError(
+                "Physical evaluation child has no sealed process wrapper; "
+                "manual adjudication required"
+            )
         process = run_skill_physical_process(
             SkillPhysicalProcessConfig(evaluation=config),
             store=store,
             project_root=Path(__file__).resolve().parents[2],
         )
+        _reverify_protocol(protocol_path, protocol_file_sha256, protocol.manifest_sha256)
         child_id = process.metrics.get("child_run_id")
-        result = store.verify(child_id) if isinstance(child_id, str) else process
+        if isinstance(child_id, str):
+            child_result = store.verify(child_id)
+            if process.metrics.get("child_manifest_sha256") != child_result.manifest_sha256:
+                raise ValueError("Physical process child binding changed after execution")
+            result = child_result if _clean_process_child(process, child_result) else process
+        else:
+            result = process
         if result.config != expected:
             if result.kind != PROCESS_KIND or result.config.get("evaluation") != expected:
                 raise ValueError("Physical evaluation result changed its frozen configuration")

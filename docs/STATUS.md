@@ -93,13 +93,14 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `f3c098e6986f57e87e04d47ba935c646c506913fa8a4073439c69d4aed42b797`.
-It binds the training cohort and25 evaluator/process/runner/control/scoring/policy sources,
+seal `64458379864025808a3d106fa152bb8f6dd11701783d11e196f0cbdd040a2bc3`.
+It binds the training cohort and 97 package/runtime and authored-scene/SO-101 asset
+files,
 final-update20,000 selection,
 MPS, execution prefix2, exact teacher preparation, fixed nominal-v2 scene,
 twice-nominal action budgets and1,200-second wall limits. Its runner accepts only a
 completed matching cohort wrapper/child, evaluates once, preserves failures and
-refuses ambiguous duplicates. The focused protocol/evaluator/CLI group passes18
+refuses ambiguous duplicates. The focused protocol/evaluator/CLI group passes19
 tests. No model or physical success is implied. This protocol replaced the earlier
 unused seal before any cohort component evaluation ran.
 
@@ -107,16 +108,22 @@ The frozen runner now places each component evaluation below a separate non-daem
 guardian and spawned worker. Bounded cancellation, timeout and original-parent-loss
 fixtures reaped the worker and released the shared model lease, including a worker
 that ignored termination. Clean component failure remains a failed physical result;
-process completion is tracked separately. The five new physical-process fixtures,
-35 existing workflow guardian/process fixtures and four protocol-runner fixtures
-pass together. A timed-out process is retained and cannot be retried automatically
-under the frozen protocol.
+process completion is tracked separately. The shared model lease is reserved before
+an attempt is allocated and transferred continuously through the guardian to its
+worker, so contention consumes no frozen attempt. A child can be returned only when
+its verified process wrapper records clean worker and guardian exits, confirmed
+reaps, no forced interruption and `process_complete=true`. A timed-out process is
+retained and cannot be retried automatically under the frozen protocol. An
+original-parent loss that leaves an unsealed process declaration also blocks
+automatic retry pending explicit adjudication. The 65 protocol/process/guardian/
+lease CPU fixtures pass together.
 
-A CPU-only suite reporter now requires exactly one verified result for every frozen
-skill and rebinds each evaluation to its cohort wrapper and training child before
-sealing a result table. Missing or duplicate outcomes stop without a partial report;
-failed components remain failed. It never promotes teacher-prepared components to
-independent dinner, autonomous-workflow or release success. Five aggregation fixtures
+A CPU-only suite reporter now requires exactly one verified result and one clean,
+child-bound process wrapper for every frozen skill. It rebinds each evaluation to
+its cohort wrapper and training child before sealing a result table. Missing,
+duplicate or interrupted outcomes stop without a partial report; failed components
+remain failed. It never promotes teacher-prepared components to
+independent dinner, autonomous-workflow or release success. Six aggregation fixtures
 pass. Run it only after the six one-time component evaluations finish. The portal
 recognizes cohort attempts, component evaluations, the suite report and guarded
 workflow evidence by readable names; native ARM64 type-check and production build pass.
@@ -126,8 +133,8 @@ still came from shorter v1 skill intervals. The executor now passes a guard one
 action beyond its explicit budget, leaving the executor as the single stopping
 authority and preventing premature v2 plate termination. The unused protocol was
 regenerated before any outcome with all then-current transitive evaluator/control/scoring
-sources pinned. The later guardian addition produced the current25-source seal before
-any component evaluation. The combined executor/outcome/protocol/evaluator group passes61
+sources pinned. The later guardian hardening produced the current 97-source-and-asset
+seal before any component evaluation. The combined executor/outcome/protocol/evaluator group passes61
 tests; the corrected protocol re-verifies.
 
 CPU-only analysis run `20260911T210617-481ff0b6e8eb`, seal

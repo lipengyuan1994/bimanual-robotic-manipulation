@@ -124,6 +124,22 @@ def test_prestart_cancel_never_spawns_component(tmp_path):
     assert result.metrics["child_run_id"] is None
 
 
+def test_busy_model_lease_does_not_allocate_frozen_attempt(tmp_path):
+    from bimanual.worker_lease import WorkerLease
+
+    store = EvidenceStore(tmp_path / "evidence")
+    store.root.mkdir(parents=True)
+    with WorkerLease.acquire(store.root / ".model-job.lock"):
+        with pytest.raises(RuntimeError, match="still holds"):
+            run_skill_physical_process(
+                settings(tmp_path),
+                store=store,
+                project_root=tmp_path,
+                _entrypoint=normal,
+            )
+    assert not (store.root / "runs").exists()
+
+
 def physical_owner(root):
     from pathlib import Path
 

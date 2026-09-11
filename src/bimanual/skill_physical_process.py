@@ -131,12 +131,22 @@ def run_skill_physical_process(
     ):
         raise RuntimeError("Spawn requires the current verified native interpreter")
     _confine(config, store)
-    directory = store.new_run()
-    source = provenance(project_root)
+    store.root.mkdir(parents=True, exist_ok=True)
+    lease_path = store.root / MODEL_JOB_LEASE
+    prestart_cancelled = cancelled()
+    # A busy worker is not an evaluation attempt. Reserve the shared lease before
+    # allocating evidence, then transfer the same descriptor through the guardian.
+    parent_lease = None if prestart_cancelled else WorkerLease.acquire(lease_path)
+    try:
+        directory = store.new_run()
+        source = provenance(project_root)
+    except BaseException:
+        if parent_lease is not None:
+            parent_lease.close()
+        raise
     started = time.monotonic()
     deadline = started + config.evaluation.wall_timeout_seconds
     guardian_root = directory / "guardian"
-    lease_path = store.root / MODEL_JOB_LEASE
     cleanup_lease = None
     cancellation = None
     process = None
@@ -311,7 +321,7 @@ def run_skill_physical_process(
         if os.name != "posix":
             raise RuntimeError("Physical evaluation guardian requires POSIX")
         (directory / "config.json").write_bytes(canonical(config.model_dump(mode="json")))
-        if cancelled():
+        if prestart_cancelled or cancelled():
             reason = "cancelled"
         else:
             context = mp.get_context("spawn")
@@ -332,12 +342,16 @@ def run_skill_physical_process(
                     config.poll_interval_seconds,
                     str(lease_path),
                     _physical_child,
+                    parent_lease.export_for_spawn(),
                 ),
                 name="bimanual-skill-physical-guardian",
                 daemon=False,
             )
             record("spawn_requested")
             process.start()
+            # spawn serialization has transferred a duplicate to the guardian.
+            parent_lease.close()
+            parent_lease = None
             metrics["guardian_pid"] = process.pid
             record("guardian_started", pid=process.pid)
             while not exited(config.poll_interval_seconds):
@@ -356,6 +370,8 @@ def run_skill_physical_process(
     finally:
         if process is not None and process.pid is not None:
             settle_guardian()
+        if parent_lease is not None:
+            parent_lease.close()
 
     try:
         if message is not None:

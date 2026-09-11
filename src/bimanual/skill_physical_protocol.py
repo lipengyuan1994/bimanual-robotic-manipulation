@@ -15,33 +15,13 @@ from bimanual.skill_views import INTERVALS_V2
 from bimanual.training_cohort import COHORT_SKILLS, load_training_cohort_protocol
 
 _BUDGETS = {skill: 2 * (end - start) for skill, start, end in INTERVALS_V2[1:]}
-_SOURCES = (
-    "skill_physical_evaluation.py",
-    "teacher_prefix.py",
-    "skill_executor.py",
-    "skill_outcomes.py",
-    "successor_readiness.py",
-    "dinner_control.py",
-    "dinner_scoring.py",
-    "dinner_teacher.py",
-    "skill_registry.py",
-    "skill_physical_protocol.py",
-    "skill_physical_protocol_runner.py",
-    "skill_physical_process.py",
-    "skill_physical_suite.py",
-    "skill_policy.py",
-    "policy_rollout.py",
-    "supervised_control.py",
-    "contracts.py",
-    "teacher.py",
-    "dual_arm.py",
-    "supervisor.py",
-    "training.py",
-    "workflow_guardian.py",
-    "workflow_process.py",
-    "worker_lease.py",
-    "evidence.py",
-)
+def _source_paths(root: Path) -> tuple[str, ...]:
+    """Seal the package runtime plus exact authored-scene and robot assets."""
+
+    paths = list(root.glob("*.py"))
+    for relative in ("models/dinner_teacher_v2", "models/robotstudio_so101"):
+        paths.extend(path for path in (root / relative).rglob("*") if path.is_file())
+    return tuple(sorted(path.relative_to(root).as_posix() for path in paths))
 
 
 def _configs() -> tuple[dict, ...]:
@@ -84,7 +64,8 @@ class SkillPhysicalProtocol(Contract):
             raise ValueError("Training cohort path must be relative to this protocol")
         if tuple(self.configs) != _configs():
             raise ValueError("Physical evaluation parameters must match the frozen six-skill suite")
-        if set(self.evaluation_sources) != set(_SOURCES):
+        root = Path(__file__).resolve().parent
+        if set(self.evaluation_sources) != set(_source_paths(root)):
             raise ValueError("Physical evaluation protocol requires the exact runtime source set")
         body = self.model_dump(mode="json", exclude={"manifest_sha256"})
         if hashlib.sha256(canonical(body)).hexdigest() != self.manifest_sha256:
@@ -105,7 +86,7 @@ def create_skill_physical_protocol(training_cohort_path: Path, destination: Path
         "training_cohort_path": os.path.relpath(cohort_path, destination.parent),
         "training_cohort_file_sha256": digest_file(cohort_path),
         "training_cohort_manifest_sha256": cohort.manifest_sha256,
-        "evaluation_sources": {name: digest_file(root / name) for name in _SOURCES},
+        "evaluation_sources": {name: digest_file(root / name) for name in _source_paths(root)},
         "configs": _configs(),
         "selection_rule": "evaluate_every_completed_cohort_checkpoint_once",
         "scope": "teacher_prepared_component_only_not_autonomous_workflow",

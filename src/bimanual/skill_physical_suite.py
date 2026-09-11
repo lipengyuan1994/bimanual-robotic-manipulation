@@ -7,9 +7,10 @@ from pathlib import Path
 
 from bimanual.evidence import EvidenceStore, Manifest, canonical, digest_file, provenance
 from bimanual.skill_physical_evaluation import SkillPhysicalEvaluationConfig
+from bimanual.skill_physical_process import PROCESS_KIND, SkillPhysicalProcessConfig
 from bimanual.skill_physical_protocol import load_skill_physical_protocol
 from bimanual.skill_physical_protocol_runner import KIND as EVALUATION_KIND
-from bimanual.skill_physical_protocol_runner import _training_child
+from bimanual.skill_physical_protocol_runner import _clean_process_child, _training_child
 from bimanual.training import ACTTrainingConfig
 from bimanual.training_cohort import COHORT_SKILLS, load_training_cohort_protocol
 from bimanual.worker_lease import WorkerLease
@@ -52,6 +53,34 @@ def _expected_training(cohort_path: Path, cohort, skill: str) -> ACTTrainingConf
             "skill_views_path": (cohort_path.parent / raw["skill_views_path"]).resolve(),
         }
     )
+
+
+def _verified_process(store: EvidenceStore, candidate: Manifest) -> Manifest:
+    expected = SkillPhysicalProcessConfig(
+        evaluation=SkillPhysicalEvaluationConfig.model_validate(candidate.config)
+    ).model_dump(mode="json")
+    matches = []
+    for path in (store.root / "runs").glob("*/manifest.json"):
+        try:
+            with path.open() as stream:
+                header = stream.read(131072)
+            if PROCESS_KIND not in header or candidate.run_id not in header:
+                continue
+            raw = json.loads(path.read_text())
+        except (OSError, ValueError):
+            continue
+        if (
+            raw.get("kind") == PROCESS_KIND
+            and raw.get("config") == expected
+            and raw.get("metrics", {}).get("child_run_id") == candidate.run_id
+        ):
+            matches.append(store.verify(path.parent.name))
+    if len(matches) != 1:
+        raise ValueError("Physical evaluation requires exactly one sealed process wrapper")
+    process = matches[0]
+    if not _clean_process_child(process, candidate):
+        raise ValueError("Physical evaluation process did not finish cleanly")
+    return process
 
 
 def _validate_candidate(
@@ -109,10 +138,13 @@ def _validate_candidate(
         or candidate.metrics["autonomous_skill_actions"] < 0
     ):
         raise ValueError("Physical evaluation omits required scope or action disclosure")
+    process = _verified_process(store, candidate)
     return {
         "skill_id": skill,
         "evaluation_run_id": candidate.run_id,
         "evaluation_manifest_sha256": candidate.manifest_sha256,
+        "process_run_id": process.run_id,
+        "process_manifest_sha256": process.manifest_sha256,
         "training_attempt_run_id": wrapper.run_id,
         "training_manifest_sha256": child.manifest_sha256,
         "component_passed": passed,
@@ -158,6 +190,8 @@ def run_skill_physical_suite_report(protocol_path: Path):
                     "skill_id": row["skill_id"],
                     "run_id": row["evaluation_run_id"],
                     "manifest_sha256": row["evaluation_manifest_sha256"],
+                    "process_run_id": row["process_run_id"],
+                    "process_manifest_sha256": row["process_manifest_sha256"],
                 }
                 for row in rows
             ],
