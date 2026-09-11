@@ -272,5 +272,13 @@ Follow-up declared: dropout-zero protocol `20260911T021430-2b8791b001be` keeps
 all other no-VAE settings and the original acceptance gates. The retained
 training-only audit is `20260911T021301-8ac3000fe6d8`. An actual one-update CPU
 checkpoint/processor/sampler round-trip passes for this configuration. Full
-checks are running under process 97534, log `.artifacts/checks-dropout-config.log`.
-Training has not yet started; do not mistake the protocol for a trained model.
+checks passed: 445 tests, 11 explicit optional-training skips, eight rendering
+deselections; log `.artifacts/checks-dropout-config.log`. The actual dropout-zero
+CPU test passes separately.
+
+Active training: `20260911T021733-b67e2a69d96e`, clean source `6f878db`, native
+MPS process 67509, log `.artifacts/approach-no-dropout-v1-2000.log`. Check that
+handle before starting anything else; do not launch a duplicate. After completion,
+verify the seal, then run `.artifacts/approach-no-dropout-offline.py <training-run>`
+in the native training environment and `.artifacts/compare-no-dropout-offline.py
+<offline-run>` in `.venv`. The gate must pass before physical validation.
