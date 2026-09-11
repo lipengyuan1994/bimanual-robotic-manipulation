@@ -25,6 +25,7 @@ class SkillExecutionResult:
     physical_success: bool = False
     successor_ready: bool | None = None
     final_parking_ready: bool | None = None
+    failure_code: str | None = None
 
 
 class DinnerSkillExecutor:
@@ -77,6 +78,7 @@ class DinnerSkillExecutor:
         self._physical_success = False
         self._successor_ready = None
         self._final_parking_ready = None
+        self._failure_code = None
 
     def start(
         self,
@@ -207,9 +209,19 @@ class DinnerSkillExecutor:
             self._physical_success,
             self._successor_ready,
             self._final_parking_ready,
+            self._failure_code,
         )
 
-    def _finish(self, state, reason, observation, *, recoverable_failure=False):
+    def _finish(
+        self,
+        state,
+        reason,
+        observation,
+        *,
+        recoverable_failure=False,
+        failure_code=None,
+    ):
+        self._failure_code = failure_code
         result = self._outcome(state, reason)
         self._write(
             "termination_requested", asdict(result) | {"recoverable_failure": recoverable_failure}
@@ -248,11 +260,27 @@ class DinnerSkillExecutor:
             observation = self._next_observation or self.worker.capture()
             self._next_observation = None
             if self._count >= self.max_actions:
+                counters = self._monitor.snapshot().counters
+                if self.policy.binding.view.skill_id == "drawer_open":
+                    failure_code = (
+                        "drawer_contact_not_acquired"
+                        if counters.get("drawer_contact_samples", 0) == 0
+                        else "physical_milestone_incomplete"
+                    )
+                else:
+                    failure_code = (
+                        "grasp_not_acquired"
+                        if counters.get("maximum_airborne_samples", 0) == 0
+                        and counters.get("donor_samples", 0) == 0
+                        else "physical_milestone_incomplete"
+                    )
                 return self._finish(
                     "failed",
-                    "Physical completion/readiness not reached within action budget",
+                    f"{failure_code}: physical completion/readiness not reached "
+                    "within action budget",
                     observation,
                     recoverable_failure=not self._physical_success,
+                    failure_code=failure_code,
                 )
             if not self.worker.control.pending:
                 start = time.perf_counter()
@@ -283,7 +311,12 @@ class DinnerSkillExecutor:
             outcome = self._monitor.consume(action, rows)
             self._write("physical_outcome", outcome.report())
             if outcome.state == "failed":
-                return self._finish("failed", outcome.reason, self.worker.capture())
+                return self._finish(
+                    "failed",
+                    outcome.reason,
+                    self.worker.capture(),
+                    failure_code="physical_outcome_failed",
+                )
             if outcome.state == "succeeded":
                 self._physical_success = True
                 fresh = self.worker.capture()

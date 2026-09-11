@@ -101,6 +101,14 @@ missing, reordered or changed profiles before model loading; fresh executors inh
 the bound prefix and budget. The focused manifest/execution/executor checks pass75
 tests. This is interface integrity, not learned workflow success.
 
+Executor failures now retain a machine-readable physical classification. A
+controlled no-grasp action-budget fixture produces `grasp_not_acquired`, recaptures
+fresh sequence boundaries, and exhausts exactly attempts1/2/3. An injected early
+physical-outcome failure produces `physical_outcome_failed`, stops at
+`recovery_required`, and never replans. The focused runner/executor/supervisor group
+passes92 CPU/physics fixtures. These tests validate recovery authority and taxonomy,
+not learned grasp success.
+
 A generic teacher-prepared component evaluator is now implemented. It verifies the
 nominal-v2 source and skill boundary, executes the sealed teacher prefix through
 real collision/contact physics, and then permits checkpoint actions only. Component
@@ -116,7 +124,7 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `537bfac83c3deb4ec800a132830ce414a95728f859bf4cabe835a2abb7e20e51`.
+seal `8f8d9baf8e8e4b09e91f4b3c7584454c3a6fb6ca1de3e4625a463904cf889fcc`.
 It binds the training cohort and 98 package/runtime and authored-scene/SO-101 asset
 files,
 final-update20,000 selection,

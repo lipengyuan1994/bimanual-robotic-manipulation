@@ -196,8 +196,43 @@ def test_budget_failure_replans_from_owned_boundary_and_exhausts_two_retries(set
     assert s.worker._env is env and not s.worker.recovery_available()
     assert len(s.prepared) == 3 and not s.worker.control.pending
     assert [r.attempt.number for r in s.worker.supervisor.snapshot().attempts] == [1, 2, 3]
+    rows = [
+        json.loads(line)
+        for line in (s.worker.directory / "skill-execution.jsonl").read_text().splitlines()
+    ]
+    failures = [row for row in rows if row["event"] == "termination_requested"]
+    assert len(failures) == 3
+    assert all(row["failure_code"] == "grasp_not_acquired" for row in failures)
+    assert all("grasp_not_acquired" in row["reason"] for row in failures)
+    assert sorted({capture[0] for capture in s.captures}) == [0, 1, 2, 3]
+    assert len(s.captures) == 12
     for _ in range(3):
         assert s.runner.tick() == result
+
+
+def test_physical_outcome_failure_stops_without_retry(setup, monkeypatch):
+    s = setup
+    s.runner.start(s.task())
+    assert s.runner.tick().state == "planning"
+    finish_model(s)
+    monkeypatch.setattr(
+        s.prepared[-1]._monitor,
+        "consume",
+        lambda action, rows: SkillOutcome(
+            "failed", "Injected support continuity loss", {"actions": 1}
+        ),
+    )
+    assert s.runner.tick().state == "ready"
+    terminal = s.runner.tick()
+    assert terminal.state == "recovery_required"
+    assert terminal.attempt_count == 1
+    assert len(s.prepared) == 1
+    rows = [
+        json.loads(line)
+        for line in (s.worker.directory / "skill-execution.jsonl").read_text().splitlines()
+    ]
+    failure = next(row for row in rows if row["event"] == "termination_requested")
+    assert failure["failure_code"] == "physical_outcome_failed"
 
 
 def test_two_steps_share_worker_and_require_new_planning_and_real_supervisor_finish(

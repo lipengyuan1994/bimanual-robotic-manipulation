@@ -24,7 +24,7 @@ is active.
 
 The six-skill suite was frozen before any of those checkpoints completed at
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `537bfac83c3deb4ec800a132830ce414a95728f859bf4cabe835a2abb7e20e51`.
+seal `8f8d9baf8e8e4b09e91f4b3c7584454c3a6fb6ca1de3e4625a463904cf889fcc`.
 It selects final-update20,000 checkpoints, MPS, a two-action execution prefix,
 the authored nominal-v2 scene, exact teacher preparation, per-skill action budgets
 equal to twice the nominal duration, and a1,200-second wall limit. It requires one

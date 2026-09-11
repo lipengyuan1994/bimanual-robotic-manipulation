@@ -48,6 +48,15 @@ is not eligible. Cancellation and task replacement invalidate recovery authority
 Other failed boundaries still report `recovery_required`; guard exceptions stop.
 This implements a bounded retry lifecycle, not measured learned recovery success.
 
+Every failed executor result now carries a machine-readable classification.
+Exhausting the action budget without any measured airborne/donor evidence is
+`grasp_not_acquired`; a drawer with no contact is `drawer_contact_not_acquired`;
+later incomplete progress is `physical_milestone_incomplete`; and an explicit
+failure from the physical monitor is `physical_outcome_failed`. The first three
+budget cases retain the existing bounded recovery rule. A physical-outcome failure
+stops at `recovery_required` without another attempt because it has no eligible
+owned recovery boundary.
+
 
 ## Validation
 
