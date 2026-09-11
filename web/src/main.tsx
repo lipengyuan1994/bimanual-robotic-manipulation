@@ -30,6 +30,7 @@ type Run = {
   created_at?: string;
   files?: Record<string, string>;
   metrics?: Record<string, unknown>;
+  summary?: { recorded_training_steps: number; omitted_metric_fields: string[] };
   error?: string;
 };
 
@@ -45,7 +46,7 @@ function RunLink({ run, select }: { run: Run; select: (id: string) => void }) {
     return <span title={run.error}>Check local files</span>;
   if (run.files?.["replay.gif"])
     return <button onClick={() => select(run.run_id)}>Replay ↑</button>;
-  const filename = ["error.txt", "failure.txt", "proposal.json", "response.txt", "metrics.json", "score.json", "doctor.json", "trajectory.csv", "observations.jsonl", "act_config.json"].find(
+  const filename = ["error.txt", "failure.txt", "proposal.json", "response.txt", "metrics.json", "score.json", "doctor.json", "trajectory.csv", "observations.jsonl", "steps.jsonl", "act_config.json"].find(
     (name) => run.files?.[name],
   );
   return filename ? (
@@ -54,7 +55,7 @@ function RunLink({ run, select }: { run: Run; select: (id: string) => void }) {
         ? "Error"
         : filename === "proposal.json" || filename === "response.txt"
           ? "Decision"
-        : filename === "trajectory.csv" || filename === "observations.jsonl"
+        : filename === "trajectory.csv" || filename === "observations.jsonl" || filename === "steps.jsonl"
           ? "Trace"
           : "Report"}{" "}
       ↗
@@ -398,6 +399,11 @@ function App() {
                           : run.kind === "preparation_runtime"
                             ? "Runtime probe"
                             : run.kind ? run.kind.replaceAll("_", " ") : "Unreadable run"}
+                        {run.summary && (
+                          <small title="Individual training updates are available in the complete trace.">
+                            {" · "}{run.summary.recorded_training_steps.toLocaleString()} recorded updates
+                          </small>
+                        )}
                       </td>
                       <td>
                         <span

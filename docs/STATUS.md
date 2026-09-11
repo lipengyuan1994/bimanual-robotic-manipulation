@@ -1,7 +1,7 @@
 # Project status
 
 Updated: 2026-09-11. Branch: `codex/preparation-foundation`.
-Latest checkpoint: `60e4f17`. Working changes add configurable action-prefix
+Latest pushed checkpoint: `f5c3f02`. Working changes add configurable action-prefix
 execution and its regression test. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [historical evidence](STATUS_HISTORY.md).
 
@@ -22,6 +22,12 @@ quality, release reliability or Intel compliance.
 
 ## Active jobs and next executable actions
 
+Current model job: **11662**, batch4 training `20260911T134059-0cebfd5a5ae1`.
+At the latest check,1,718/20,000 updates were recorded. No second GPU job may
+run concurrently. Regression83196 is terminal:971 passed,18 skipped,9 render deselected
+(490.25s), `.artifacts/checks-history-summary.log`. The later phase-analysis
+module has11 separately passing tests.
+
 - ACT training `20260911T122319-b2ee550f005b` completed 20,000 updates on
   native MPS. Checkpoint and processor reloads pass.
 - Recorded-input evaluation `20260911T131631-11ba2033068e` completed all
@@ -37,7 +43,7 @@ quality, release reliability or Intel compliance.
   two-action comparison with the same checkpoint and limits. It finished as
   run `20260911T133149-1555757a5255`: failed after900 actions without physical
   completion/readiness. Session24984 is terminal; sealed evidence verifies.
-  Log `.artifacts/handoff-physical-prefix2.log`. No GPU job remains active.
+  Log `.artifacts/handoff-physical-prefix2.log`. Batch4 training is now active; see its run below.
 - Prefix integration regression: 100 tests passed; lint passes. Production default
   remains one action per forecast. Longer-prefix physical quality is unproven.
 
@@ -148,3 +154,33 @@ live with113 updates recorded. Frozen evaluation protocol
 `20260911T134150-ebacc86a1733` contains exact recorded-input, prefix1 and prefix2
 drivers. Verify their bytes against that sealed protocol before execution.
 The final20k checkpoint alone is selected, and both physical outcomes must be kept.
+
+Portal history improvement: paginated API responses omit the potentially20,000-row
+`metrics.steps` array and explicitly report the omitted field and recorded count.
+All other metrics, failures and integrity status remain visible. Full unpaged API
+and sealed local manifests retain the original data. This reduces response size;
+full selected-run hashing still occurs and remains a possible latency cost.
+
+History summary follow-up:7 API tests pass, including a20,000-update record that
+keeps the paginated response below5KB while preserving the complete sealed and
+unpaged data. The UI displays the recorded update count and links `steps.jsonl`
+when available; native ARM64 TypeScript/Vite build passes. Full regression is
+running as session83196, log `.artifacts/checks-history-summary.log`. Training
+session11662 remains active; do not start a second GPU workload.
+
+Verified phase-error report `20260911T134557-8d1df3e13b25` binds the recorded evaluation and
+teacher seals and copies phase labels. All630frames are included. Left-close
+gripper mean absolute error is0.05030rad; startup settle has the highest
+all-joint phase mean (0.03160rad). These labels support diagnosis only and
+never enter operating policy inputs. Earlier unbound report134536 is retained.
+
+Reusable phase analysis: `scripts/analyze_phase_errors.py` verifies both source
+seals, compares evaluation targets to teacher actions, and recomputes errors from
+raw forecasts. Real-data run `20260911T134740-40a7dd56482b` completed.11 focused
+tests cover coverage, invalid forecasts and nonzero skill intervals; lint and
+formatting pass. This module was added after regression83196 started, so its
+coverage is reported separately from that suite.
+
+History/analysis checkpoint: full regression971passed; phase-analysis11passed;
+native frontend build,423documentation links and README synchronization pass.
+Training11662 remains active. Parent OS-crash recovery remains an M4 gap.

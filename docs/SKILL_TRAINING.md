@@ -115,3 +115,16 @@ Validation: 29 view tests pass, including resealed failed-audit, wrong-recipe an
 phase-change rejection. Successor-reference and training-adapter regressions:
 30 pass, one optional real-training skip. These metadata checks do not establish
 physical successor readiness; the new recorded boundaries need their own audit.
+
+## Reproduce phase error analysis
+
+After a recorded-input handoff evaluation completes, run:
+
+```sh
+.venv/bin/python scripts/analyze_phase_errors.py EVALUATION_RUN TEACHER_RUN
+```
+
+The CPU-only analysis verifies both run seals, checks that evaluation targets match
+teacher actions, requires complete ordered forecast coverage, and recomputes
+first-action errors by phase and joint. Its sealed report is diagnostic evidence;
+phase labels never enter policy inputs and low error does not establish grasping.

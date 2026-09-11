@@ -108,10 +108,21 @@ def create_app(
         before: str | None = Query(default=None, max_length=128),
     ):
         # Source-file digests are retained on disk, but omitted from the list view.
-        return [
+        records = [
             {k: v for k, v in run.items() if k != "provenance"}
             for run in store.list_runs(limit=limit, before=before)
         ]
+        if limit is not None:
+            for record in records:
+                metrics = record.get("metrics", {})
+                if isinstance(metrics.get("steps"), list):
+                    record["metrics"] = {k: v for k, v in metrics.items() if k != "steps"}
+                    record["summary"] = {
+                        "omitted_metric_fields": ["steps"],
+                        "recorded_training_steps": len(metrics["steps"]),
+                        "detail_scope": "Full metrics remain in the sealed local manifest",
+                    }
+        return records
 
     @app.get("/api/runs/{run_id}/files/{filename:path}")
     def evidence_file(run_id: str, filename: str):

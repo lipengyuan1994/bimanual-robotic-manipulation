@@ -170,3 +170,28 @@ def test_run_page_query_bounds_and_cursor(tmp_path):
         assert all(r["outcome"] == "failed" for r in page + older)
         for limit in (0, 101, "invalid"):
             assert client.get("/api/runs", params={"limit": limit}).status_code == 422
+
+
+def test_paginated_training_summary_preserves_full_evidence(tmp_path):
+    store = EvidenceStore(tmp_path)
+    directory = store.new_run()
+    metrics = {"steps": [{"step": i, "loss": 0.5} for i in range(20000)], "physical_success": False}
+    store.seal(
+        directory,
+        kind="training",
+        outcome="failed",
+        config={},
+        metrics=metrics,
+        source={},
+        claims=[],
+    )
+    with TestClient(create_app(ROOT, tmp_path)) as client:
+        response = client.get("/api/runs", params={"limit": 20})
+        record = response.json()[0]
+        assert len(response.content) < 5000
+        assert record["integrity"] == "verified" and record["outcome"] == "failed"
+        assert record["metrics"] == {"physical_success": False}
+        assert record["summary"]["recorded_training_steps"] == 20000
+        assert record["summary"]["omitted_metric_fields"] == ["steps"]
+        assert client.get("/api/runs").json()[0]["metrics"] == metrics
+    assert store.verify(directory.name).metrics == metrics
