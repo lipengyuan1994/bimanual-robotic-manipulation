@@ -45,6 +45,19 @@ and nineteen evaluator, runner, control, scoring, policy, contract, and checkpoi
 source files. It returns an existing sealed result instead of retrying it;
 multiple matching results stop as ambiguous. A failed physical result stays failed.
 
+After all six declared evaluations have run, seal their complete result table:
+
+```sh
+.artifacts/training-venv/bin/bimanual skill-physical-suite-report \
+  docs/experiments/six-skill-physical-evaluation-protocol-v1.json
+```
+
+The report requires exactly one verified result for every skill, rebinds each result
+to its sealed cohort wrapper and training child, and preserves every failure. It
+refuses a partial or ambiguous suite. Even when all six components pass, the report
+keeps independent dinner-task success, autonomous-workflow success and release
+qualification unset because every component used a disclosed teacher prefix.
+
 ```sh
 PYTORCH_ENABLE_MPS_FALLBACK=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
   .artifacts/training-venv/bin/bimanual skill-physical-eval \

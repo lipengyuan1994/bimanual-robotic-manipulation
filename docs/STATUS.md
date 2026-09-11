@@ -102,6 +102,13 @@ completed matching cohort wrapper/child, evaluates once, preserves failures and
 refuses ambiguous duplicates. The focused protocol/evaluator/CLI group passes18
 tests. No model or physical success is implied.
 
+A CPU-only suite reporter now requires exactly one verified result for every frozen
+skill and rebinds each evaluation to its cohort wrapper and training child before
+sealing a result table. Missing or duplicate outcomes stop without a partial report;
+failed components remain failed. It never promotes teacher-prepared components to
+independent dinner, autonomous-workflow or release success. Four aggregation fixtures
+pass. Run it only after the six one-time component evaluations finish.
+
 Before the suite ran, review found the outcome monitor's redundant default budget
 still came from shorter v1 skill intervals. The executor now passes a guard one
 action beyond its explicit budget, leaving the executor as the single stopping

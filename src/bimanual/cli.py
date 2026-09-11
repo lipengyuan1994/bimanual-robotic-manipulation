@@ -161,6 +161,11 @@ def main(argv: list[str] | None = None) -> int:
     physical_protocol_run.add_argument("protocol", type=Path)
     physical_protocol_run.add_argument("--skill", required=True)
     physical_protocol_run.add_argument("--training-attempt", required=True)
+    physical_suite_report = commands.add_parser(
+        "skill-physical-suite-report",
+        help="Seal the complete frozen six-skill component result without workflow claims",
+    )
+    physical_suite_report.add_argument("protocol", type=Path)
     handoff_analysis = commands.add_parser(
         "handoff-failure-analyze",
         help="Reproduce contact-stage findings from sealed learned hand-off failures",
@@ -583,6 +588,12 @@ def main(argv: list[str] | None = None) -> int:
                 args.skill,
                 args.training_attempt,
             )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
+        elif args.command == "skill-physical-suite-report":
+            from bimanual.skill_physical_suite import run_skill_physical_suite_report
+
+            result = run_skill_physical_suite_report(args.protocol)
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1
         elif args.command == "handoff-failure-analyze":
