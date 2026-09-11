@@ -159,11 +159,11 @@ hackathon submission has been sent.
 
 ## Next executable work
 
-All experiment/model/physics processes from this session are terminal. No restart
-or new training is necessary simply to recover the handoff.
+See the final handoff entry below for live process handles; do not restart jobs
+without checking their actual state.
 
-1. Diagnose the failed nominal-launch fitting experiment below; assess
-   initialization and training duration before preregistering a follow-up.
+1. Execute the declared dropout-zero fitting experiment after full checks pass,
+   then apply the unchanged training-only acceptance gates.
 2. Inspect the stalled nominal learned trajectory against training coverage; use
    training-only policy-visited states for any corrective demonstrations. Keep the
    two validation starts out of training and retain all prior failures.
@@ -227,9 +227,8 @@ improves 6.960→2.828 mm, but its first pan command remains backward; endpoint 
 worsens 1.180→1.918 mm, and other training starts regress beyond tolerance. No
 physical run was attempted with the new model. Do not promote it or alter the gate.
 
-All root model/physics/check processes are terminal. Next: diagnose residual fitting
-error, including backbone initialization and training duration, before one bounded
-follow-up experiment. Keep all six training trajectories eligible and validation
+The nominal-launch experiment is terminal. Its subsequent no-VAE and dropout
+follow-ups are recorded below. Keep all six training trajectories eligible and validation
 states excluded. Prepared training-only diagnostic drivers remain
 `.artifacts/approach-nominal-launch-offline.py <training-run>` and
 `.artifacts/compare-nominal-launch-offline.py <offline-run>`; the latter retains
@@ -264,7 +263,14 @@ base suite passes 445 tests (ten optional skips, eight render deselections).
 Logs: `.artifacts/temporal-actions-lerobot-tests.log` and
 `.artifacts/checks-temporal-no-vae-final.log`. No new physical success is claimed.
 
-All training, offline assessment and full-check processes are terminal. Next:
-inspect the retained training-error trajectory and normalization on moving joints
-before declaring one follow-up intervention. Do not repeat failed candidates or
+The no-VAE training and assessment are terminal. The fitting audit and next
+controlled intervention are recorded below. Do not repeat failed candidates or
 add validation states to training. The frozen no-VAE comparison remains unchanged.
+
+
+Follow-up declared: dropout-zero protocol `20260911T021430-2b8791b001be` keeps
+all other no-VAE settings and the original acceptance gates. The retained
+training-only audit is `20260911T021301-8ac3000fe6d8`. An actual one-update CPU
+checkpoint/processor/sampler round-trip passes for this configuration. Full
+checks are running under process 97534, log `.artifacts/checks-dropout-config.log`.
+Training has not yet started; do not mistake the protocol for a trained model.

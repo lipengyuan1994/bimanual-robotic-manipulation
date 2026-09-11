@@ -41,6 +41,7 @@ class ACTTrainingConfig(BaseModel):
     )
     sampling_protocol_run: Path | None = None
     use_vae: bool = True
+    dropout: float = Field(default=0.1, ge=0, lt=1)
     reference_initial_state_sha256: str | None = Field(default=None, pattern="^[a-f0-9]{64}$")
 
     @model_validator(mode="after")
@@ -431,6 +432,7 @@ def run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root: 
             pretrained_backbone_weights=None,
             push_to_hub=False,
             use_amp=False,
+            dropout=config.dropout,
             optimizer_lr=config.learning_rate,
             optimizer_lr_backbone=config.learning_rate,
             **architecture,

@@ -410,3 +410,24 @@ The first pan command remains backward. Endpoint retention and unchanged weights
 pass, but launch and other-start gates fail. No physical run follows this result.
 Removing the VAE alone at this budget does not solve the fitting problem; this
 experiment does not establish that the standard VAE is generally better.
+
+### Deterministic fitting follow-up
+
+Training-only audit `20260911T021301-8ac3000fe6d8` compares retained loss windows
+and per-joint errors for all three candidates. The no-VAE run still clips every
+update; its final 250-update mean L1 is 0.12217 and median gradient norm 29.62
+against a clip threshold of 10. Lower aggregate training loss did not improve
+launch inference. Saved action normalization remains consistent with inference.
+
+Protocol `20260911T021430-2b8791b001be` tests dropout 0 instead of 0.1 on the
+no-VAE configuration, keeping the same data, initialization, sampling, learning
+rate and 2,000-update budget. It preserves the existing offline gates and only
+permits physical validation after all gates pass. The earlier unexecuted record
+`20260911T021411-d998adb7e673` retained a contradictory copied intervention string
+and is superseded before training. No earlier record was edited.
+
+`train --dropout 0` selects this configuration; the default remains 0.1. The value
+is saved in both training and checkpoint configuration. One actual native CPU
+update with no VAE/dropout, checkpoint reload and processor/sampler checks passes
+(`.artifacts/no-dropout-checkpoint-test.log`). This is a controlled fitting
+experiment, not a claim that dropout should be removed from the released policy.

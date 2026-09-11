@@ -187,12 +187,18 @@ def test_training_cannot_write_inside_dataset(manifest_dataset):
     not os.environ.get("BIMANUAL_TRAIN_TEST_DATASET"),
     reason="Requires explicit real ACT dataset and native training environment",
 )
-@pytest.mark.parametrize("use_vae", [True, False], ids=["vae", "no_vae"])
-def test_real_one_step_training_and_reload(tmp_path, use_vae):
+@pytest.mark.parametrize(
+    "use_vae,dropout",
+    [(True, 0.1), (False, 0.1), (False, 0.0)],
+    ids=["vae", "no_vae", "no_dropout"],
+)
+def test_real_one_step_training_and_reload(tmp_path, use_vae, dropout):
     dataset = Path(os.environ["BIMANUAL_TRAIN_TEST_DATASET"])
     store = EvidenceStore(tmp_path / "evidence")
     manifest = run_train(
-        ACTTrainingConfig(dataset_path=dataset, steps=1, device="cpu", use_vae=use_vae),
+        ACTTrainingConfig(
+            dataset_path=dataset, steps=1, device="cpu", use_vae=use_vae, dropout=dropout
+        ),
         store=store,
         project_root=Path.cwd(),
     )
@@ -214,6 +220,7 @@ def test_real_one_step_training_and_reload(tmp_path, use_vae):
         (store.root / "runs" / manifest.run_id / "checkpoint/config.json").read_text()
     )
     assert checkpoint_config["use_vae"] is use_vae
+    assert checkpoint_config["dropout"] == dropout
     assert verified.metrics["act_initialization"]["use_vae"] is use_vae
     if not use_vae:
         assert set(verified.metrics["steps"][0]["loss_parts"]) == {"l1_loss"}
