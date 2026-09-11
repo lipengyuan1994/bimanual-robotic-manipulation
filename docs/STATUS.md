@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 11, 2026. Latest pushed checkpoint: `2399b2f` on
+Updated September 11, 2026. Latest pushed checkpoint: `66e0c1c` on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -135,6 +135,9 @@ internal visual-only experiment on one physical layout, not the final production
 or organizer evaluation suite. No visual recordings have entered training;
 verified export/view/composition integration remains the next data step after
 the active model job frees the rendering slot.
+[Protocol and source-verification guide](VISUAL_TRAINING.md). The source verifier
+and CLI pass41targeted checks, including rejection by real physics scorers of a
+synthetic integrity fixture. No real visual recording has passed this gate yet.
 
 The opt-in operator supports one worker, start/stop, verified history, progress
 and three-camera previews. History pages omit large training-update arrays while
@@ -157,7 +160,7 @@ Parent-record reconstruction remains unresolved. The original portal service was
   against hashed lockfile requirements:ARM64,68compiled extensions, CPU arithmetic
   and MuJoCo stepping. It predates visual variants and excludes ML extras/rendering.
   [Repeatable installation](SETUP.md).
-- Checkpoint2399b2f is pushed; draft PR#1 description updated. Its GitHub Actions
+- Checkpoint66e0c1c is pushed; new remote CI remains unverified. Prior checkpoint2399b2f's GitHub Actions
   runs34635313597 and34635303088 now have successful portal and Python/render jobs.
   These checks cover pushed2399b2f, not the subsequent working-tree changes.
   No merge is authorized here.

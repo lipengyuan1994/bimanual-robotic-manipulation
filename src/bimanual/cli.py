@@ -93,6 +93,15 @@ def main(argv: list[str] | None = None) -> int:
         "corrective-views-check", help="Verify corrective source recordings and boundaries"
     )
     corrective_check.add_argument("manifest", type=Path)
+    visual_protocol = commands.add_parser(
+        "visual-protocol-check", help="Verify frozen visual seed allocation and source identities"
+    )
+    visual_protocol.add_argument("protocol", type=Path)
+    visual_source = commands.add_parser(
+        "visual-source-check", help="Verify a recorded visual teacher source before export"
+    )
+    visual_source.add_argument("run_root", type=Path)
+    visual_source.add_argument("--protocol", type=Path, required=True)
     evaluation = commands.add_parser("dinner-evaluate", help="Re-score sealed dinner evidence")
     evaluation.add_argument("run_id")
     evaluation.add_argument("--instrumentation-run", help="Sealed declarations linked to this run")
@@ -408,6 +417,26 @@ def main(argv: list[str] | None = None) -> int:
 
             result = load_corrective_views(args.manifest, store)
             emit(result.model_dump())
+        elif args.command == "visual-protocol-check":
+            from bimanual.visual_training import load_visual_training_protocol
+
+            result = load_visual_training_protocol(args.protocol)
+            emit(result.model_dump(mode="json"))
+        elif args.command == "visual-source-check":
+            from bimanual.visual_source import verify_visual_source
+
+            result = verify_visual_source(args.run_root, protocol_path=args.protocol)
+            emit(
+                dict(
+                    outcome="verified",
+                    run_id=result.manifest.run_id,
+                    source_manifest_sha256=result.manifest.manifest_sha256,
+                    protocol_sha256=result.protocol_sha256,
+                    episode_sha256=result.episode_sha256,
+                    physical_layout_count=result.physical_layout_count,
+                    lerobot_decoded_parity=result.lerobot_decoded_parity,
+                )
+            )
         elif args.command == "dinner-evaluate":
             from bimanual.dinner_evaluation import evaluate_dinner_run
 

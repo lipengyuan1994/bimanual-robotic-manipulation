@@ -48,6 +48,8 @@ chat history to resume implementation.
 
 Bounded learned dinner work: [skill training and dataset views](SKILL_TRAINING.md).
 
+Appearance variation: [frozen visual splits and source verification](VISUAL_TRAINING.md).
+
 Measured skill termination: [learned executor and physical monitor](SKILL_EXECUTION.md).
 
 Learned skill transitions: [successor readiness](SUCCESSOR_READINESS.md).
