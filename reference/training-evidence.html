@@ -26,7 +26,13 @@
 </tbody></table>
 <p>“Two actions per forecast” means executing the first two predictions from a ten-action sequence, checking each before applying it. It does not mean skipping observations or disabling contact checks. Our two-action experiment improved approach progress but did not establish grasping.</p>
 <details><summary>Check your interpretation: do valid, low-error predictions prove the robot can grasp?</summary><p>No. They describe predictions on recorded inputs. Once the policy moves the arms, its new observations can differ from the teacher's. The physical run must independently demonstrate a grasp, transfer and stable release. Our failed runs are evidence of that gap.</p></details>
-<p>A new batch-size comparison is in progress. It changes training batch size from one to four while retaining the other declared settings. Its result remains unknown; the same physical checks still apply.</p>
-<p>See the <a href="../docs/STATUS.md">current engineering status</a> and <a href="../docs/SKILL_TRAINING.md">skill-data contract</a> for the exact evidence. The <a href="https://arxiv.org/abs/2304.13705">original ACT paper</a> discusses how policy errors can compound over time. The <a href="https://huggingface.co/docs/lerobot/act">LeRobot ACT guide</a> describes its camera/joint inputs and action-sequence outputs.</p>
+<h2>The corrective follow-up</h2>
+<p>The later batch-four corrective checkpoint completed 20,000 updates using all 630 nominal frames plus 188 approach corrections. On the same 630 recorded inputs, its first-action mean absolute error was about 0.00116 rad and its maximum was 0.08593 rad. Those numbers improved, but both physical runs still failed.</p>
+<table><thead><tr><th>Physical attempt</th><th>Observed result</th></tr></thead><tbody>
+<tr><td>Two actions per forecast</td><td>Reached donor hold, then lost all grip at action 567.</td></tr>
+<tr><td>Five actions per forecast</td><td>Completed shared hold, then lost all grip at action 676.</td></tr>
+</tbody></table>
+<p>Replaying the sealed contact logs localized the final fault. The receiver-gripper commands were 0.0707 rad and 0.1323 rad; the nearest nominal left-release target was -0.1 rad. The respective errors of +0.1707 rad and +0.2323 rad opened the receiving gripper. This supports a corrective-data decision about the release transition. It does not promote the checkpoint.</p>
+<p>See the <a href="../docs/STATUS.md">current engineering status</a>, <a href="../docs/HANDOFF_FAILURE_ANALYSIS.md">continuity analysis</a>, and <a href="../docs/SKILL_TRAINING.md">skill-data contract</a> for the exact evidence. The <a href="https://arxiv.org/abs/2304.13705">original ACT paper</a> discusses how policy errors can compound over time. The <a href="https://huggingface.co/docs/lerobot/act">LeRobot ACT guide</a> describes its camera/joint inputs and action-sequence outputs.</p>
 <footer>Return to <a href="../lessons/0004-demonstrations-and-act.html">Lesson 04</a>. Ask the agent to help interpret a specific run; reading this sheet does not record mastery.</footer>
 </main></body></html>

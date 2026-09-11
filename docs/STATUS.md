@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 11, 2026. Latest pushed checkpoint: `29465a8` on
+Updated September 11, 2026. Latest pushed checkpoint: `9e25716` on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -264,7 +264,9 @@ remain mandatory for Intel compliance. [Access](INTEL_ACCESS.md).
 
 Organizer assets/seeds, prior-code eligibility and hosting details remain provisional.
 User reports completion of lessons1–2. Lessons3–7 are available; the training-evidence
-reference now includes actual failed physical attempts. No additional mastery has
+reference and Lesson4 now include the corrective checkpoint's measured receiver-grip
+failure and the distinction between low recorded-input error and closed-loop contact.
+No additional mastery has
 been recorded. [Learning](LEARNING.md), [questions](ORGANIZER_QUESTIONS.md).
 
 
