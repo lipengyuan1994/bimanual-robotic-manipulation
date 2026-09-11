@@ -192,3 +192,15 @@ The prepared exhaustive hand-off evaluator is
 `.artifacts/evaluate-dinner-handoff-v2.py`; it must run on the completed trained
 checkpoint, cover all630 source observations, retain every forecast/error, and
 report bounds and joint-target errors without claiming physical success.
+
+Qwen direction69764 is terminal completed, run `20260911T121102-7f242fa1b264`:
+all four frozen presence/absence and right/left recipient cases pass. This validates
+only the preregistered wording on the fixed images; no general planner promotion.
+Next GPU job is the prepared ACT hand-off training protocol
+`20260911T121325-10260896f896`.
+
+New `operator_jobs.py` implements one active background workflow, job-specific
+stop requests, verified final evidence and explicit shutdown-timeout reporting.
+Eleven CPU tests pass, including simultaneous starts, stale stop IDs, corrupted
+results and failed thread startup. It is not yet wired into the API or UI; the
+portal remains read-only. Job completion never claims independent task success.

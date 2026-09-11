@@ -191,3 +191,12 @@ fixed planner. Protocol `20260911T115919-698f78cadeac` preregisters the next pai
 skill-decision test: bar, beam and strip name the same elongated target; appearance
 is not evidence of presence. Original positive/negative gates remain unchanged.
 No action is dispatched and no planner change is promoted from this diagnosis.
+
+Receiver-first diagnostic `20260911T121102-7f242fa1b264`, protocol
+`20260911T120740-a2070b401571`, passes all four frozen-image cases: present/right,
+absent/right, present/left and absent/left. The prompt identifies the receiving
+arm first and explains bar/beam/strip as target aliases; source pixels, model,
+precision and decision gates are unchanged. No action is dispatched. This is
+bounded prompt evidence and does not establish full workflow reasoning or justify
+an untested system-prompt rewrite. The earlier alias-only positive case selected
+the wrong recipient and remains a failure.
