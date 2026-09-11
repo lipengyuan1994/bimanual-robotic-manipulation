@@ -127,9 +127,10 @@ and portal are committed at `bdcd4e4`. Use `git rev-parse HEAD` for the latest
 handoff commit; subsequent sampler changes do not alter the sealed teacher run. [Draft PR #1](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/pull/1)
 is open and unmerged.
 
-Latest `scripts/check.sh`: **403 passed, three explicit optional-training skips,
+Latest `scripts/check.sh`: **414 passed, three explicit optional-training skips,
 eight rendering tests deselected**, with Ruff, formatting, docs and README checks.
-Log: `.artifacts/checks-dinner-packaged.log`. The preceding seven actual
+Log: `.artifacts/checks-nominal-launch-profile.log`; the preceding dinner-only
+checkpoint had 403 passing tests. The preceding seven actual
 rendering tests and the additional sensor integration rendering test passed
 separately; do not count deselections/skips as passes. Four actual sensor bundles
 and real Qwen/ACT runs also have separate verified evidence.
@@ -161,9 +162,8 @@ hackathon submission has been sent.
 All experiment/model/physics processes from this session are terminal. No restart
 or new training is necessary simply to recover the handoff.
 
-1. Run the verified nominal-launch sampler under preregistered protocol
-   `20260911T013418-850e2f3250df`: 2,000 updates, followed by training-only offline
-   gates before any further physical attempt.
+1. Diagnose the failed nominal-launch fitting experiment below; assess
+   initialization and training duration before preregistering a follow-up.
 2. Inspect the stalled nominal learned trajectory against training coverage; use
    training-only policy-visited states for any corrective demonstrations. Keep the
    two validation starts out of training and retain all prior failures.
@@ -191,8 +191,8 @@ folders. Full checks and clean rendered reproduction now pass.
 
 ACT analysis `20260911T012244-b6feaf688748` verifies exact nominal reset input
 matches training, yet the first predicted movement has the wrong sign. Proposal
-`20260911T012605-8265a1f82ac4` changes only training-anchor sampling; no new training
-has started and held-out cases remain excluded. See [training](TRAINING.md).
+`20260911T012605-8265a1f82ac4` changes only training-anchor sampling; its completed follow-up failed the offline
+gate below, and held-out cases remain excluded. See [training](TRAINING.md).
 
 
 ### Clean rendered M1 reproduction
@@ -215,10 +215,22 @@ opened and checked: completed dinner replay, independent score link and M1 statu
 are visible; the score endpoint serves the verified result.
 
 
-The `approach_nominal_launch_v1` sampler now passes 32 focused tests (one real-ACT
-check explicitly skipped), and actual dataset verification confirms 10/120/350
-anchors with equal group mass. Full checks are running in
-`.artifacts/checks-nominal-launch-profile.log`. No training has started. Prepared
-local experiment drivers are `.artifacts/approach-nominal-launch-v1-2000.py`,
+The `approach_nominal_launch_v1` sampler passes 32 focused tests (one real-ACT
+check explicitly skipped). Full checks pass: 414 tests, three optional-training
+skips and eight render deselections (`.artifacts/checks-nominal-launch-profile.log`).
+
+Run `20260911T014325-bad8e53b82db` completed 2,000 native MPS updates in 415.15 seconds
+from clean `497e23a`; checkpoint/processor/sampler reloads and evidence seal verify.
+Offline run `20260911T015030-96f6a94b5887` and comparison
+`20260911T015050-0e94cba7b117` fail the preregistered gate: nominal launch tool error
+improves 6.960→2.828 mm, but its first pan command remains backward; endpoint error
+worsens 1.180→1.918 mm, and other training starts regress beyond tolerance. No
+physical run was attempted with the new model. Do not promote it or alter the gate.
+
+All root model/physics/check processes are terminal. Next: diagnose residual fitting
+error, including backbone initialization and training duration, before one bounded
+follow-up experiment. Keep all six training trajectories eligible and validation
+states excluded. Prepared training-only diagnostic drivers remain
 `.artifacts/approach-nominal-launch-offline.py <training-run>` and
-`.artifacts/compare-nominal-launch-offline.py <offline-run>`; retain their evidence.
+`.artifacts/compare-nominal-launch-offline.py <offline-run>`; the latter retains
+this experiment's frozen gate, not a generic future acceptance threshold.

@@ -317,7 +317,7 @@ The reduced attention to other training starts is an explicit tradeoff to measur
 All masks must derive from verified training configs, and all probability/RNG
 lineage must be saved. No validation states were used to choose this design.
 The proposal and detailed limits are preserved locally in
-`.artifacts/nominal-launch-proposal.md`; it has not been implemented or trained.
+`.artifacts/nominal-launch-proposal.md`; implementation and measured results follow.
 
 
 The follow-up is now preregistered as protocol `20260911T013418-850e2f3250df`.
@@ -332,5 +332,31 @@ The `approach_nominal_launch_v1` sampler is implemented and verified against the
 actual 480-frame dataset: groups 10/120/350 each receive one third of total mass.
 It derives a unique nominal episode from the verified zero-offset training config,
 retains all frames and ordering, and records truthful conditional probabilities.
-Focused tests: 32 passed, one real-ACT check explicitly skipped. This protocol has
-not trained a model yet.
+Focused tests: 32 passed, one real-ACT check explicitly skipped. The completed
+training experiment is recorded below.
+
+
+## Nominal launch experiment result
+
+Clean sampler checkpoint `497e23a366d512554f22cc21c745ad54c338ba81` trained run
+`20260911T014325-bad8e53b82db`: 2,000 updates on native MPS in 415.15 seconds,
+11,908,460 parameters, unchanged 480-frame dataset. Checkpoint, processors and
+sampler reload checks pass. Training and evidence seals verify.
+
+Training-only offline run `20260911T015030-96f6a94b5887` leaves weights unchanged.
+Comparison `20260911T015050-0e94cba7b117` applies the preregistered gates:
+
+| Measure | Previous model | Nominal-launch sampler |
+|---|---:|---:|
+| Nominal launch mean first-joint error | 0.013894 rad | 0.008822 rad |
+| Nominal launch mean tool-target error | 6.960 mm | 2.828 mm |
+| Settled mean tool-target error | 1.180 mm | 1.918 mm |
+| Other training starts mean first-joint error | 0.020952 rad | 0.031087 rad |
+
+The launch error reductions pass, but the nominal first pan target is still
+negative, settled error exceeds the allowed 0.5 mm increase, and other starts
+exceed the allowed 20% regression. The offline gate **fails**. No physical test
+was attempted with this checkpoint, and it is not promoted. The result demonstrates
+a sampling tradeoff, not reliable learned control. Investigate fitting capacity,
+initialization and training duration before another preregistered intervention;
+keep the validation scenes excluded from training design.
