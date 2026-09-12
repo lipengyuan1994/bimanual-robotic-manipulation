@@ -137,7 +137,17 @@ class DinnerSkillExecutor:
                 != successor.capability_id
             ):
                 raise ValueError("Readiness reference does not match the registered successor")
-        # The worker validates current observation and exact capability/checkpoint binding.
+        # Lineage and readiness validation above can take longer than the physical
+        # two-second camera age bound.  Do not bind a policy against the earlier
+        # dispatch capture: acquire a new, same-state camera bundle immediately
+        # before the worker enforces its physical input contract.
+        observation = self.worker.refresh_pre_action_capture(attempt_id, observation)
+        if (
+            observation.episode_id != active.request.episode_id
+            or observation.instruction_revision != snapshot.task.instruction_revision
+        ):
+            raise ValueError("Fresh executor capture no longer matches the active task")
+        # The worker validates the fresh observation and exact capability/checkpoint binding.
         self.worker.policy_inputs(observation)
         self.worker.bind_skill(
             self.policy,

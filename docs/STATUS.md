@@ -140,9 +140,27 @@ child manifest SHA-256 `465c90fda5a5208b618628193d1e29de6d734fb92b05f1e6a30fbf3c
 checkpoint `9583437c92db08a4b4767a4b5cccac04a76388a3fe941f7b029891c6846eea6e`.
 All six planned local individual-skill training runs are now complete. This is
 training completion only: fork manipulation and every other learned skill remain
-untested physically. The next executable step is exactly one frozen six-skill
-physical protocol run under the released shared model lease. Log
-`.artifacts/cohort-remaining-sequence-replacement.log`.
+untested physically. Frozen physical suite v1 `20260912T065623-0cb7569a9716`,
+seal `105feb29b5bff9e7bb92bb5e13beab62382478dda75d00c8224ef19d28bcb659`,
+completed all six cases with zero passes. Every guarded child stopped before its
+first autonomous action because the restricted execution environment reported
+`MPS unavailable or CPU fallback enabled`. Those failed preflights remain in the
+suite. An isolated live-MPS replay `20260912T071218-08ff1d062398`, seal
+`28bfbf838328ac02fcff37a0cce6933b7c22ac421f17347e9466fe4a95cdb28a`,
+verified native ARM64 MPS and loaded every policy on `mps:0`, but then exposed a
+second zero-action defect: immutable checkpoint/readiness validation left the
+initial camera capture stale. The targeted pre-action stationary-capture refresh
+preserves normal duplicate-capture rejection, and its focused worker, supervisor,
+executor, evaluator and guardian group passes125tests. A real-MPS one-action
+smoke `20260912T071719-2fcd09c2f758`, seal
+`8285033c2c34b0663aff68ae634f0cfb1ac19b2d0d5868a71b111f7c7cd79691`, loaded
+on `mps:0` and applied one learned action; it failed only its intentionally
+one-action budget. Corrected suite v2 is frozen at
+[`experiments/six-skill-physical-evaluation-protocol-v2.json`](experiments/six-skill-physical-evaluation-protocol-v2.json),
+seal `90ad4e2ee6d87ad4104b9b17393cfc4525303136df175c578681185911fbd0df`.
+The next executable step is exactly one v2 six-skill physical run from the
+native, unsandboxed MPS process; it must retain every outcome and makes no full
+workflow or release claim.
 
 The continuity collector now runs below a bounded guardian and native spawned
 worker. It reserves the shared model lease before allocating output, retains

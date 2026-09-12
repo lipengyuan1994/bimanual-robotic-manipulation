@@ -575,6 +575,21 @@ class DinnerControlWorker:
         self._validate_capture(observation)
         return policy_inputs(self._raw)
 
+    def refresh_pre_action_capture(self, attempt_id: str, observation: Observation) -> Observation:
+        """Capture a fresh stationary boundary before policy binding.
+
+        This is deliberately narrower than a normal camera capture: no control
+        may be queued, and the supervisor must replace only its current active
+        capture at the same physics sequence.
+        """
+
+        if self.control.pending:
+            raise ValueError("Cannot refresh a capture after an action forecast is queued")
+        fresh = self.capture()
+        self.supervisor.refresh_pre_action_capture(attempt_id, observation, fresh)
+        self._validate_capture(fresh)
+        return fresh
+
     def _permissions(self, attempt_id: str):
         active = self.supervisor.snapshot().active
         if active is None or active.attempt_id != attempt_id:

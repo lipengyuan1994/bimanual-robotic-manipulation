@@ -128,6 +128,36 @@ def test_executor_is_single_attempt(setup):
         executor.start(active.attempt_id, worker.capture())
 
 
+def test_start_recaptures_after_slow_preflight_validation(tmp_path):
+    capability = dinner_capability("handoff_transfer")
+    worker = DinnerControlWorker(
+        tmp_path / "worker",
+        [capability],
+        render_capture=lambda env: {
+            name: np.zeros((270, 480, 3), np.uint8) for name in CAMERAS
+        },
+    )
+    try:
+        worker.supervisor.load_task(
+            TaskSpec(
+                task_id="recapture",
+                episode_id=worker.episode_id,
+                instruction_revision=0,
+                instruction="Recapture before the physical policy boundary",
+                steps=(StepSpec(step_id="transfer", capability_id=capability.capability_id),),
+            )
+        )
+        original = worker.capture()
+        attempt = worker.supervisor.dispatch(original)
+        worker._clock = lambda: original.observed_monotonic_ns + 3_000_000_000
+        worker.supervisor._clock = worker._clock
+        executor = DinnerSkillExecutor(worker, FixturePolicy(), max_actions=1)
+        executor.start(attempt.attempt_id, original)
+        assert executor._next_observation.observed_monotonic_ns > original.observed_monotonic_ns
+    finally:
+        worker.close()
+
+
 def test_cancellation_during_prediction_revokes_returned_forecast(setup):
     worker, executor, policy = setup
 

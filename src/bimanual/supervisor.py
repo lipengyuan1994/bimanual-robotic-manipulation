@@ -465,6 +465,49 @@ class TaskSupervisor:
         self._last_observation = observation
         return self._active
 
+    def refresh_pre_action_capture(
+        self, attempt_id: str, previous: Observation, current: Observation
+    ) -> Attempt:
+        """Replace one dispatched capture before the first physical policy action.
+
+        A slow immutable-checkpoint validation may make the dispatched camera
+        bundle expire.  This narrow path accepts a newer rendering of the exact
+        same stationary simulator boundary.  It cannot advance state, reuse an
+        older capture, or run after an action has been authorized.
+        """
+
+        now = self._now()
+        self._expire(now)
+        if not self._active or self._active.attempt_id != attempt_id:
+            self._clear("Stale executor attempt", now)
+            raise RuntimeError("No matching active attempt")
+        try:
+            if self._last_observation != previous:
+                raise ValueError("Pre-action refresh does not match the active capture")
+            if not isinstance(current, Observation) or not self._task or (
+                current.episode_id,
+                current.instruction_revision,
+            ) != (self._task.episode_id, self._task.instruction_revision):
+                raise ValueError("Pre-action refresh has stale task identity")
+            if not 0 <= now - current.observed_monotonic_ns <= self._max_age:
+                raise ValueError("Pre-action refresh is stale or from the future")
+            if (
+                current.sequence != previous.sequence
+                or current.simulation_seconds != previous.simulation_seconds
+                or current.observed_monotonic_ns <= previous.observed_monotonic_ns
+            ):
+                raise ValueError("Pre-action refresh must retain one stationary boundary")
+        except (ValueError, TypeError) as exc:
+            self._clear("Rejected pre-action capture refresh", now)
+            self._close(
+                "failed", f"Rejected pre-action capture refresh: {exc}", now, self._last_observation
+            )
+            raise
+        self._last_observation = current
+        self._active = self._active.model_copy(update={"observation": current})
+        self._event("pre_action_capture_refreshed", f"Fresh capture at sequence {current.sequence}", now)
+        return self._active
+
     def _close(
         self,
         outcome: Outcome,

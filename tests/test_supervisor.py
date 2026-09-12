@@ -57,6 +57,34 @@ def task(*, identity="task", revision=0, steps=1, retries=2):
     )
 
 
+def test_pre_action_capture_refresh_accepts_only_newer_stationary_boundary(core):
+    supervisor, clock, _ = core
+    supervisor.load_task(task())
+    original = observation(captured=clock.now)
+    attempt = supervisor.dispatch(original)
+    clock.now += 1
+    fresh = observation(captured=clock.now)
+    assert (
+        supervisor.refresh_pre_action_capture(attempt.attempt_id, original, fresh)
+        == supervisor.snapshot().active
+    )
+    assert supervisor.snapshot().active is not None
+    assert supervisor.authorize(attempt.attempt_id, fresh).attempt_id == attempt.attempt_id
+
+
+def test_pre_action_capture_refresh_rejects_state_change(core):
+    supervisor, clock, _ = core
+    supervisor.load_task(task())
+    original = observation(captured=clock.now)
+    attempt = supervisor.dispatch(original)
+    clock.now += 1
+    with pytest.raises(ValueError, match="stationary boundary"):
+        supervisor.refresh_pre_action_capture(
+            attempt.attempt_id, original, observation(sequence=1, captured=clock.now)
+        )
+    assert supervisor.snapshot().attempts[-1].outcome == "failed"
+
+
 @pytest.fixture
 def core():
     clock, clears = Clock(), []

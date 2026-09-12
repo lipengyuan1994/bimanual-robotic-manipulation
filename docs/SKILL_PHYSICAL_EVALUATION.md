@@ -85,6 +85,37 @@ Even when all six components pass, the report
 keeps independent dinner-task success, autonomous-workflow success and release
 qualification unset because every component used a disclosed teacher prefix.
 
+## Preserved v1 preflight failures and corrected v2 evaluation
+
+The v1 suite `20260912T065623-0cb7569a9716` is sealed failed with all six
+cases preserved. Its workers were blocked before policy load by the restricted
+execution environment reporting MPS unavailable, so every case recorded zero
+autonomous actions. A separate real-MPS replay
+`20260912T071218-08ff1d062398` preserved those identities, verified native
+ARM64 MPS, and found a second integration defect: checkpoint/readiness validation
+could make the dispatched capture expire before the first policy input.
+
+The pre-action capture refresh fixes only that stationary-boundary handoff. It
+requires the same active attempt, task identity, simulation sequence and
+simulation time; it rejects queued actions, altered state, old timestamps and
+ordinary duplicate captures. The real-MPS smoke
+`20260912T071719-2fcd09c2f758` loaded on `mps:0` and applied one learned action;
+its failed outcome is expected because the smoke deliberately imposed a one-action
+budget.
+
+The corrected source is frozen in
+[`experiments/six-skill-physical-evaluation-protocol-v2.json`](experiments/six-skill-physical-evaluation-protocol-v2.json),
+seal `90ad4e2ee6d87ad4104b9b17393cfc4525303136df175c578681185911fbd0df`.
+It is a new, separately reported six-case evaluation. It does not replace v1 or
+turn either preflight result into manipulation success. Run v2 from a process with
+actual Metal access:
+
+```sh
+PYTORCH_ENABLE_MPS_FALLBACK=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+  .artifacts/training-venv/bin/bimanual skill-physical-protocol-run-all \
+  docs/experiments/six-skill-physical-evaluation-protocol-v2.json
+```
+
 ```sh
 PYTORCH_ENABLE_MPS_FALLBACK=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
   .artifacts/training-venv/bin/bimanual skill-physical-eval \
