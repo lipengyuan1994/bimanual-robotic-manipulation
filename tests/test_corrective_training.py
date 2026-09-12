@@ -112,7 +112,7 @@ def test_skill_archive_selects_only_the_named_skill(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(
         module,
-        "load_skill_corrective_views",
+        "load_skill_corrective_views_binding",
         lambda *args: SimpleNamespace(sources=sources),
     )
     root = tmp_path / "archive"

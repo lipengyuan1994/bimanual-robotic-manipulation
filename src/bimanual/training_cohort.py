@@ -320,10 +320,10 @@ def load_training_cohort_protocol(path):
     ):
         raise ValueError("Cohort nominal v2 source identity mismatch")
     if result.profile == "six_skill_corrective_act_training_protocol_v1":
-        from bimanual.corrective_profiles import verify_supported_corrective_dataset
+        from bimanual.corrective_profiles import verify_supported_corrective_dataset_binding
 
         corrective_root = (path.parent / result.corrective_dataset_root).resolve()
-        corrective = verify_supported_corrective_dataset(corrective_root)
+        corrective = verify_supported_corrective_dataset_binding(corrective_root)
         if (
             digest_file(corrective_root / "export_manifest.json")
             != result.corrective_dataset_file_sha256

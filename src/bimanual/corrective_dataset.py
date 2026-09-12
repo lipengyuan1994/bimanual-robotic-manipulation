@@ -21,13 +21,10 @@ def select_corrective_episodes(root: Path, manifest: dict, skill_id: str) -> tup
     """
     if manifest.get("profile") != SKILL_CORRECTIVE_PROFILE:
         return tuple(manifest["episodes"])
-    from bimanual.evidence import EvidenceStore
-    from bimanual.skill_corrective_views import load_skill_corrective_views
+    from bimanual.skill_corrective_views import load_skill_corrective_views_binding
 
     root = Path(root).resolve(strict=True)
-    views = load_skill_corrective_views(
-        root / "skill_corrective_views.json", EvidenceStore(root / "raw_sources")
-    )
+    views = load_skill_corrective_views_binding(root / "skill_corrective_views.json")
     episodes = manifest.get("episodes")
     if not isinstance(episodes, list) or len(episodes) != len(views.sources):
         raise ValueError("Corrective source/view episode count mismatch")

@@ -259,13 +259,13 @@ def load_skill_checkpoint(
             compose_sampling_plan,
             select_corrective_episodes,
         )
-        from bimanual.corrective_profiles import verify_supported_corrective_dataset
+        from bimanual.corrective_profiles import verify_supported_corrective_dataset_binding
 
         recorded = _read(root / "sampling-plan.json").get("corrective_dataset", {})
         corrective_root = _resolve_corrective_root(
             config, metrics, recorded, corrective_dataset_root
         )
-        corrective_manifest = verify_supported_corrective_dataset(corrective_root)
+        corrective_manifest = verify_supported_corrective_dataset_binding(corrective_root)
         views_sha = digest_file(corrective_root / "corrective_views.json")
         if (
             digest_file(root / "corrective_views.json") != views_sha

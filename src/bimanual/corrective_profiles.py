@@ -29,3 +29,17 @@ def verify_supported_corrective_dataset(root: Path) -> dict:
 
         return verify_skill_corrective_dataset(root)
     raise ValueError("Unsupported corrective dataset profile")
+
+
+def verify_supported_corrective_dataset_binding(root: Path) -> dict:
+    """Use an already independently-audited corrective archive at runtime."""
+    root = Path(root).resolve(strict=True)
+    try:
+        profile = json.loads((root / "export_manifest.json").read_bytes()).get("profile")
+    except (OSError, ValueError, AttributeError) as error:
+        raise ValueError("Corrective dataset manifest is missing or malformed") from error
+    if profile == SKILL_PROFILE:
+        from bimanual.skill_corrective_export import verify_skill_corrective_dataset_binding
+
+        return verify_skill_corrective_dataset_binding(root)
+    return verify_supported_corrective_dataset(root)

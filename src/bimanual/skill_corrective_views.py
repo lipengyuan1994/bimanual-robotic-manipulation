@@ -242,11 +242,22 @@ def create_skill_corrective_views(
 
 
 def load_skill_corrective_views(path: Path, store: EvidenceStore) -> SkillCorrectiveViews:
+    view = load_skill_corrective_views_binding(path)
+    for source in view.sources:
+        if _source(store, source.run_id) != source:
+            raise ValueError("Corrective source differs from the verified recording")
+    return view
+
+
+def load_skill_corrective_views_binding(path: Path) -> SkillCorrectiveViews:
+    """Check the immutable view declaration without rereading every raw PNG.
+
+    Full source and image verification remains the responsibility of
+    :func:`load_skill_corrective_views` and the explicit archive verifier.  Runtime
+    callers use this bounded check after their archive has already passed that gate.
+    """
     view = SkillCorrectiveViews.model_validate_json(Path(path).read_bytes())
     body = view.model_dump(mode="json", exclude={"manifest_sha256"})
     if hashlib.sha256(canonical(body)).hexdigest() != view.manifest_sha256:
         raise ValueError("Corrective views manifest digest mismatch")
-    for source in view.sources:
-        if _source(store, source.run_id) != source:
-            raise ValueError("Corrective source differs from the verified recording")
     return view

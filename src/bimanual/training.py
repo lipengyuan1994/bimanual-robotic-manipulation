@@ -509,7 +509,7 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
                 compose_sampling_plan,
                 select_corrective_episodes,
             )
-            from bimanual.corrective_profiles import verify_supported_corrective_dataset
+            from bimanual.corrective_profiles import verify_supported_corrective_dataset_binding
 
             corrective_root = config.corrective_dataset_path
             if not corrective_root.is_absolute():
@@ -517,7 +517,7 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
             corrective_root = corrective_root.resolve(strict=True)
             if store.root.resolve().is_relative_to(corrective_root):
                 raise ValueError("Training evidence must be outside the corrective dataset")
-            corrective_manifest = verify_supported_corrective_dataset(corrective_root)
+            corrective_manifest = verify_supported_corrective_dataset_binding(corrective_root)
             (directory / "corrective_views.json").write_bytes(
                 (corrective_root / "corrective_views.json").read_bytes()
             )
@@ -874,7 +874,7 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
             raise ValueError("Dataset changed during training")
         if corrective_manifest is not None:
             if (
-                verify_supported_corrective_dataset(corrective_root) != corrective_manifest
+                verify_supported_corrective_dataset_binding(corrective_root) != corrective_manifest
                 or (
                     digest_file(corrective_root / "export_manifest.json")
                     != sampling_plan["corrective_dataset"]["export_manifest_sha256"]

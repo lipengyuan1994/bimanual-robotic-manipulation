@@ -23,7 +23,10 @@ from bimanual.dataset_export import (
 )
 from bimanual.dual_arm import JOINT_ORDER
 from bimanual.evidence import EvidenceStore, canonical, digest_file
-from bimanual.skill_corrective_views import load_skill_corrective_views
+from bimanual.skill_corrective_views import (
+    load_skill_corrective_views,
+    load_skill_corrective_views_binding,
+)
 
 PROFILE = "six_skill_corrective_lerobot_v1"
 
@@ -262,4 +265,45 @@ def verify_skill_corrective_dataset(root: Path) -> dict:
         token=False,
     )
     _parity(dataset, views, store)
+    return payload
+
+
+def verify_skill_corrective_dataset_binding(root: Path) -> dict:
+    """Verify the sealed runtime binding without repeating the archive's full audit.
+
+    The full verifier above checks every copied source artifact and decoded LeRobot
+    row.  That is intentionally expensive and is run independently before cohort
+    creation.  A training invocation instead binds the already sealed manifest,
+    view, source declarations, and required dataset structure before any model work.
+    """
+    _native()
+    root = Path(root).resolve(strict=True)
+    payload = json.loads((root / "export_manifest.json").read_text())
+    body = {k: v for k, v in payload.items() if k != "manifest_sha256"}
+    if hashlib.sha256(canonical(body)).hexdigest() != payload.get("manifest_sha256"):
+        raise ValueError("Corrective export manifest digest mismatch")
+    if payload.get("profile") != PROFILE or payload.get("format") != "lerobot_v3":
+        raise ValueError("Unsupported corrective export profile")
+    files = payload.get("files")
+    if not isinstance(files, dict) or "meta/info.json" not in files or not any(
+        name.startswith("data/") and name.endswith(".parquet") for name in files
+    ):
+        raise ValueError("Corrective dataset requires sealed local metadata and data")
+    views_path = root / "skill_corrective_views.json"
+    if not views_path.is_file() or digest_file(views_path) != payload.get(
+        "skill_corrective_views_sha256"
+    ):
+        raise ValueError("Corrective view binding mismatch")
+    views = load_skill_corrective_views_binding(views_path)
+    if payload.get("episodes") != _episodes(views) or payload.get("frames") != sum(
+        source.end - source.start for source in views.sources
+    ):
+        raise ValueError("Corrective export source/index mapping mismatch")
+    for source in views.sources:
+        manifest_path = root / "raw_sources" / "runs" / source.run_id / "manifest.json"
+        if not manifest_path.is_file():
+            raise ValueError("Corrective source manifest is missing")
+        manifest = json.loads(manifest_path.read_text())
+        if manifest.get("manifest_sha256") != source.source_manifest_sha256:
+            raise ValueError("Corrective source manifest binding mismatch")
     return payload
