@@ -84,6 +84,22 @@ def main(argv: list[str] | None = None) -> int:
     feedback.add_argument("--record-demonstration", action="store_true")
     feedback.add_argument("--variation-seed", type=int, default=0)
     feedback.add_argument("--acquisition-offset-rad", type=float, default=0.0)
+    continuity_protocol_create = commands.add_parser(
+        "handoff-continuity-protocol-create",
+        help="Freeze measured-state receiver continuity correction cases",
+    )
+    continuity_protocol_create.add_argument("--diagnosis-run", required=True)
+    continuity_protocol_create.add_argument("--destination", type=Path, required=True)
+    continuity_protocol_check = commands.add_parser(
+        "handoff-continuity-protocol-check",
+        help="Reverify a frozen hand-off continuity collection protocol",
+    )
+    continuity_protocol_check.add_argument("protocol", type=Path)
+    continuity_run = commands.add_parser(
+        "handoff-continuity-run", help="Collect one frozen hand-off continuity case once"
+    )
+    continuity_run.add_argument("protocol", type=Path)
+    continuity_run.add_argument("case_id")
     corrective_create = commands.add_parser(
         "corrective-views-create", help="Pin verified approach correction intervals"
     )
@@ -543,6 +559,32 @@ def main(argv: list[str] | None = None) -> int:
                 ),
                 store=store,
                 project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
+        elif args.command == "handoff-continuity-protocol-create":
+            from bimanual.handoff_continuity_protocol import (
+                create_handoff_continuity_protocol,
+            )
+
+            result = create_handoff_continuity_protocol(
+                evidence_root=store.root,
+                diagnosis_run_id=args.diagnosis_run,
+                destination=args.destination,
+            )
+            emit(result.model_dump(mode="json"))
+        elif args.command == "handoff-continuity-protocol-check":
+            from bimanual.handoff_continuity_protocol import (
+                load_handoff_continuity_protocol,
+            )
+
+            result = load_handoff_continuity_protocol(args.protocol)
+            emit(result.model_dump(mode="json"))
+        elif args.command == "handoff-continuity-run":
+            from bimanual.handoff_continuity_teacher import run_handoff_continuity_case
+
+            result = run_handoff_continuity_case(
+                args.protocol, args.case_id, store=store, project_root=root
             )
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1

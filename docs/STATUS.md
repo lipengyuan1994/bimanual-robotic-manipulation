@@ -28,6 +28,18 @@ Checkpoint, processors, sampler, temporal loss, learning-rate schedule and exter
 registry binding reverify. Log `.artifacts/handoff-corrective-v1-training.log`.
 This proves training completion only; learned manipulation success remains unknown.
 
+The failed checkpoint now has a separate continuity-correction data boundary rather
+than widening its historical approach-only dataset. Frozen protocol
+[`experiments/handoff-continuity-collection-protocol-v1.json`](experiments/handoff-continuity-collection-protocol-v1.json),
+seal `c7ec1dcc9a4b7118b90bd88ff294a8ee248ec9cfad6af914295a6618e781c329`,
+binds the verified unpromoted diagnosis, exact nominal-v2 assets and nine receiver
+start cases at a 0.015-radian envelope. The contact-only collector retains prefix,
+acquisition, correction and validation evidence, but marks only receiver convergence
+through donor release as training eligible. Independent scoring requires ordered
+donor/shared/receiver holds and continuous grip. Ten protocol/scoring tests pass.
+No case has executed because active serial training owns the shared model lease;
+creating the boundary is not corrective data, retraining or hand-off success.
+
 Frozen recorded-input evaluation `20260911T202723-0973816bd4b8` completed over
 all630handoff frames:630valid, zero invalid/out-of-bounds, first-action mean
 absolute error0.0011597rad and maximum0.0859281rad. Physical success remains null.
@@ -221,8 +233,8 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `b82f5f37f4f9e9fd7b0c097603eeecd5de8ddedbd72b0b862710712bdb2b68f6`.
-It binds the training cohort and 106 package/runtime and authored-scene/SO-101 asset
+seal `d31b5366e7fc66719d7baf880841047a6e76b6dc43f0eda0426a4f5a27dd96c6`.
+It binds the training cohort and 108 package/runtime and authored-scene/SO-101 asset
 files,
 final-update20,000 selection,
 MPS, execution prefix2, exact teacher preparation, fixed nominal-v2 scene,

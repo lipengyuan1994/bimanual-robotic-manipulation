@@ -26,6 +26,68 @@ def test_feedback_cli_preserves_outcome_and_recording(
     assert outcome in capsys.readouterr().out
 
 
+def test_handoff_continuity_protocol_cli_dispatch(tmp_path, monkeypatch, capsys):
+    from bimanual import handoff_continuity_protocol as module
+
+    calls = []
+    result = SimpleNamespace(model_dump=lambda **kwargs: {"profile": "continuity-v1"})
+    monkeypatch.setattr(
+        module,
+        "create_handoff_continuity_protocol",
+        lambda **kwargs: calls.append(kwargs) or result,
+    )
+    destination = tmp_path / "protocol.json"
+    assert (
+        main(
+            [
+                "--artifacts",
+                str(tmp_path),
+                "handoff-continuity-protocol-create",
+                "--diagnosis-run",
+                "diagnosis-a",
+                "--destination",
+                str(destination),
+            ]
+        )
+        == 0
+    )
+    assert calls == [
+        {
+            "evidence_root": tmp_path.resolve(),
+            "diagnosis_run_id": "diagnosis-a",
+            "destination": destination,
+        }
+    ]
+    assert "continuity-v1" in capsys.readouterr().out
+
+
+def test_handoff_continuity_run_cli_preserves_failure(tmp_path, monkeypatch, capsys):
+    from bimanual import handoff_continuity_teacher as module
+
+    calls = []
+    result = SimpleNamespace(outcome="failed", model_dump=lambda **kwargs: {"outcome": "failed"})
+    monkeypatch.setattr(
+        module,
+        "run_handoff_continuity_case",
+        lambda protocol, case_id, **kwargs: calls.append((protocol, case_id)) or result,
+    )
+    protocol = tmp_path / "protocol.json"
+    assert (
+        main(
+            [
+                "--artifacts",
+                str(tmp_path),
+                "handoff-continuity-run",
+                str(protocol),
+                "receiver-baseline",
+            ]
+        )
+        == 1
+    )
+    assert calls == [(protocol, "receiver-baseline")]
+    assert "failed" in capsys.readouterr().out
+
+
 @pytest.mark.parametrize("command", ["corrective-views-create", "corrective-views-check"])
 def test_corrective_cli_dispatch(tmp_path, monkeypatch, capsys, command):
     from bimanual import corrective_views

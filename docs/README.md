@@ -54,6 +54,7 @@ Sequential local training: [remaining six-skill cohort](TRAINING_COHORT.md).
 Per-checkpoint physics: [teacher-prepared learned-skill evaluation](SKILL_PHYSICAL_EVALUATION.md).
 
 Failed hand-off diagnosis: [receiver-grip continuity analysis](HANDOFF_FAILURE_ANALYSIS.md).
+Corrective follow-up: [frozen receiver-continuity collection](HANDOFF_CONTINUITY.md).
 
 Appearance variation: [frozen visual splits and source verification](VISUAL_TRAINING.md).
 
