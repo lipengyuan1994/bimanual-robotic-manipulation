@@ -238,6 +238,17 @@ def main(argv: list[str] | None = None) -> int:
         help="Seal a read-only diagnosis of a completed six-skill component suite",
     )
     physical_failure_analysis.add_argument("suite_run_id")
+    corrective_protocol_create = commands.add_parser(
+        "skill-corrective-protocol-create",
+        help="Freeze bounded corrective teacher-data collection from a failed component suite",
+    )
+    corrective_protocol_create.add_argument("--diagnosis-run", required=True)
+    corrective_protocol_create.add_argument("--destination", type=Path, required=True)
+    corrective_protocol_check = commands.add_parser(
+        "skill-corrective-protocol-check",
+        help="Reverify a frozen six-skill corrective collection protocol",
+    )
+    corrective_protocol_check.add_argument("protocol", type=Path)
     cohort_adjudicate = commands.add_parser(
         "training-cohort-adjudicate-preflight",
         help="Classify one zero-update MPS environment failure before a replacement",
@@ -862,6 +873,21 @@ def main(argv: list[str] | None = None) -> int:
                 project_root=root,
             )
             emit(result.model_dump(exclude={"provenance"}))
+        elif args.command == "skill-corrective-protocol-create":
+            from bimanual.skill_corrective_protocol import (
+                create_skill_corrective_collection_protocol,
+            )
+
+            result = create_skill_corrective_collection_protocol(
+                evidence_root=store.root,
+                diagnosis_run_id=args.diagnosis_run,
+                destination=args.destination,
+            )
+            emit(result.model_dump(mode="json"))
+        elif args.command == "skill-corrective-protocol-check":
+            from bimanual.skill_corrective_protocol import load_skill_corrective_collection_protocol
+
+            emit(load_skill_corrective_collection_protocol(args.protocol).model_dump(mode="json"))
         elif args.command == "handoff-failure-analyze":
             from bimanual.handoff_failure_analysis import (
                 HandoffFailureAnalysisConfig,

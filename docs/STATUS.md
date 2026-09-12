@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 12, 2026. Latest implementation checkpoint: `ec2d341` on
+Updated September 12, 2026. Latest implementation checkpoint: `9bb3694` on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -183,10 +183,16 @@ handle-contact samples but reached only 10.74 mm of opening; spoon recorded 53,6
 contact samples but only 4.63 mm maximum displacement. The sealed diagnosis and
 bounded correction directions are recorded in
 [`experiments/2026-09-12-six-skill-failure-diagnosis.md`](experiments/2026-09-12-six-skill-failure-diagnosis.md).
-The next executable step is to freeze separate corrective collection/training
-protocols for approach/contact acquisition, grasp/lift, and drawer pull before any
-new local data collection or retraining. Intel setup remains deferred until that
-local correction work completes.
+Frozen corrective collection protocol
+[`experiments/six-skill-corrective-collection-protocol-v1.json`](experiments/six-skill-corrective-collection-protocol-v1.json),
+seal `9410b76cd5d985377f7bfb862641fb445757e7b331897a85b53f1404280c7424`,
+binds that diagnosis, the v2 scene assets, and twenty one-attempt teacher-assisted
+cases: five each for bar-contact avoidance, cup/plate/fork approach-contact, spoon
+grasp/lift, and drawer pull. Every case is explicitly non-learned and
+training-ineligible until its future collection evidence is separately validated.
+The next executable step is to implement the contact-only teacher collectors and
+their source validators for those frozen cases before any local retraining. Intel
+setup remains deferred until that local correction work completes.
 
 The continuity collector now runs below a bounded guardian and native spawned
 worker. It reserves the shared model lease before allocating output, retains
