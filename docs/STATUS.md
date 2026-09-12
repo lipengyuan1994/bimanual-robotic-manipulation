@@ -160,7 +160,23 @@ one-action budget. Corrected suite v2 is frozen at
 seal `90ad4e2ee6d87ad4104b9b17393cfc4525303136df175c578681185911fbd0df`.
 The next executable step is exactly one v2 six-skill physical run from the
 native, unsandboxed MPS process; it must retain every outcome and makes no full
-workflow or release claim.
+workflow or release claim. That run completed as suite
+`20260912T081226-097d224c93cd`, seal
+`8b93c3543edb15278afbabe4b3dab0acfd8dbf38f08fe7acf3a89f8ea5005488`.
+All six child and suite manifests independently verify. It records0/6 component
+passes, independent task success `null`, autonomous workflow success `null`, and
+release qualification `false`. Bar (`20260912T072134-15f8fbbcae9d`) loaded on
+`mps:0` but stopped before its first autonomous action when the teacher-prepared
+boundary contained a forbidden practice-object/left-arm contact. Cup
+(`20260912T072327-726a5bd5a3f4`) applied1,038actions, plate
+(`20260912T073048-aa7da58dc745`)1,964, drawer
+(`20260912T074301-bcf8d58857ba`)1,120, spoon
+(`20260912T075137-2017ea3aa6ef`)1,408, and fork
+(`20260912T080152-fd9c64650d6d`)1,408. Cup, plate and fork ended
+`grasp_not_acquired`; drawer and spoon ended `physical_milestone_incomplete`.
+The next executable step is a read-only diagnosis of the frozen contact guard and
+the five full-budget physical traces, followed by a separately frozen corrective
+data/retraining protocol if that diagnosis identifies a valid bounded repair.
 
 The continuity collector now runs below a bounded guardian and native spawned
 worker. It reserves the shared model lease before allocating output, retains

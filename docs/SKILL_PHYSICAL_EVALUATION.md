@@ -116,6 +116,16 @@ PYTORCH_ENABLE_MPS_FALLBACK=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
   docs/experiments/six-skill-physical-evaluation-protocol-v2.json
 ```
 
+V2 completed as suite `20260912T081226-097d224c93cd`, seal
+`8b93c3543edb15278afbabe4b3dab0acfd8dbf38f08fe7acf3a89f8ea5005488`.
+All six component and process records independently verify, but none passed. Bar
+stopped at an explicit forbidden contact in the teacher-prepared boundary. Cup,
+plate and fork exhausted their complete learned budgets without a grasp; drawer
+and spoon exhausted theirs without their physical milestone. These are failures,
+not a basis for an autonomous-workflow or release claim. The next work is trace
+diagnosis and, only if justified, a distinct frozen corrective-data and retraining
+experiment.
+
 ```sh
 PYTORCH_ENABLE_MPS_FALLBACK=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
   .artifacts/training-venv/bin/bimanual skill-physical-eval \
