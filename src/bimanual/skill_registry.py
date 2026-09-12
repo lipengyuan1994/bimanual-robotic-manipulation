@@ -256,13 +256,13 @@ def load_skill_checkpoint(
     corrective_root = None
     if config.corrective_dataset_path is not None:
         from bimanual.corrective_dataset import compose_sampling_plan
-        from bimanual.corrective_export import verify_corrective_dataset
+        from bimanual.corrective_profiles import verify_supported_corrective_dataset
 
         recorded = _read(root / "sampling-plan.json").get("corrective_dataset", {})
         corrective_root = _resolve_corrective_root(
             config, metrics, recorded, corrective_dataset_root
         )
-        corrective_manifest = verify_corrective_dataset(corrective_root)
+        corrective_manifest = verify_supported_corrective_dataset(corrective_root)
         views_sha = digest_file(corrective_root / "corrective_views.json")
         if (
             digest_file(root / "corrective_views.json") != views_sha

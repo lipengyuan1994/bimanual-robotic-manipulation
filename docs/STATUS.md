@@ -31,14 +31,23 @@ This proves training completion only; learned manipulation success remains unkno
 The failed checkpoint now has a separate continuity-correction data boundary rather
 than widening its historical approach-only dataset. Frozen protocol
 [`experiments/handoff-continuity-collection-protocol-v1.json`](experiments/handoff-continuity-collection-protocol-v1.json),
-seal `c7ec1dcc9a4b7118b90bd88ff294a8ee248ec9cfad6af914295a6618e781c329`,
+seal `fe0b14056ea9a69605975b83c37971903398d09ab0cb23651d726ca7e3622562`,
 binds the verified unpromoted diagnosis, exact nominal-v2 assets and nine receiver
 start cases at a 0.015-radian envelope. The contact-only collector retains prefix,
 acquisition, correction and validation evidence, but marks only receiver convergence
 through donor release as training eligible. Independent scoring requires ordered
-donor/shared/receiver holds and continuous grip. Ten protocol/scoring tests pass.
-No case has executed because active serial training owns the shared model lease;
-creating the boundary is not corrective data, retraining or hand-off success.
+donor/shared/receiver holds and continuous grip. The source views independently
+recompute the physical score, select only the correction interval, and pad chunks
+before the validation tail. A separate LeRobot-v3 export preserves all raw source
+evidence, verifies decoded RGB/joint/action parity and enters training under the
+distinct `corrective_receiver_continuity` region. The historical approach-only
+profile remains accepted without changing its semantics. The continuity protocol,
+scoring, views, export and profile dispatch groups pass36tests; broader corrective
+and relocation checks pass49tests. No case has executed because active serial
+training owns the shared model lease; creating this boundary is not corrective data,
+retraining or hand-off success. The complete non-render repository gate after this
+integration passes1,318tests with18documented optional skips,9render deselections
+and two dependency deprecation warnings in597.50seconds.
 
 Frozen recorded-input evaluation `20260911T202723-0973816bd4b8` completed over
 all630handoff frames:630valid, zero invalid/out-of-bounds, first-action mean
@@ -233,8 +242,8 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `d31b5366e7fc66719d7baf880841047a6e76b6dc43f0eda0426a4f5a27dd96c6`.
-It binds the training cohort and 108 package/runtime and authored-scene/SO-101 asset
+seal `e0fda04ec36855945ba9d6f613cb892de0d165d9ab096361d3758a7e61358f94`.
+It binds the training cohort and 111 package/runtime and authored-scene/SO-101 asset
 files,
 final-update20,000 selection,
 MPS, execution prefix2, exact teacher preparation, fixed nominal-v2 scene,

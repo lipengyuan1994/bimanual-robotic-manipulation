@@ -42,6 +42,25 @@ training sequence releases the shared simulation/model lease:
 ```
 
 Run every declared case in protocol order and retain every outcome. A separate views,
-LeRobot export and retraining version will accept only completed, independently scored
-sources and will keep action chunks inside the eligible correction interval. No current
-checkpoint is promoted by creating this protocol or implementing the collector.
+LeRobot export and training intake are implemented. They accept only completed sources
+whose physical score reproduces from the sealed 1 kHz trace, keep action chunks inside
+the eligible correction interval, and label the training region
+`corrective_receiver_continuity`. The earlier `corrective_approach` profile remains
+supported and distinct. After all nine physical cases pass, create and export the new
+version with:
+
+```sh
+.venv/bin/bimanual handoff-continuity-views-create \
+  --run-id FIRST_CASE_RUN --run-id SECOND_CASE_RUN \
+  --destination .artifacts/handoff-continuity-views-v1.json
+.artifacts/training-venv/bin/bimanual handoff-continuity-export \
+  --views .artifacts/handoff-continuity-views-v1.json \
+  --destination .artifacts/datasets/handoff-continuity-v1 \
+  --repo-id local/handoff-continuity-v1
+HF_HUB_OFFLINE=1 .artifacts/training-venv/bin/bimanual \
+  handoff-continuity-export-check .artifacts/datasets/handoff-continuity-v1
+```
+
+List all nine run IDs in frozen protocol order; the two shown above only illustrate
+the repeated option. No current checkpoint is promoted by creating this protocol or
+implementing the collector/export boundary.

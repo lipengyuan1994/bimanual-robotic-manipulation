@@ -30,6 +30,7 @@ def test_plan_keeps_full_nominal_and_original_correction_indices(tmp_path):
         "episodes": [{"episode_id": "nominal", "probability": 1}],
     }
     manifest = {
+        "profile": "feedback_approach_corrective_lerobot_v1",
         "episodes": [
             {
                 "episode_id": "correction",
@@ -40,7 +41,7 @@ def test_plan_keeps_full_nominal_and_original_correction_indices(tmp_path):
                 "episode_sha256": "a" * 64,
                 "source_manifest_sha256": "b" * 64,
             }
-        ]
+        ],
     }
     result = compose_sampling_plan(plan, tmp_path, manifest)
     assert len(result["frames"]) == 632
@@ -48,6 +49,33 @@ def test_plan_keeps_full_nominal_and_original_correction_indices(tmp_path):
     assert all(f["probability"] == 1 / 632 for f in result["frames"])
     assert len(plan["frames"]) == 630
     assert sum(e["probability"] for e in result["episodes"]) == 1
+
+
+def test_continuity_profile_gets_distinct_training_region(tmp_path):
+    (tmp_path / "export_manifest.json").write_text("{}")
+    plan = {
+        "profile": "uniform",
+        "skill_view": {"skill_id": "handoff_transfer"},
+        "frames": [{"dataset_index": 0}],
+        "episodes": [{"episode_id": "nominal", "probability": 1}],
+    }
+    manifest = {
+        "profile": "handoff_receiver_continuity_lerobot_v1",
+        "episodes": [
+            {
+                "episode_id": "continuity",
+                "episode_index": 0,
+                "dataset_start": 0,
+                "dataset_end": 1,
+                "parent_start": 312,
+                "episode_sha256": "a" * 64,
+                "source_manifest_sha256": "b" * 64,
+            }
+        ],
+    }
+    result = compose_sampling_plan(plan, tmp_path, manifest)
+    assert result["frames"][-1]["region"] == "corrective_receiver_continuity"
+    assert result["episodes"][-1]["regions"][0]["name"] == ("corrective_receiver_continuity")
 
 
 class Rows(list):

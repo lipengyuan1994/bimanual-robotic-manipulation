@@ -100,6 +100,29 @@ def main(argv: list[str] | None = None) -> int:
     )
     continuity_run.add_argument("protocol", type=Path)
     continuity_run.add_argument("case_id")
+    continuity_views_create = commands.add_parser(
+        "handoff-continuity-views-create",
+        help="Pin verified receiver-continuity correction intervals",
+    )
+    continuity_views_create.add_argument("--run-id", action="append", required=True)
+    continuity_views_create.add_argument("--destination", type=Path, required=True)
+    continuity_views_check = commands.add_parser(
+        "handoff-continuity-views-check",
+        help="Reverify receiver-continuity sources and training boundaries",
+    )
+    continuity_views_check.add_argument("manifest", type=Path)
+    continuity_export = commands.add_parser(
+        "handoff-continuity-export",
+        help="Export verified receiver-continuity intervals to local LeRobot",
+    )
+    continuity_export.add_argument("--views", type=Path, required=True)
+    continuity_export.add_argument("--destination", type=Path, required=True)
+    continuity_export.add_argument("--repo-id", required=True)
+    continuity_export_check = commands.add_parser(
+        "handoff-continuity-export-check",
+        help="Reverify a local receiver-continuity LeRobot export",
+    )
+    continuity_export_check.add_argument("dataset", type=Path)
     corrective_create = commands.add_parser(
         "corrective-views-create", help="Pin verified approach correction intervals"
     )
@@ -588,6 +611,35 @@ def main(argv: list[str] | None = None) -> int:
             )
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1
+        elif args.command == "handoff-continuity-views-create":
+            from bimanual.handoff_continuity_views import create_handoff_continuity_views
+
+            result = create_handoff_continuity_views(store, args.run_id, args.destination)
+            emit(result.model_dump(mode="json"))
+        elif args.command == "handoff-continuity-views-check":
+            from bimanual.handoff_continuity_views import load_handoff_continuity_views
+
+            result = load_handoff_continuity_views(args.manifest, store)
+            emit(result.model_dump(mode="json"))
+        elif args.command == "handoff-continuity-export":
+            from bimanual.handoff_continuity_export import (
+                export_handoff_continuity_dataset,
+            )
+
+            result = invoke_with_diagnostics(
+                export_handoff_continuity_dataset,
+                args.views,
+                store,
+                args.destination,
+                args.repo_id,
+            )
+            emit({"dataset": str(result)})
+        elif args.command == "handoff-continuity-export-check":
+            from bimanual.handoff_continuity_export import (
+                verify_handoff_continuity_dataset,
+            )
+
+            emit(invoke_with_diagnostics(verify_handoff_continuity_dataset, args.dataset))
         elif args.command == "corrective-views-create":
             from bimanual.corrective_views import create_corrective_views
 

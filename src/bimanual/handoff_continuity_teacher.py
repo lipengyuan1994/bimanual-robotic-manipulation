@@ -402,11 +402,15 @@ def run_handoff_continuity_case(
                 outcome = "failed"
             model_lease.close()
         if (directory / "physics.jsonl").is_file() and (directory / "actions.jsonl").is_file():
-            score = _continuity_score(directory / "physics.jsonl", directory / "actions.jsonl")
-            metrics["independent_score"] = score
-            metrics["physical_handoff_success"] = score["physical_handoff_success"]
-            (directory / "independent-score.json").write_bytes(canonical(score) + b"\n")
-            if not score["physical_handoff_success"]:
+            try:
+                score = _continuity_score(directory / "physics.jsonl", directory / "actions.jsonl")
+                metrics["independent_score"] = score
+                metrics["physical_handoff_success"] = score["physical_handoff_success"]
+                (directory / "independent-score.json").write_bytes(canonical(score) + b"\n")
+            except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError) as error:
+                metrics["scoring_error"] = f"{type(error).__name__}: {error}"
+                metrics["physical_handoff_success"] = False
+            if not metrics["physical_handoff_success"]:
                 outcome = "failed"
         if (
             digest_file(protocol_path) != protocol_file_sha256

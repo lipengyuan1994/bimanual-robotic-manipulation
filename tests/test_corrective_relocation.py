@@ -49,7 +49,7 @@ def test_plan_uses_actual_bytes_with_original_root_identity(tmp_path):
         "frames": [{"dataset_index": 0}],
         "episodes": [{"probability": 1}],
     }
-    manifest = {"episodes": []}
+    manifest = {"profile": "feedback_approach_corrective_lerobot_v1", "episodes": []}
     original_root = str(tmp_path / "absent" / "corrections")
     result = compose_sampling_plan(plan, actual, manifest, recorded_root=original_root)
     assert result["corrective_dataset"]["root"] == original_root

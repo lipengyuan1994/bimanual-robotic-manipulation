@@ -88,6 +88,74 @@ def test_handoff_continuity_run_cli_preserves_failure(tmp_path, monkeypatch, cap
     assert "failed" in capsys.readouterr().out
 
 
+def test_handoff_continuity_views_cli_dispatch(tmp_path, monkeypatch, capsys):
+    from bimanual import handoff_continuity_views as module
+
+    calls = []
+    result = SimpleNamespace(
+        model_dump=lambda **kwargs: {"profile": "handoff_receiver_continuity_views_v1"}
+    )
+    monkeypatch.setattr(
+        module,
+        "create_handoff_continuity_views",
+        lambda store, run_ids, destination: calls.append((run_ids, destination)) or result,
+    )
+    destination = tmp_path / "views.json"
+    assert (
+        main(
+            [
+                "--artifacts",
+                str(tmp_path),
+                "handoff-continuity-views-create",
+                "--run-id",
+                "source-a",
+                "--destination",
+                str(destination),
+            ]
+        )
+        == 0
+    )
+    assert calls == [(["source-a"], destination)]
+    assert "handoff_receiver_continuity_views_v1" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "command", ["handoff-continuity-export", "handoff-continuity-export-check"]
+)
+def test_handoff_continuity_export_cli_dispatch(tmp_path, monkeypatch, capsys, command):
+    from bimanual import handoff_continuity_export as module
+
+    calls = []
+    destination = tmp_path / "dataset"
+    views = tmp_path / "views.json"
+    monkeypatch.setattr(
+        module,
+        "export_handoff_continuity_dataset",
+        lambda path, store, root, repo_id: calls.append((path, root, repo_id)) or root,
+    )
+    monkeypatch.setattr(
+        module,
+        "verify_handoff_continuity_dataset",
+        lambda root: calls.append(root) or {"profile": "handoff_receiver_continuity_lerobot_v1"},
+    )
+    if command.endswith("export"):
+        args = [
+            "--views",
+            str(views),
+            "--destination",
+            str(destination),
+            "--repo-id",
+            "local/continuity",
+        ]
+        expected = [(views, destination, "local/continuity")]
+    else:
+        args = [str(destination)]
+        expected = [destination]
+    assert main(["--artifacts", str(tmp_path), command, *args]) == 0
+    assert calls == expected
+    assert capsys.readouterr().out
+
+
 @pytest.mark.parametrize("command", ["corrective-views-create", "corrective-views-check"])
 def test_corrective_cli_dispatch(tmp_path, monkeypatch, capsys, command):
     from bimanual import corrective_views

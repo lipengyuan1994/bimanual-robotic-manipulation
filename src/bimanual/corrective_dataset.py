@@ -103,6 +103,14 @@ def compose_sampling_plan(
         raise ValueError("Corrections require the complete verified handoff skill")
     if recorded_root is not None and not Path(recorded_root).is_absolute():
         raise ValueError("Recorded corrective identity must be an absolute path")
+    regions = {
+        "feedback_approach_corrective_lerobot_v1": "corrective_approach",
+        "handoff_receiver_continuity_lerobot_v1": "corrective_receiver_continuity",
+    }
+    try:
+        corrective_region = regions[manifest["profile"]]
+    except (KeyError, TypeError) as error:
+        raise ValueError("Unsupported corrective dataset profile") from error
     result = copy.deepcopy(plan)
     identity = digest_file(root / "export_manifest.json")
     result["corrective_dataset"] = {
@@ -124,7 +132,7 @@ def compose_sampling_plan(
                     source_frame_index=source["parent_start"] + index - source["dataset_start"],
                     source_episode_sha256=source["episode_sha256"],
                     source_manifest_sha256=source["source_manifest_sha256"],
-                    region="corrective_approach",
+                    region=corrective_region,
                 )
             )
     count = len(result["frames"])
@@ -143,7 +151,7 @@ def compose_sampling_plan(
             probability=(s["dataset_end"] - s["dataset_start"]) / count,
             regions=[
                 dict(
-                    name="corrective_approach",
+                    name=corrective_region,
                     start=0,
                     end=s["dataset_end"] - s["dataset_start"],
                     conditional_probability=1.0,
