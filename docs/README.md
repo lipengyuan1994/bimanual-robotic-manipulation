@@ -57,6 +57,8 @@ Per-checkpoint physics: [teacher-prepared learned-skill evaluation](SKILL_PHYSIC
 
 Corrective teacher sources: [one-attempt corrective collection](SKILL_CORRECTIVE_COLLECTION.md).
 
+Corrective replay validation: [frozen source views](experiments/six-skill-corrective-views-v1.json).
+
 Failed hand-off diagnosis: [receiver-grip continuity analysis](HANDOFF_FAILURE_ANALYSIS.md).
 Corrective follow-up: [frozen receiver-continuity collection](HANDOFF_CONTINUITY.md).
 

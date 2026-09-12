@@ -255,6 +255,17 @@ def main(argv: list[str] | None = None) -> int:
     )
     corrective_run.add_argument("protocol", type=Path)
     corrective_run.add_argument("case_id")
+    corrective_views = commands.add_parser(
+        "skill-corrective-views-create",
+        help="Create a sealed read-only view over successful corrective teacher sources",
+    )
+    corrective_views.add_argument("destination", type=Path)
+    corrective_views.add_argument("run_ids", nargs="+")
+    corrective_views_check = commands.add_parser(
+        "skill-corrective-views-check",
+        help="Reverify a six-skill corrective source view",
+    )
+    corrective_views_check.add_argument("view", type=Path)
     cohort_adjudicate = commands.add_parser(
         "training-cohort-adjudicate-preflight",
         help="Classify one zero-update MPS environment failure before a replacement",
@@ -902,6 +913,18 @@ def main(argv: list[str] | None = None) -> int:
             )
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1
+        elif args.command == "skill-corrective-views-create":
+            from bimanual.skill_corrective_views import create_skill_corrective_views
+
+            emit(
+                create_skill_corrective_views(store, args.run_ids, args.destination).model_dump(
+                    mode="json"
+                )
+            )
+        elif args.command == "skill-corrective-views-check":
+            from bimanual.skill_corrective_views import load_skill_corrective_views
+
+            emit(load_skill_corrective_views(args.view, store).model_dump(mode="json"))
         elif args.command == "handoff-failure-analyze":
             from bimanual.handoff_failure_analysis import (
                 HandoffFailureAnalysisConfig,

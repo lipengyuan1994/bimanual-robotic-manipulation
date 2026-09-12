@@ -32,3 +32,11 @@ consumed, and rerunning the same exact request returns its verified manifest.
 
 Run each of the twenty cases at most once, preserve every outcome, and do not begin
 local retraining until a separate validation/export boundary exists.
+
+The validator creates an immutable view that selects only verified replay actions:
+
+```bash
+.venv/bin/bimanual skill-corrective-views-create /private/tmp/bar-view.json \
+  six-skill-corrective-9d2fae6f6ad5f8027a2a4991
+.venv/bin/bimanual skill-corrective-views-check /private/tmp/bar-view.json
+```

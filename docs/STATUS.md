@@ -208,10 +208,21 @@ run `six-skill-corrective-cc34b2b728ae06ccef92f059`, manifest
 the 630-action prefix but exhausted an incorrect servo-convergence recovery budget
 before replay. Both manifests independently verify. The collector now uses one
 bounded probe and exact measured-state recovery command before replay; focused
-collector/protocol/outcome tests pass 35 cases. The next executable step is a
-distinct remaining frozen case with the corrected collector, followed by a separate
-source validator/export boundary before any local retraining. Intel setup remains
-deferred until that local correction work completes.
+collector/protocol/outcome tests pass 35 cases. Corrected case
+`bar_contact_avoidance-51002` then completed as run
+`six-skill-corrective-9d2fae6f6ad5f8027a2a4991`, manifest
+`8f48660c9de78be9c4f7db49ff914c55934a4d518ccaee51c77b31abb009b07c`: its
+teacher prefix (630 actions), bounded probe/recovery (2 actions), and 531-action
+replay were recorded with 1,164 synchronized observations. The independent monitor
+reproduced its physical bar-placement result. The read-only validator rechecks that
+trace, every action/camera alignment, and source lineage; it froze view
+[`experiments/six-skill-corrective-views-v1.json`](experiments/six-skill-corrective-views-v1.json),
+seal `b6c7cddc8177744e07bb3e70adf948eb7aa7e58c521b6099110a42aa7b7074a4`, which
+selects only replay actions 632–1162. The source and view remain teacher-only and
+training-ineligible pending a separate export boundary. Focused validator/collector
+tests pass 41 cases. The next executable step is to implement that export boundary,
+then collect additional distinct frozen cases with the verified collector. Intel
+setup remains deferred until that local correction work completes.
 
 The continuity collector now runs below a bounded guardian and native spawned
 worker. It reserves the shared model lease before allocating output, retains
