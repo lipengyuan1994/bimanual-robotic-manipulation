@@ -66,11 +66,21 @@ target displacement of 0.134962956 m, no forbidden-contact events, and maximum
 overlap of 0.002515121 m. The correction direction is to inspect the learned
 trajectory that exceeds the overlap guard; the contact guard remains mandatory.
 
+The successor localization `20260912T145555-503d496afcab`, seal
+`f4798d6b4412851ee747c7584d37652329f170a5f5c6588f5a2e91d2e8216633`, adds no
+model or physics execution. It places the maximum at sample 20 of the rejected
+214th policy control, at 42.170 s in `policy/place`. The bar remained in contact
+with the workbench and right gripper, at `[-0.025399, 0.101435, 0.391412]` m;
+the attempted right-arm command was `[0.818747, 0.599436, -0.478853, 1.461354,
+2.470160, 0.184061]` rad. This is a transport-to-placement trajectory issue,
+not a forbidden-contact failure.
+
 ## Outcome and next step
 
 This candidate is **not promoted**. Its physical success, component pass,
 independent task success, autonomous workflow success, and release qualification are
 all false or unproven. The next step is to define a separately frozen corrective-data
-protocol only if a trajectory review supplies a bounded, measurable correction
-objective. There is no automatic evaluation retry or retraining authorization in
-this record.
+or sampling protocol that increases coverage of the measured transport-to-placement
+region without duplicating the existing uniform replay data. It must set an explicit
+sampling interval, source binding, and fresh checkpoint/evaluation boundary. There
+is no automatic evaluation retry or retraining authorization in this record.

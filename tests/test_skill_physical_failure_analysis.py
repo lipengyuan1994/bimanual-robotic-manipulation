@@ -141,4 +141,9 @@ def test_seals_single_component_overlap_diagnosis(tmp_path):
     )
     assert result.outcome == "completed"
     assert result.metrics["component"]["maximum_overlap_m"] == 0.003
+    peak = result.metrics["component"]["overlap_peak"]
+    assert peak["policy_action_index"] == 1
+    assert peak["sample_in_action"] == 1
+    assert peak["target_position_m"] == [0.0, 0.0, 0.4]
+    assert peak["control_targets_rad"] is None
     assert "exceeded the overlap guard" in result.metrics["component"]["recommended_next_step"]

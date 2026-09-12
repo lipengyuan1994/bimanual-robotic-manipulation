@@ -103,6 +103,34 @@ def _target_displacement(rows: list[dict], target: str) -> float:
     )
 
 
+def _overlap_peak(rows: list[dict], actions: list[dict], target: str | None) -> dict:
+    """Locate the highest overlap in the bounded learned-control trace.
+
+    The result is deliberately descriptive evidence, rather than a recovery
+    command.  It ties the guard event to one applied control and the simulator
+    state that followed it, so a future correction protocol has a measurable
+    objective instead of merely duplicating an existing teacher replay.
+    """
+    index, row = max(enumerate(rows), key=lambda item: float(item[1].get("overlap", 0.0)))
+    action_index, sample_in_action = divmod(index, 50)
+    peak = {
+        "policy_sample_index": index,
+        "policy_action_index": action_index + 1,
+        "sample_in_action": sample_in_action + 1,
+        "simulation_seconds": float(row.get("t", 0.0)),
+        "phase": row.get("phase"),
+        "overlap_m": float(row.get("overlap", 0.0)),
+        "contacts": [pair for pair in row.get("contacts", []) if target in pair]
+        if target is not None
+        else [],
+    }
+    if target is not None:
+        peak["target_position_m"] = row["objects"][target]["pos"]
+    if action_index < len(actions):
+        peak["control_targets_rad"] = actions[action_index].get("targets_rad")
+    return peak
+
+
 def _recommendation(
     skill_id: str,
     target_contact_samples: int,
@@ -153,6 +181,12 @@ def _analyse_child(store: EvidenceStore, child: Manifest, expected_skill: str) -
         physics_path,
         teacher_prefix_actions=child.metrics.get("teacher_prefix_actions"),
     )
+    # Include the bounded rejected tail for trajectory localization.  The count
+    # remains based on confirmed controls, so a partial physics step is never
+    # relabelled as an applied policy action.
+    action_trace = [json.loads(line) for line in actions_path.open()]
+    if len(action_trace) != len(actions) + rejected_actions:
+        raise ValueError("Worker action trace changed during analysis")
     target = TARGETS.get(expected_skill)
     bad = [
         {"action": index // 50 + 1, "bad": row["bad"]}
@@ -173,6 +207,7 @@ def _analyse_child(store: EvidenceStore, child: Manifest, expected_skill: str) -
         "physical_success": False,
         "maximum_overlap_m": float(max(row.get("overlap", 0.0) for row in rows)),
         "maximum_overtravel_m": float(max(row.get("overtravel", 0.0) for row in rows)),
+        "overlap_peak": _overlap_peak(rows, action_trace, target),
     }
     if target is None:
         drawer_forces = [min(row["drawer_forces"]) for row in rows]

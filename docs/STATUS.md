@@ -718,4 +718,12 @@ controls and one partial rejected control, with 10,649 target-contact samples, n
 forbidden contacts, maximum target displacement 0.134962956 m, and maximum overlap
 0.002515121 m. It supports trajectory-focused correction and does not authorize a
 retry or weakened safety guard.
+The narrowed read-only localization `20260912T145555-503d496afcab`, seal
+`f4798d6b4412851ee747c7584d37652329f170a5f5c6588f5a2e91d2e8216633`, places the
+2.515121 mm peak at sample 20 of the rejected 214th control in `policy/place`.
+The bar was simultaneously in workbench/right-gripper contact. The next executable
+engineering step is to implement and freeze a transport-to-placement sampling
+protocol over the sealed source data, then train a fresh unpromoted checkpoint;
+it must not duplicate the existing uniform corrective replay, weaken the guard, or
+reuse the already-consumed physical-evaluation declaration.
 See [the experiment record](experiments/2026-09-12-corrective-bar-policy-v2.md).
