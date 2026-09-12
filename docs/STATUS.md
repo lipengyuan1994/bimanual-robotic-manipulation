@@ -132,11 +132,17 @@ completed and independently reverified all 20,000 native-MPS updates. Wrapper
 manifest SHA-256 `bf249c2c6da399945db5a6db89e158b123489441caafa97d5ec30935706d33d3`;
 child manifest SHA-256 `f3c5ccdfb7d726a066a211125f62361944ad301b031a04c6a0e8743a51ebc885`;
 checkpoint `043299789355afd30abe126fc20037bbaac6fefdcb174cc77088aec0f5d1674b`.
-Spoon manipulation remains untested. The coordinator has allocated active
-`fork_retrieve_place` wrapper `20260912T051013-349dc05877f1`, child
-`20260912T051013-a1e71cfdf885`, and will stop on any failure. Log
-`.artifacts/cohort-remaining-sequence-replacement.log`. Poll session 1714; do not
-start another model, inference or render job.
+Spoon manipulation remains untested. The final `fork_retrieve_place` wrapper
+`20260912T051013-349dc05877f1` and child `20260912T051013-a1e71cfdf885` then
+completed and independently reverified all 20,000 native-MPS updates. Wrapper
+manifest SHA-256 `1769fa9a4546bc6077bc239e6ffd5e5008de117216754f1b2c948733a756dda5`;
+child manifest SHA-256 `465c90fda5a5208b618628193d1e29de6d734fb92b05f1e6a30fbf3cc7a6b5ea`;
+checkpoint `9583437c92db08a4b4767a4b5cccac04a76388a3fe941f7b029891c6846eea6e`.
+All six planned local individual-skill training runs are now complete. This is
+training completion only: fork manipulation and every other learned skill remain
+untested physically. The next executable step is exactly one frozen six-skill
+physical protocol run under the released shared model lease. Log
+`.artifacts/cohort-remaining-sequence-replacement.log`.
 
 The continuity collector now runs below a bounded guardian and native spawned
 worker. It reserves the shared model lease before allocating output, retains
