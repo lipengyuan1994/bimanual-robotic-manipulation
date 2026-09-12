@@ -41,9 +41,9 @@ class ACTTrainingConfig(BaseModel):
     learning_rate_schedule: Literal["constant", "terminal_linear"] = "constant"
     temporal_loss_profile: Literal["uniform", "first_action_half_v1"] = "uniform"
     normalization_std_floor: float = Field(default=1e-4, gt=0, le=1)
-    sampling_profile: Literal["uniform", "approach_regions_v1", "approach_nominal_launch_v1"] = (
-        "uniform"
-    )
+    sampling_profile: Literal[
+        "uniform", "approach_regions_v1", "approach_nominal_launch_v1", "bar_transport_placement_v1"
+    ] = "uniform"
     sampling_protocol_run: Path | None = None
     use_vae: bool = True
     dropout: float = Field(default=0.1, ge=0, lt=1)
@@ -58,8 +58,15 @@ class ACTTrainingConfig(BaseModel):
             raise ValueError("Terminal linear decay requires at least four updates")
         if (self.skill_views_path is None) != (self.skill_id is None):
             raise ValueError("Skill training requires both a verified view manifest and skill id")
-        if self.skill_id is not None and self.sampling_profile != "uniform":
-            raise ValueError("Skill views currently support uniform sampling only")
+        if self.skill_id is not None and self.sampling_profile not in {
+            "uniform",
+            "bar_transport_placement_v1",
+        }:
+            raise ValueError("Skill views support only uniform or dedicated bar transport sampling")
+        if self.sampling_profile == "bar_transport_placement_v1" and self.skill_id != (
+            "bar_place_and_return"
+        ):
+            raise ValueError("Bar transport sampling is restricted to bar_place_and_return")
         if (self.sampling_profile == "uniform") != (self.sampling_protocol_run is None):
             raise ValueError(
                 "Nonuniform profiles require a sampling protocol run; uniform forbids it"
@@ -67,10 +74,10 @@ class ACTTrainingConfig(BaseModel):
         if self.corrective_dataset_path is not None and (
             self.skill_id is None
             or self.skill_views_path is None
-            or self.sampling_profile != "uniform"
+            or self.sampling_profile not in {"uniform", "bar_transport_placement_v1"}
         ):
             raise ValueError(
-                "Corrective training requires a verified selected skill view and uniform sampling"
+                "Corrective training requires a verified selected skill view and supported sampling"
             )
         return self
 
@@ -480,8 +487,13 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
             (dataset_root / "export_manifest.json").read_bytes()
         )
         (directory / "training_config.json").write_text(config.model_dump_json(indent=2) + "\n")
+        nominal_sampling_config = config
+        if config.sampling_profile == "bar_transport_placement_v1":
+            nominal_sampling_config = config.model_copy(
+                update={"sampling_profile": "uniform", "sampling_protocol_run": None}
+            )
         sampling_plan = build_sampling_plan(
-            dataset_root, dataset_manifest, config, project_root=project_root
+            dataset_root, dataset_manifest, nominal_sampling_config, project_root=project_root
         )
         skill_view = None
         if config.skill_views_path is not None:
@@ -504,6 +516,7 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
             metrics["skill_views_file_sha256"] = view_digest
         corrective_manifest = None
         corrective_root = None
+        bar_sampling = None
         if config.corrective_dataset_path is not None:
             from bimanual.corrective_dataset import (
                 compose_sampling_plan,
@@ -518,6 +531,23 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
             if store.root.resolve().is_relative_to(corrective_root):
                 raise ValueError("Training evidence must be outside the corrective dataset")
             corrective_manifest = verify_supported_corrective_dataset_binding(corrective_root)
+            if config.sampling_profile == "bar_transport_placement_v1":
+                from bimanual.bar_transport_placement_sampling import (
+                    load_bar_transport_placement_sampling,
+                )
+
+                if corrective_manifest.get("profile") != "bar_overlap_corrective_lerobot_v1":
+                    raise ValueError(
+                        "Bar transport sampling requires the bar-overlap corrective archive"
+                    )
+
+                protocol_path = config.sampling_protocol_run
+                if not protocol_path.is_absolute():
+                    protocol_path = project_root / protocol_path
+                bar_sampling = load_bar_transport_placement_sampling(
+                    protocol_path, corrective_export_root=corrective_root
+                )
+                metrics["bar_transport_sampling"] = bar_sampling.model_dump(mode="json")
             corrective_views_name = (
                 "skill_corrective_views.json"
                 if corrective_manifest.get("profile") == "six_skill_corrective_lerobot_v1"
@@ -542,6 +572,14 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
             sampling_plan = compose_sampling_plan(
                 sampling_plan, corrective_root, corrective_manifest, episodes=corrective_episodes
             )
+            if config.sampling_profile == "bar_transport_placement_v1":
+                from bimanual.corrective_dataset import emphasize_bar_transport_placement
+
+                sampling_plan = emphasize_bar_transport_placement(
+                    sampling_plan,
+                    emphasis_start=bar_sampling.emphasis_source_interval[0],
+                    emphasis_end=bar_sampling.emphasis_source_interval[1],
+                )
             (directory / "corrective_dataset_manifest.json").write_bytes(
                 (corrective_root / "export_manifest.json").read_bytes()
             )

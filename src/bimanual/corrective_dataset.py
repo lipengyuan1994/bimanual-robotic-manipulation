@@ -5,10 +5,13 @@ from __future__ import annotations
 import copy
 from pathlib import Path
 
+import numpy as np
+
 from bimanual.dataset_export import CAMERA_FEATURES
 from bimanual.evidence import digest_file
 
 SKILL_CORRECTIVE_PROFILE = "six_skill_corrective_lerobot_v1"
+BAR_OVERLAP_PROFILE = "bar_overlap_corrective_lerobot_v1"
 
 
 def select_corrective_episodes(root: Path, manifest: dict, skill_id: str) -> tuple[dict, ...]:
@@ -19,6 +22,28 @@ def select_corrective_episodes(root: Path, manifest: dict, skill_id: str) -> tup
     that archive, so selection is derived from the sealed source view rather
     than from task text or a caller-provided index.
     """
+    if manifest.get("profile") == BAR_OVERLAP_PROFILE:
+        if skill_id != "bar_place_and_return":
+            raise ValueError("Bar-overlap archive is restricted to bar_place_and_return")
+        episodes = manifest.get("episodes")
+        if not isinstance(episodes, list) or not episodes:
+            raise ValueError("Bar-overlap archive has no replay episodes")
+        selected, cursor = [], 0
+        for episode in episodes:
+            start, end = episode.get("dataset_start"), episode.get("dataset_end")
+            if type(start) is not int or type(end) is not int or end <= start:
+                raise ValueError("Bar-overlap source interval is invalid")
+            selected.append(
+                dict(
+                    episode,
+                    source_dataset_start=start,
+                    source_dataset_end=end,
+                    dataset_start=cursor,
+                    dataset_end=cursor + end - start,
+                )
+            )
+            cursor += end - start
+        return tuple(selected)
     if manifest.get("profile") != SKILL_CORRECTIVE_PROFILE:
         return tuple(manifest["episodes"])
     from bimanual.skill_corrective_views import load_skill_corrective_views_binding
@@ -168,7 +193,9 @@ def compose_sampling_plan(
     selected_skill = plan.get("skill_view", {}).get("skill_id")
     if plan["profile"] != "uniform" or not isinstance(selected_skill, str):
         raise ValueError("Corrections require a selected uniform skill view")
-    if manifest.get("profile") != SKILL_CORRECTIVE_PROFILE and selected_skill != "handoff_transfer":
+    if manifest.get("profile") not in {SKILL_CORRECTIVE_PROFILE, BAR_OVERLAP_PROFILE} and (
+        selected_skill != "handoff_transfer"
+    ):
         raise ValueError("This corrective profile requires the complete verified handoff skill")
     if recorded_root is not None and not Path(recorded_root).is_absolute():
         raise ValueError("Recorded corrective identity must be an absolute path")
@@ -176,6 +203,7 @@ def compose_sampling_plan(
         "feedback_approach_corrective_lerobot_v1": "corrective_approach",
         "handoff_receiver_continuity_lerobot_v1": "corrective_receiver_continuity",
         SKILL_CORRECTIVE_PROFILE: "corrective_skill_replay",
+        BAR_OVERLAP_PROFILE: "corrective_bar_overlap_replay",
     }
     try:
         corrective_region = regions[manifest["profile"]]
@@ -191,7 +219,7 @@ def compose_sampling_plan(
     for frame in result["frames"]:
         frame["dataset_source"] = "nominal"
     selected_episodes = tuple(manifest["episodes"] if episodes is None else episodes)
-    if manifest.get("profile") == SKILL_CORRECTIVE_PROFILE:
+    if manifest.get("profile") in {SKILL_CORRECTIVE_PROFILE, BAR_OVERLAP_PROFILE}:
         expected_episodes = select_corrective_episodes(root, manifest, selected_skill)
         if selected_episodes != expected_episodes:
             raise ValueError("Corrective selection does not match the selected skill")
@@ -234,5 +262,101 @@ def compose_sampling_plan(
             ],
         )
         for s in selected_episodes
+    )
+    return result
+
+
+def emphasize_bar_transport_placement(
+    plan: dict, *, emphasis_start: int, emphasis_end: int
+) -> dict:
+    """Give each bar corrective replay equal mass to transport and its remainder.
+
+    Nominal selected-skill frames retain one half of total mass. The other half is
+    divided equally among every corrective source's emphasis and remainder groups.
+    This makes the correction auditable without turning the archive into a generic
+    task mixture.
+    """
+    if plan.get("profile") != "uniform" or plan.get("skill_view", {}).get("skill_id") != (
+        "bar_place_and_return"
+    ):
+        raise ValueError("Bar transport emphasis requires a uniform selected bar skill")
+    if (
+        type(emphasis_start) is not int
+        or type(emphasis_end) is not int
+        or emphasis_start >= emphasis_end
+    ):
+        raise ValueError("Bar transport emphasis interval is invalid")
+    result = copy.deepcopy(plan)
+    nominal = [frame for frame in result["frames"] if frame.get("dataset_source") == "nominal"]
+    corrective = [
+        frame for frame in result["frames"] if frame.get("dataset_source") == "corrective"
+    ]
+    if not nominal or not corrective:
+        raise ValueError("Bar transport emphasis requires nominal and corrective frames")
+    groups = {}
+    for frame in corrective:
+        source = frame.get("episode_id")
+        index = frame.get("source_frame_index")
+        if not isinstance(source, str) or type(index) is not int:
+            raise ValueError("Bar corrective frame lacks immutable source identity")
+        region = "transport_to_placement" if emphasis_start <= index < emphasis_end else "remainder"
+        frame["region"] = region
+        groups.setdefault((source, region), []).append(frame)
+    expected_groups = {
+        (episode["episode_id"], region)
+        for episode in result["episodes"]
+        if episode.get("source") == "corrective"
+        for region in ("transport_to_placement", "remainder")
+    }
+    if set(groups) != expected_groups or any(not frames for frames in groups.values()):
+        raise ValueError("Every selected bar replay needs transport and remainder frames")
+    for frame in nominal:
+        frame["probability"] = 0.5 / len(nominal)
+    group_mass = 0.5 / len(groups)
+    for frames in groups.values():
+        for frame in frames:
+            frame["probability"] = group_mass / len(frames)
+    probabilities = [frame["probability"] for frame in result["frames"]]
+    if not np.isclose(sum(probabilities), 1.0):
+        raise ValueError("Bar transport sampling probabilities do not sum to one")
+    for episode in result["episodes"]:
+        episode_frames = [
+            frame
+            for frame in result["frames"]
+            if frame.get("episode_id") == episode["episode_id"]
+            and frame.get("dataset_source") == episode.get("source")
+        ]
+        episode["probability"] = sum(frame["probability"] for frame in episode_frames)
+        if episode.get("source") == "corrective":
+            regions = []
+            for region in ("transport_to_placement", "remainder"):
+                frames = [frame for frame in episode_frames if frame["region"] == region]
+                regions.append(
+                    dict(
+                        name=region,
+                        start=min(frame["parent_dataset_index"] for frame in frames),
+                        end=max(frame["parent_dataset_index"] for frame in frames) + 1,
+                        conditional_probability=sum(frame["probability"] for frame in frames)
+                        / episode["probability"],
+                    )
+                )
+            episode["regions"] = regions
+    result.update(
+        profile="bar_transport_placement_v1",
+        algorithm="torch.multinomial_float64",
+        bar_transport_placement=dict(
+            emphasis_source_interval=[emphasis_start, emphasis_end],
+            nominal_probability=0.5,
+            corrective_group_probability=group_mass,
+            groups=[
+                dict(
+                    episode_id=episode_id,
+                    region=region,
+                    frame_count=len(frames),
+                    probability=group_mass,
+                )
+                for (episode_id, region), frames in sorted(groups.items())
+            ],
+        ),
     )
     return result

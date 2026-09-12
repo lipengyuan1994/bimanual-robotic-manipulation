@@ -287,6 +287,19 @@ def main(argv: list[str] | None = None) -> int:
         help="Fully verify a frozen bar-overlap local LeRobot export",
     )
     bar_overlap_export_check.add_argument("dataset", type=Path)
+    bar_sampling_create = commands.add_parser(
+        "bar-transport-sampling-create",
+        help="Freeze the source-bound bar transport sampling declaration",
+    )
+    bar_sampling_create.add_argument("--destination", type=Path, required=True)
+    bar_sampling_create.add_argument("--corrective-export", type=Path, required=True)
+    bar_sampling_create.add_argument("--failure-localization-seal", required=True)
+    bar_sampling_check = commands.add_parser(
+        "bar-transport-sampling-check",
+        help="Reverify a frozen bar transport sampling declaration",
+    )
+    bar_sampling_check.add_argument("declaration", type=Path)
+    bar_sampling_check.add_argument("--corrective-export", type=Path, required=True)
     corrective_run = commands.add_parser(
         "skill-corrective-run",
         help="Collect one frozen six-skill corrective teacher source once",
@@ -990,6 +1003,31 @@ def main(argv: list[str] | None = None) -> int:
             from bimanual.bar_overlap_correction_export import verify_bar_overlap_dataset
 
             emit(invoke_with_diagnostics(verify_bar_overlap_dataset, args.dataset))
+        elif args.command == "bar-transport-sampling-create":
+            from bimanual.bar_transport_placement_sampling import (
+                create_bar_transport_placement_sampling,
+            )
+
+            emit(
+                invoke_with_diagnostics(
+                    create_bar_transport_placement_sampling,
+                    args.destination,
+                    corrective_export_root=args.corrective_export,
+                    failure_localization_manifest_sha256=args.failure_localization_seal,
+                ).model_dump(mode="json")
+            )
+        elif args.command == "bar-transport-sampling-check":
+            from bimanual.bar_transport_placement_sampling import (
+                load_bar_transport_placement_sampling,
+            )
+
+            emit(
+                invoke_with_diagnostics(
+                    load_bar_transport_placement_sampling,
+                    args.declaration,
+                    corrective_export_root=args.corrective_export,
+                ).model_dump(mode="json")
+            )
         elif args.command == "skill-corrective-run":
             from bimanual.skill_corrective_teacher import run_skill_corrective_case
 

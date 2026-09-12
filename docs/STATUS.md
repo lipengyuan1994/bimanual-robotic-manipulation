@@ -743,3 +743,13 @@ binding verification has passed. The slower complete decoded-row audit is runnin
 a distinct gate and must pass before the archive is used for training. This remains
 teacher data only. The next executable implementation step is the source-bound,
 equal-mass transport-versus-remainder sampling profile specified in ADR 0004.
+
+That profile is now implemented but not yet declared for execution. It is restricted
+to `bar_place_and_return` and the bar-overlap archive. It assigns 50% total mass to
+the selected nominal bar-skill frames, then splits the remaining 50% evenly across
+each sealed corrective replay's `[770,1070)` transport-to-placement frames and its
+remaining replay frames. The profile records every selected source identity and
+frame index in the training sampling plan. Focused corrective-data and skill-training
+tests pass (10 passed, 1 expected full-dataset skip). Creating the one-time sampling
+declaration requires the still-pending full archive audit, and no model job has been
+started from this profile.
