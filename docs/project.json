@@ -25,7 +25,7 @@
       "id": "M2",
       "title": "Learned workflow",
       "state": "in_progress",
-      "detail": "All six component ACT checkpoints completed 20,000 native-MPS updates. The frozen actual-MPS component suite failed 0/6. Seven independently validated corrective teacher replays now cover all six first-release skills (two bar cases plus cup, plate, fork, spoon, and drawer) for 4,143 transitions. This is teacher data only: no corrective policy, learned component, autonomous dinner workflow, or perturbation suite has succeeded."
+      "detail": "All six component ACT checkpoints completed 20,000 native-MPS updates. The frozen actual-MPS component suite failed 0/6. Seven independently validated corrective teacher replays now cover all six first-release skills (two bar cases plus cup, plate, fork, spoon, and drawer) for 4,143 transitions. The checked local LeRobot v0.6.1 archive is sealed, and each future skill run is restricted to matching corrective episodes. This is teacher data only: no corrective policy, learned component, autonomous dinner workflow, or perturbation suite has succeeded."
     },
     {
       "id": "M3",
