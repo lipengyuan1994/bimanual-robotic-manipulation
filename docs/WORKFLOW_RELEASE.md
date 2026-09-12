@@ -20,18 +20,26 @@ The protocol is local ARM64 prequalification. Its schema fixes
 claim task quality or Intel compliance.
 
 `workflow-release-run PROTOCOL CASE_ID` reserves one declared case before starting
-the isolated workflow process. It will never retry an interrupted reservation or
-select a replacement scene. A clean process child is copied into a separate evidence
-store and scored by the independent dinner evaluator. The sealed case wrapper keeps
-execution completion, process integrity and physical task success as separate fields.
-It can claim only that one local scene passed.
+the isolated workflow process. The shared model-job lease is acquired before the
+identity-addressed reservation is created, so a busy training or inference worker
+does not consume the one allowed attempt. The reservation and request are flushed
+before execution. A missing, truncated or unsealed reservation requires explicit
+adjudication; the runner will never retry it or select a replacement scene. A clean
+process child is copied into a separate evidence store and scored by the independent
+dinner evaluator. The sealed case wrapper keeps execution completion, process
+integrity and physical task success as separate fields. It also retains terminal
+reasons, failure codes and gates, retry and intervention declarations, rejected and
+partial actions, forbidden-contact counts, and planner/policy/execution/simulation
+timing. It can claim only that one local scene passed.
 
 After all sixteen reserved cases have sealed, `workflow-release-suite PROTOCOL`
-re-verifies every wrapper and its nested process, execution copy and independent
-evaluation. Missing, interrupted and duplicate cases stop aggregation. The report
-retains the complete ordered result table, observed success rate and Wilson 95%
-interval. It reports the six one-factor diagnostics and ten combined frozen test
-seeds separately, including the observed 10-seed target result.
+reconstructs the canonical request from the protocol, then re-verifies every wrapper,
+nested process, execution copy and exact source-manifest-bound evaluation. Missing,
+interrupted, orphaned or contradictory reservations stop aggregation. The report
+retains the complete ordered result table, failure and scoring-gate histograms,
+retry/intervention/action/contact totals, timing p50/p95, observed success rate and
+Wilson 95% interval. It reports the six one-factor diagnostics and ten combined
+frozen test seeds separately, including the observed 10-seed target result.
 `local_prequalification_passed` is true only at 16/16; `release_success` stays null
 and `intel_validated` stays false.
 

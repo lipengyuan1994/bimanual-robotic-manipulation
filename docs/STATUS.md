@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 11, 2026. Latest implementation checkpoint: `af32e79` on
+Updated September 11, 2026. Latest implementation checkpoint: `6b3ebc8` on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -149,20 +149,24 @@ completed checkpoints exist, it will freeze their workflow/execution profile,
 Qwen revision and manifest, the verified16-scene suite, every package Python
 source, canonical instruction, MPS devices, 1920-pixel planner camera and time
 limits before release evaluation. Its schema cannot claim release or Intel success.
-The one-case runner now reserves a frozen scene before spawning, blocks automatic
-retry after an interrupted reservation, preserves the process and child evidence,
-and independently scores a verified copy. It reports execution completion, clean
-process transport and physical task success separately. The aggregate reporter
-requires exactly one verified result for all sixteen cases in frozen order, rejects
-missing/interrupted/duplicate cases, and retains the full result table, observed
-rate and Wilson95 interval. It also reports the six diagnostic scenes and ten
-combined frozen test seeds separately, including the observed 10-seed target.
+The one-case runner now acquires the shared top-level model lease before writing a
+durable identity-addressed scene reservation, blocks automatic retry after a missing,
+truncated or interrupted reservation, preserves the process and child evidence, and
+independently scores a verified copy. It reports execution completion, clean process
+transport and physical task success separately, plus terminal reasons, failure codes,
+retry/intervention declarations, action/contact counts and timing. The aggregate
+reporter reconstructs each exact request from the frozen protocol, verifies the
+source-manifest-bound learned evaluation and all duplicated outcome fields, and
+requires exactly one result for all sixteen cases in frozen order. Missing,
+interrupted, orphaned or contradictory reservations stop aggregation. The report
+retains failure/gate histograms, action/contact totals, timing p50/p95, the full
+result table, observed rate and Wilson95 interval. It also reports the six diagnostic
+scenes and ten combined frozen test seeds separately, including the observed 10-seed target.
 Local prequalification requires16/16; final release success remains null and Intel
-validation remains false. Six runner and seven
-aggregate/CLI fixtures pass, including nested process/child/evaluation re-verification
-and rechecking source wrappers when an existing report is reopened. The aggregate
-cannot hide a later duplicate or source change. The combined release, scene-suite
-and workflow-process group passes48tests.
+validation remains false. The hardened release and workflow-process group passes44
+focused tests, including truncated-reservation, busy-shared-lease, exact request,
+nested process/child/evaluation re-verification and source-bound scoring checks.
+The aggregate cannot hide an orphaned reservation or later source change.
 [Release freeze](WORKFLOW_RELEASE.md).
 
 The next seven-checkpoint manifest version now seals the per-skill execution
@@ -217,7 +221,7 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `e683179a43b1561c3ba12dcc503b1eaa237fef64d84cbc93d4433b08006f267e`.
+seal `b82f5f37f4f9e9fd7b0c097603eeecd5de8ddedbd72b0b862710712bdb2b68f6`.
 It binds the training cohort and 106 package/runtime and authored-scene/SO-101 asset
 files,
 final-update20,000 selection,

@@ -1,17 +1,23 @@
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 
 import pytest
 
 from bimanual.cli import main
+from bimanual.dinner_evaluation import _trace_layout
+from bimanual.dinner_outcomes import PROFILE
 from bimanual.evidence import EvidenceStore
 from bimanual.scene_variant_suite import SceneVariantSuiteEntry
-from bimanual.workflow_release_runner import run_workflow_release_case
+from bimanual.worker_lease import WorkerLease
+from bimanual.workflow_release_runner import _reservation_name, run_workflow_release_case
 from bimanual.workflow_release_suite import _validate_wrapper
 
 
-def _fixture(tmp_path, monkeypatch, *, score_success=True, process_error=False):
+def _fixture(
+    tmp_path, monkeypatch, *, score_success=True, process_error=False, broken_binding=False
+):
     import bimanual.workflow_release_runner as module
 
     protocol_path = tmp_path / "release.json"
@@ -51,14 +57,33 @@ def _fixture(tmp_path, monkeypatch, *, score_success=True, process_error=False):
     monkeypatch.setattr(module, "load_workflow_release_protocol", lambda path: protocol)
     calls = []
 
-    def process(config, *, store, project_root):
+    def process(config, *, store, project_root, **kwargs):
         calls.append(config)
+        assert kwargs["model_job_lease"] is not None
+        assert kwargs["model_job_lease_path"].name == ".model-job.lock"
         if process_error:
             raise RuntimeError("simulated interruption")
         process_directory = store.new_run()
         child_store = EvidenceStore(process_directory / "child-evidence")
         child_directory = child_store.new_run()
-        (child_directory / "fixture.txt").write_text("workflow trace")
+        (child_directory / "step-report.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "profile": "dinner_workflow_step_report_v1",
+                    "task_id": None,
+                    "workflow_state": "execution_complete",
+                    "execution_complete": True,
+                    "attempt_count": 0,
+                    "successful_attempts": 0,
+                    "failed_attempts": 0,
+                    "total_applied_actions": 0,
+                    "steps": [],
+                    "attempts": [],
+                    "independent_task_success": None,
+                }
+            )
+        )
         child = child_store.seal(
             child_directory,
             kind="dinner_workflow_execution",
@@ -102,10 +127,42 @@ def _fixture(tmp_path, monkeypatch, *, score_success=True, process_error=False):
             directory,
             kind="dinner_evaluation",
             outcome="completed" if score_success else "failed",
-            config={"source_run": run_id},
-            metrics={"score": {"independent_task_success": score_success}},
+            config={
+                "source_run": run_id,
+                "source_manifest_sha256": ("f" * 64 if broken_binding else source.manifest_sha256),
+                "profile": PROFILE,
+                "selected_trace_layout": _trace_layout(source.kind),
+                "instrumentation": {},
+                "instrumentation_scope": "Source declaration provenance unspecified",
+                "instrumentation_run": None,
+                "instrumentation_manifest_sha256": None,
+            },
+            metrics={
+                "score": {
+                    "independent_task_success": score_success,
+                    "failed_gates": [] if score_success else ["plate_placed"],
+                },
+                "full_trace_diagnostics": {
+                    "errors": [],
+                    "forbidden_samples": 0,
+                    "partial_actions": 0,
+                },
+                "source_outcome": source.outcome,
+                "source_kind": source.kind,
+                "selected_trace_layout": _trace_layout(source.kind),
+                "scene_binding_verified": True,
+                "learned_execution_verified": True,
+                "learned_execution_audit": {
+                    "profile": "learned_dinner_execution_audit_v1",
+                    "verified": True,
+                    "applicable": True,
+                },
+            },
             source={},
-            claims=[],
+            claims=[
+                "Physical scoring of retained evidence; no new execution, generalization "
+                "or learned-policy certification"
+            ],
         )
 
     monkeypatch.setattr(module, "run_workflow_process", process)
@@ -129,7 +186,9 @@ def test_runs_and_scores_one_frozen_case_exactly_once(tmp_path, monkeypatch):
     assert first.metrics["independent_task_success"] is True
     assert first.metrics["intel_validated"] is False
     assert first.metrics["release_success"] is None
-    row = _validate_wrapper(store, first, protocol, protocol.cases[0])
+    assert first.metrics["execution_evidence"]["step_report_available"] is True
+    assert first.metrics["execution_evidence"]["operator_interventions"] == 0
+    row = _validate_wrapper(store, first, protocol_path, protocol, protocol.cases[0])
     assert row["independent_task_success"] is True
 
 
@@ -158,6 +217,41 @@ def test_unknown_case_fails_before_reservation(tmp_path, monkeypatch):
     protocol, _, store, calls = _fixture(tmp_path, monkeypatch)
     with pytest.raises(ValueError, match="not a member"):
         run_workflow_release_case(protocol, "mass-29001", store=store, project_root=tmp_path)
+    assert calls == []
+    assert not (store.root / "runs").exists()
+
+
+def test_truncated_identity_reservation_blocks_retry(tmp_path, monkeypatch):
+    protocol_path, protocol, store, calls = _fixture(tmp_path, monkeypatch)
+    directory = store.directory(
+        _reservation_name(protocol.manifest_sha256, protocol.cases[0].case_id)
+    )
+    directory.mkdir(parents=True)
+    (directory / "release-case-request.json").write_text('{"protocol_manifest_sha256":')
+    with pytest.raises(RuntimeError, match="reservation is incomplete"):
+        run_workflow_release_case(
+            protocol_path, "placement-29001", store=store, project_root=tmp_path
+        )
+    assert calls == []
+
+
+def test_mismatched_evaluation_source_manifest_cannot_pass(tmp_path, monkeypatch):
+    protocol_path, _, store, _ = _fixture(tmp_path, monkeypatch, broken_binding=True)
+    result = run_workflow_release_case(
+        protocol_path, "placement-29001", store=store, project_root=tmp_path
+    )
+    assert result.outcome == "failed"
+    assert result.metrics["independent_task_success"] is False
+
+
+def test_busy_shared_model_lease_consumes_no_frozen_reservation(tmp_path, monkeypatch):
+    protocol_path, _, store, calls = _fixture(tmp_path, monkeypatch)
+    store.root.mkdir(parents=True)
+    with WorkerLease.acquire(store.root / ".model-job.lock"):
+        with pytest.raises(RuntimeError, match="still holds"):
+            run_workflow_release_case(
+                protocol_path, "placement-29001", store=store, project_root=tmp_path
+            )
     assert calls == []
     assert not (store.root / "runs").exists()
 

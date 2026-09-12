@@ -134,6 +134,9 @@ def run_workflow_process(
     project_root: Path,
     cancelled: Callable[[], bool] = lambda: False,
     on_progress: Callable[[dict], None] | None = None,
+    model_job_lease_path: Path | None = None,
+    model_job_lease=None,
+    reserve_model_job_before_output: bool = False,
     _entrypoint: Callable = run_workflow_execution,
 ) -> Manifest:
     """Synchronous supervisor suitable for an API background job or CLI.
@@ -166,16 +169,31 @@ def run_workflow_process(
     ):
         raise RuntimeError("Spawn requires the current verified native interpreter")
     _confine(execution, store.root)
-    directory = store.new_run()
-    source = provenance(project_root)
+    from bimanual.worker_lease import MODEL_JOB_LEASE, WorkerLease
+
+    lease_path = (
+        Path(model_job_lease_path).resolve()
+        if model_job_lease_path is not None
+        else store.root / MODEL_JOB_LEASE
+    )
+    lease_path.parent.mkdir(parents=True, exist_ok=True)
+    if model_job_lease is not None:
+        model_job_lease.assert_path(lease_path)
+        parent_lease = model_job_lease
+    else:
+        parent_lease = WorkerLease.acquire(lease_path) if reserve_model_job_before_output else None
+    try:
+        directory = store.new_run()
+        source = provenance(project_root)
+    except BaseException:
+        if parent_lease is not None:
+            parent_lease.close()
+        raise
     started = time.monotonic()
     deadline = started + execution.wall_timeout_seconds
     child_store = EvidenceStore(directory / "child-evidence")
     process = None
     guardian_root = directory / "guardian"
-    from bimanual.worker_lease import MODEL_JOB_LEASE
-
-    lease_path = store.root / MODEL_JOB_LEASE
     cleanup_lease = None
     cancellation = None
     message = None
@@ -355,7 +373,6 @@ def run_workflow_process(
             reason = reason or "failed"
         process.close()
 
-    from bimanual.worker_lease import WorkerLease
     from bimanual.workflow_guardian import guardian_entry
 
     try:
@@ -383,12 +400,16 @@ def run_workflow_process(
                     config.poll_interval_seconds,
                     str(lease_path),
                     _child,
+                    parent_lease.export_for_spawn() if parent_lease is not None else None,
                 ),
                 name="bimanual-workflow-guardian",
                 daemon=False,
             )
             record("spawn_requested")
             process.start()
+            if parent_lease is not None:
+                parent_lease.close()
+                parent_lease = None
             metrics["guardian_pid"] = process.pid
             record("guardian_started", pid=process.pid)
             next_progress = 0.0
@@ -413,6 +434,8 @@ def run_workflow_process(
     finally:
         if process is not None and process.pid is not None:
             settle_guardian()
+        if parent_lease is not None:
+            parent_lease.close()
 
     try:
         # No child or model thread can write after this point. Only read child artifacts.

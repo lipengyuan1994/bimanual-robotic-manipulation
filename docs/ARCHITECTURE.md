@@ -36,11 +36,13 @@ policy quality requires a separate rollout. See [interfaces](INTERFACES.md),
 
 The [supervisor core](SUPERVISOR.md) now validates a serial plan against explicitly
 registered capabilities, tracks attempts and deadlines, controls arm/shared-space
-ownership, and clears actions on cancellation or task changes. It is not yet wired
-to composable dinner-skill executors. The [local Qwen adapter](PLANNER.md) proposes
-typed skills from images and joints; its CLI is an offline recorded-camera probe
-that cannot dispatch actions. The [ACT rollout](POLICY_ROLLOUT.md) executes actual
-model predictions through a guarded action queue, but has not passed a grasp.
+ownership, and clears actions on cancellation or task changes. The integrated workflow
+wires it to seven bounded dinner-skill executors and seals every planner decision,
+attempt, action and terminal outcome. The [local Qwen adapter](PLANNER.md) proposes
+typed skills from images and joints through a guarded dispatch lifecycle. The
+[ACT rollout](POLICY_ROLLOUT.md) executes actual model predictions through a guarded
+action queue. Full learned dinner success remains unproven while the checkpoint
+cohort is still training.
 
 ```mermaid
 flowchart TD
@@ -62,10 +64,13 @@ semantics. This distinction must remain visible in technical claims.
 ## Interface specification for M1/M2
 
 Implemented data and action contracts live in `src/bimanual/contracts.py`.
-The table retains the complete target. A deterministic supervisor and immutable
-execution snapshots now exist, but the integrated full-task run-result contract
-and independent dinner evaluator remain pending. The actual ACT action queue
-checks source identity, expiry and the complete forecast before accepting a prefix.
+The table retains the complete target. The integrated run seals immutable supervisor
+snapshots and a typed per-step report with retries, reasons, physical classifications,
+action counts and planner/policy/execution timing. An independent evaluator replays
+the complete retained physics trace, verifies learned-checkpoint and zero-intervention
+lineage, and keeps task success separate from process completion. The actual ACT
+action queue checks source identity, expiry and the complete forecast before accepting
+a prefix.
 
 | Interface | Required contract |
 |---|---|

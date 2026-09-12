@@ -376,6 +376,25 @@ def test_normal_reports_actual_worker_separately_from_guardian(tmp_path):
     assert result.metrics["guardian_exitcode"] == result.metrics["child_exitcode"] == 0
 
 
+def test_shared_lease_reservation_rejects_busy_job_before_output(tmp_path):
+    from bimanual.worker_lease import WorkerLease
+
+    store = EvidenceStore(tmp_path / "nested-process-evidence")
+    shared = tmp_path / "shared-evidence/.model-job.lock"
+    shared.parent.mkdir()
+    with WorkerLease.acquire(shared):
+        with pytest.raises(RuntimeError, match="still holds"):
+            run_workflow_process(
+                settings(),
+                store=store,
+                project_root=tmp_path,
+                model_job_lease_path=shared,
+                reserve_model_job_before_output=True,
+                _entrypoint=normal,
+            )
+    assert not (store.root / "runs").exists()
+
+
 def test_group_cleanup_lease_released_after_publication_error(tmp_path, monkeypatch):
     from bimanual.worker_lease import WorkerLease
 

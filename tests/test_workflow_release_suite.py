@@ -9,7 +9,7 @@ from bimanual.cli import main
 from bimanual.evidence import EvidenceStore
 from bimanual.scene_variant_suite import SceneVariantSuiteEntry
 from bimanual.workflow_release_runner import KIND as CASE_KIND
-from bimanual.workflow_release_runner import REQUEST
+from bimanual.workflow_release_runner import REQUEST, RESERVATION_PREFIX, _reservation_name
 from bimanual.workflow_release_suite import create_workflow_release_suite
 
 
@@ -53,6 +53,14 @@ def _setup(tmp_path, monkeypatch, *, count=16, failed_case=None):
         cases=_cases(),
     )
     monkeypatch.setattr(module, "load_workflow_release_protocol", lambda path: protocol)
+    monkeypatch.setattr(
+        module,
+        "build_release_case_request",
+        lambda path, loaded, case: {
+            "protocol_manifest_sha256": loaded.manifest_sha256,
+            "case_id": case.case_id,
+        },
+    )
     store = EvidenceStore(tmp_path / "evidence")
     expected = {}
     for case in protocol.cases[:count]:
@@ -60,7 +68,8 @@ def _setup(tmp_path, monkeypatch, *, count=16, failed_case=None):
             "protocol_manifest_sha256": protocol.manifest_sha256,
             "case_id": case.case_id,
         }
-        directory = store.new_run()
+        directory = store.directory(_reservation_name(protocol.manifest_sha256, case.case_id))
+        directory.mkdir(parents=True)
         (directory / REQUEST).write_text(json.dumps(request))
         wrapper = store.seal(
             directory,
@@ -73,8 +82,9 @@ def _setup(tmp_path, monkeypatch, *, count=16, failed_case=None):
         )
         expected[case.case_id] = wrapper
 
-    def validate(local_store, wrapper, loaded_protocol, case):
+    def validate(local_store, wrapper, loaded_path, loaded_protocol, case):
         assert local_store is store and loaded_protocol is protocol
+        assert loaded_path == protocol_path.resolve()
         assert wrapper == expected[case.case_id]
         success = case.case_id != failed_case
         return {
@@ -88,6 +98,20 @@ def _setup(tmp_path, monkeypatch, *, count=16, failed_case=None):
             "process_transport_clean": True,
             "evaluation_outcome": "completed" if success else "failed",
             "independent_task_success": success,
+            "execution_evidence": {
+                "retry_count": 1 if not success else 0,
+                "failure_codes": {"grasp_not_acquired": 1} if not success else {},
+                "failed_gates": ["plate_placed"] if not success else [],
+                "zero_intervention_verified": True,
+                "rejected_actions": 0,
+                "partial_actions": 0,
+                "forbidden_contact_samples": 0,
+                "planning_wall_seconds": 1.0,
+                "planner_inference_seconds": 0.1,
+                "policy_inference_seconds": 0.2,
+                "execution_wall_seconds": 2.0,
+                "simulated_duration_seconds": 3.0,
+            },
         }
 
     monkeypatch.setattr(module, "_validate_wrapper", validate)
@@ -107,6 +131,12 @@ def test_aggregates_all_cases_in_frozen_order_and_reuses_report(tmp_path, monkey
     assert first.metrics["hackathon_10_seed_target_met"] is True
     assert first.metrics["release_success"] is None
     assert first.metrics["intel_validated"] is False
+    assert first.metrics["total_retries"] == 0
+    assert first.metrics["total_operator_interventions"] == 0
+    assert first.metrics["case_timing_seconds"]["execution_wall_seconds"] == {
+        "p50": 2.0,
+        "p95": 2.0,
+    }
     assert [row["case_id"] for row in first.metrics["cases"]] == [
         case.case_id for case in protocol.cases
     ]
@@ -124,48 +154,22 @@ def test_missing_case_stops_without_partial_report(tmp_path, monkeypatch):
     )
 
 
-def test_duplicate_case_stops_aggregation(tmp_path, monkeypatch):
-    protocol_path, protocol, store = _setup(tmp_path, monkeypatch)
-    case = protocol.cases[0]
-    request = {
-        "protocol_manifest_sha256": protocol.manifest_sha256,
-        "case_id": case.case_id,
-    }
-    directory = store.new_run()
-    (directory / REQUEST).write_text(json.dumps(request))
-    store.seal(
-        directory,
-        kind=CASE_KIND,
-        outcome="completed",
-        config=request,
-        metrics={"case_id": case.case_id},
-        source={},
-        claims=[],
-    )
-    with pytest.raises(RuntimeError, match="duplicated"):
+def test_unknown_orphan_reservation_stops_aggregation(tmp_path, monkeypatch):
+    protocol_path, _, store = _setup(tmp_path, monkeypatch)
+    directory = store.root / "runs" / f"{RESERVATION_PREFIX}unknown"
+    directory.mkdir()
+    (directory / REQUEST).write_text("{}")
+    with pytest.raises(RuntimeError, match="Unknown or orphaned"):
         create_workflow_release_suite(protocol_path, store=store, project_root=tmp_path)
 
 
-def test_existing_report_rechecks_later_duplicate(tmp_path, monkeypatch):
+def test_existing_report_rechecks_later_orphan(tmp_path, monkeypatch):
     protocol_path, protocol, store = _setup(tmp_path, monkeypatch)
     create_workflow_release_suite(protocol_path, store=store, project_root=tmp_path)
-    case = protocol.cases[0]
-    request = {
-        "protocol_manifest_sha256": protocol.manifest_sha256,
-        "case_id": case.case_id,
-    }
-    directory = store.new_run()
-    (directory / REQUEST).write_text(json.dumps(request))
-    store.seal(
-        directory,
-        kind=CASE_KIND,
-        outcome="completed",
-        config=request,
-        metrics={"case_id": case.case_id},
-        source={},
-        claims=[],
-    )
-    with pytest.raises(RuntimeError, match="duplicated"):
+    directory = store.root / "runs" / f"{RESERVATION_PREFIX}unknown"
+    directory.mkdir()
+    (directory / REQUEST).write_text("{}")
+    with pytest.raises(RuntimeError, match="Unknown or orphaned"):
         create_workflow_release_suite(protocol_path, store=store, project_root=tmp_path)
 
 
@@ -179,6 +183,9 @@ def test_failed_case_is_retained_without_local_pass_claim(tmp_path, monkeypatch)
     assert result.metrics["combined_test_seeds"]["successful_cases"] == 9
     assert result.metrics["hackathon_10_seed_target_met"] is False
     assert result.metrics["local_prequalification_passed"] is False
+    assert result.metrics["failure_code_histogram"] == {"grasp_not_acquired": 1}
+    assert result.metrics["failed_gate_histogram"] == {"plate_placed": 1}
+    assert result.metrics["total_retries"] == 1
     assert result.claims == []
 
 
