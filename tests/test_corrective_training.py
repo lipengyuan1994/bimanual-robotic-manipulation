@@ -24,12 +24,15 @@ def test_corrections_require_verified_selected_skill():
         skill_views_path="views.json",
     )
     assert config.corrective_dataset_path.name == "corrections"
-    assert ACTTrainingConfig(
-        dataset_path="nominal",
-        corrective_dataset_path="corrections",
-        skill_id="plate_pick_place",
-        skill_views_path="views.json",
-    ).skill_id == "plate_pick_place"
+    assert (
+        ACTTrainingConfig(
+            dataset_path="nominal",
+            corrective_dataset_path="corrections",
+            skill_id="plate_pick_place",
+            skill_views_path="views.json",
+        ).skill_id
+        == "plate_pick_place"
+    )
 
 
 def test_plan_keeps_full_nominal_and_original_correction_indices(tmp_path):
