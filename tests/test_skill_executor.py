@@ -133,9 +133,7 @@ def test_start_recaptures_after_slow_preflight_validation(tmp_path):
     worker = DinnerControlWorker(
         tmp_path / "worker",
         [capability],
-        render_capture=lambda env: {
-            name: np.zeros((270, 480, 3), np.uint8) for name in CAMERAS
-        },
+        render_capture=lambda env: {name: np.zeros((270, 480, 3), np.uint8) for name in CAMERAS},
     )
     try:
         worker.supervisor.load_task(

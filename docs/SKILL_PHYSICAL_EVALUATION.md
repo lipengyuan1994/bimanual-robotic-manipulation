@@ -126,6 +126,16 @@ not a basis for an autonomous-workflow or release claim. The next work is trace
 diagnosis and, only if justified, a distinct frozen corrective-data and retraining
 experiment.
 
+The sealed read-only diagnosis
+[`2026-09-12-six-skill-failure-diagnosis.md`](experiments/2026-09-12-six-skill-failure-diagnosis.md)
+adds the per-component contact and displacement evidence. It also preserves the
+bar's 52 confirmed action-log entries and its partial rejected 53rd action, which
+the original failure summary could not count after the contact-guard exception.
+
+```sh
+.venv/bin/bimanual skill-physical-failure-analyze 20260912T081226-097d224c93cd
+```
+
 ```sh
 PYTORCH_ENABLE_MPS_FALLBACK=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
   .artifacts/training-venv/bin/bimanual skill-physical-eval \

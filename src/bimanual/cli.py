@@ -233,6 +233,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Seal the complete frozen six-skill component result without workflow claims",
     )
     physical_suite_report.add_argument("protocol", type=Path)
+    physical_failure_analysis = commands.add_parser(
+        "skill-physical-failure-analyze",
+        help="Seal a read-only diagnosis of a completed six-skill component suite",
+    )
+    physical_failure_analysis.add_argument("suite_run_id")
     cohort_adjudicate = commands.add_parser(
         "training-cohort-adjudicate-preflight",
         help="Classify one zero-update MPS environment failure before a replacement",
@@ -845,6 +850,18 @@ def main(argv: list[str] | None = None) -> int:
             result = run_skill_physical_suite_report(args.protocol)
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1
+        elif args.command == "skill-physical-failure-analyze":
+            from bimanual.skill_physical_failure_analysis import (
+                SkillPhysicalFailureAnalysisConfig,
+                analyse_skill_physical_failures,
+            )
+
+            result = analyse_skill_physical_failures(
+                SkillPhysicalFailureAnalysisConfig(suite_run_id=args.suite_run_id),
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
         elif args.command == "handoff-failure-analyze":
             from bimanual.handoff_failure_analysis import (
                 HandoffFailureAnalysisConfig,

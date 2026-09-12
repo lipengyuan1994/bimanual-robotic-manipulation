@@ -484,10 +484,15 @@ class TaskSupervisor:
         try:
             if self._last_observation != previous:
                 raise ValueError("Pre-action refresh does not match the active capture")
-            if not isinstance(current, Observation) or not self._task or (
-                current.episode_id,
-                current.instruction_revision,
-            ) != (self._task.episode_id, self._task.instruction_revision):
+            if (
+                not isinstance(current, Observation)
+                or not self._task
+                or (
+                    current.episode_id,
+                    current.instruction_revision,
+                )
+                != (self._task.episode_id, self._task.instruction_revision)
+            ):
                 raise ValueError("Pre-action refresh has stale task identity")
             if not 0 <= now - current.observed_monotonic_ns <= self._max_age:
                 raise ValueError("Pre-action refresh is stale or from the future")
@@ -505,7 +510,9 @@ class TaskSupervisor:
             raise
         self._last_observation = current
         self._active = self._active.model_copy(update={"observation": current})
-        self._event("pre_action_capture_refreshed", f"Fresh capture at sequence {current.sequence}", now)
+        self._event(
+            "pre_action_capture_refreshed", f"Fresh capture at sequence {current.sequence}", now
+        )
         return self._active
 
     def _close(

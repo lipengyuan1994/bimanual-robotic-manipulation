@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 11, 2026. Latest implementation checkpoint: `f8d41b1` on
+Updated September 12, 2026. Latest implementation checkpoint: `ec2d341` on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -166,17 +166,27 @@ workflow or release claim. That run completed as suite
 All six child and suite manifests independently verify. It records0/6 component
 passes, independent task success `null`, autonomous workflow success `null`, and
 release qualification `false`. Bar (`20260912T072134-15f8fbbcae9d`) loaded on
-`mps:0` but stopped before its first autonomous action when the teacher-prepared
-boundary contained a forbidden practice-object/left-arm contact. Cup
-(`20260912T072327-726a5bd5a3f4`) applied1,038actions, plate
-(`20260912T073048-aa7da58dc745`)1,964, drawer
-(`20260912T074301-bcf8d58857ba`)1,120, spoon
-(`20260912T075137-2017ea3aa6ef`)1,408, and fork
-(`20260912T080152-fd9c64650d6d`)1,408. Cup, plate and fork ended
+`mps:0` and stopped during its partial 53rd action with a forbidden
+practice-object/left-arm contact. Cup (`20260912T072327-726a5bd5a3f4`) applied
+1,038 actions, plate (`20260912T073048-aa7da58dc745`) 1,964, drawer
+(`20260912T074301-bcf8d58857ba`) 1,120, spoon
+(`20260912T075137-2017ea3aa6ef`) 1,408, and fork
+(`20260912T080152-fd9c64650d6d`) 1,408. Cup, plate and fork ended
 `grasp_not_acquired`; drawer and spoon ended `physical_milestone_incomplete`.
-The next executable step is a read-only diagnosis of the frozen contact guard and
-the five full-budget physical traces, followed by a separately frozen corrective
-data/retraining protocol if that diagnosis identifies a valid bounded repair.
+The read-only diagnosis completed as `20260912T082839-aeac50b451ba`, seal
+`2eb10f4ccf30455950a8282f5ad2677c2331423a34f7f9eb96e74c5a12b15c97`.
+It verifies that bar had 52 confirmed learned actions, then a 48-sample rejected
+action 53 with a forbidden left-arm bar contact; the evaluator's zero-action metric
+is the result of the exception before its metric update, not the absence of action
+evidence. Cup, plate and fork never contacted their targets. Drawer recorded 33,985
+handle-contact samples but reached only 10.74 mm of opening; spoon recorded 53,616
+contact samples but only 4.63 mm maximum displacement. The sealed diagnosis and
+bounded correction directions are recorded in
+[`experiments/2026-09-12-six-skill-failure-diagnosis.md`](experiments/2026-09-12-six-skill-failure-diagnosis.md).
+The next executable step is to freeze separate corrective collection/training
+protocols for approach/contact acquisition, grasp/lift, and drawer pull before any
+new local data collection or retraining. Intel setup remains deferred until that
+local correction work completes.
 
 The continuity collector now runs below a bounded guardian and native spawned
 worker. It reserves the shared model lease before allocating output, retains

@@ -205,7 +205,9 @@ def test_budget_failure_replans_from_owned_boundary_and_exhausts_two_retries(set
     assert all(row["failure_code"] == "grasp_not_acquired" for row in failures)
     assert all("grasp_not_acquired" in row["reason"] for row in failures)
     assert sorted({capture[0] for capture in s.captures}) == [0, 1, 2, 3]
-    assert len(s.captures) == 12
+    # Each retry now obtains one stationary camera bundle after immutable policy
+    # validation and before policy binding, so the capture contract stays fresh.
+    assert len(s.captures) == 15
     for _ in range(3):
         assert s.runner.tick() == result
 
