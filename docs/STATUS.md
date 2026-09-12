@@ -245,8 +245,10 @@ duplicate or interrupted outcomes stop without a partial report; failed componen
 remain failed. It never promotes teacher-prepared components to
 independent dinner, autonomous-workflow or release success. Six aggregation fixtures
 pass. Run it only after the six one-time component evaluations finish. The portal
-recognizes cohort attempts, component evaluations, the suite report and guarded
-workflow evidence by readable names; native ARM64 type-check and production build pass.
+recognizes cohort attempts, component evaluations, the component suite, guarded
+workflow evidence, frozen local cases and their aggregate report by readable names;
+`result.json` is directly inspectable. Native ARM64 Node24 type-check and production
+build pass.
 
 Before the suite ran, review found the outcome monitor's redundant default budget
 still came from shorter v1 skill intervals. The executor now passes a guard one

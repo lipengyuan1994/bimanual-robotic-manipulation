@@ -46,7 +46,7 @@ function RunLink({ run, select }: { run: Run; select: (id: string) => void }) {
     return <span title={run.error}>Check local files</span>;
   if (run.files?.["replay.gif"])
     return <button onClick={() => select(run.run_id)}>Replay ↑</button>;
-  const filename = ["error.txt", "failure.txt", "proposal.json", "response.txt", "suite-results.json", "metrics.json", "score.json", "doctor.json", "trajectory.csv", "observations.jsonl", "steps.jsonl", "act_config.json"].find(
+  const filename = ["error.txt", "failure.txt", "proposal.json", "response.txt", "result.json", "suite-results.json", "metrics.json", "score.json", "doctor.json", "trajectory.csv", "observations.jsonl", "steps.jsonl", "act_config.json"].find(
     (name) => run.files?.[name],
   );
   return filename ? (
@@ -406,6 +406,10 @@ function App() {
                             ? "Six-skill physical suite"
                           : run.kind === "dinner_workflow_process"
                             ? "Guarded dinner workflow"
+                          : run.kind === "local_workflow_release_case"
+                            ? "Frozen local release case"
+                          : run.kind === "local_workflow_release_suite"
+                            ? "Local release suite"
                           : run.kind === "preparation_runtime"
                             ? "Runtime probe"
                             : run.kind ? run.kind.replaceAll("_", " ") : "Unreadable run"}
