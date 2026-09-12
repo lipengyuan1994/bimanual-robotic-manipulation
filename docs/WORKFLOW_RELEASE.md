@@ -17,8 +17,15 @@ seven skill checkpoints are complete and explicitly assembled into a verified
 
 The protocol is local ARM64 prequalification. Its schema fixes
 `intel_validated=false` and `release_success=null`; creating or verifying it cannot
-claim task quality or Intel compliance. The evaluation runner and aggregate report
-will be added after a real seven-checkpoint candidate exists.
+claim task quality or Intel compliance.
+
+`workflow-release-run PROTOCOL CASE_ID` reserves one declared case before starting
+the isolated workflow process. It will never retry an interrupted reservation or
+select a replacement scene. A clean process child is copied into a separate evidence
+store and scored by the independent dinner evaluator. The sealed case wrapper keeps
+execution completion, process integrity and physical task success as separate fields.
+It can claim only that one local scene passed; an aggregate release report still
+requires every frozen case.
 
 After the serial training cohort and component checks finish, create it with:
 
@@ -32,6 +39,8 @@ After the serial training cohort and component checks finish, create it with:
   --destination .artifacts/releases/local-candidate-v1.json
 .artifacts/workflow-venv/bin/bimanual workflow-release-check \
   .artifacts/releases/local-candidate-v1.json
+.artifacts/workflow-venv/bin/bimanual workflow-release-run \
+  .artifacts/releases/local-candidate-v1.json placement-29001
 ```
 
 The destination is exclusive-create. Any later source, checkpoint, Qwen manifest,

@@ -86,11 +86,17 @@ preserves the failed wrapper/child identities, proves zero updates and no
 checkpoint, records the live MPS probe, and authorizes exactly one replacement.
 It makes no training or physical claim.
 
-Replacement cup attempt `20260911T223642-23fabd26e102`, child
-`20260911T223642-9b4a6482722b`, is active with native Metal access under
-session1714. The same process will continue serially through plate, drawer, spoon
+Replacement cup attempt `20260911T223642-23fabd26e102` completed and sealed all
+20,000 native-MPS updates. Wrapper seal
+`e6bf5ff7cb8acff542e3ee3d8886600788a446c32974b1c5c5d32631f973c185`;
+child `20260911T223642-9b4a6482722b`, seal
+`d4ea0df77fcee0f2754a42ea78462d1b876d632675a0f4f39f5b3450c03b155a`;
+checkpoint `d0e2a96d7b29c841e707b5fa929469edc95ac9828fe62f3176891b8824adf328`.
+This proves training completion only. The same native process allocated active
+`plate_pick_place` wrapper `20260912T001417-968c928850a3`, child
+`20260912T001417-2e614f4afc6e`, and will continue serially through drawer, spoon
 and fork after each completed checkpoint, stopping on any failure. Log
-`.artifacts/cohort-remaining-sequence-replacement.log`. Poll this handle; do not
+`.artifacts/cohort-remaining-sequence-replacement.log`. Poll session 1714; do not
 start another model, inference or render job.
 
 A frozen visual-planner decision-suite boundary is now implemented. A write-once
@@ -143,7 +149,13 @@ completed checkpoints exist, it will freeze their workflow/execution profile,
 Qwen revision and manifest, the verified16-scene suite, every package Python
 source, canonical instruction, MPS devices, 1920-pixel planner camera and time
 limits before release evaluation. Its schema cannot claim release or Intel success.
-Four focused fixtures pass. [Release freeze](WORKFLOW_RELEASE.md).
+The one-case runner now reserves a frozen scene before spawning, blocks automatic
+retry after an interrupted reservation, preserves the process and child evidence,
+and independently scores a verified copy. It reports execution completion, clean
+process transport and physical task success separately; it cannot claim aggregate
+release or Intel success. Four runner fixtures pass, and the combined release,
+scene-suite and workflow-process group passes39tests. The sixteen-case aggregate
+report remains to be implemented. [Release freeze](WORKFLOW_RELEASE.md).
 
 The next seven-checkpoint manifest version now seals the per-skill execution
 profile alongside checkpoint lineage: all seven ordered skill/capability IDs,
@@ -197,8 +209,8 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `b50899967fa45c38419b02aadcdeae4224110a82edde3d433ebe8c0e83f823d7`.
-It binds the training cohort and 104 package/runtime and authored-scene/SO-101 asset
+seal `b2707ca2d4a8eeba44e218e566ffb3d6a53299895cc77b5c7b9fce0cdbdc62c6`.
+It binds the training cohort and 105 package/runtime and authored-scene/SO-101 asset
 files,
 final-update20,000 selection,
 MPS, execution prefix2, exact teacher preparation, fixed nominal-v2 scene,
@@ -237,8 +249,8 @@ still came from shorter v1 skill intervals. The executor now passes a guard one
 action beyond its explicit budget, leaving the executor as the single stopping
 authority and preventing premature v2 plate termination. The unused protocol was
 regenerated before any outcome with all then-current transitive evaluator/control/scoring
-sources pinned. The later guardian hardening and step-report addition produced the current
-104-source-and-asset
+sources pinned. The later guardian hardening, step-report addition and local release
+case runner produced the current 105-source-and-asset
 seal before any component evaluation. The combined executor/outcome/protocol/evaluator group passes61
 tests; the corrected protocol re-verifies.
 
@@ -445,7 +457,8 @@ deselections,2warnings in504.38seconds; log
 `.artifacts/checks-guardian-integration.log`. It predates the additional parent-loss
 test and24visual-protocol tests, which passed separately. Scope is POSIX/Python3.12, one worker with threads;
 independently launched subprocess trees and parent-record reconstruction remain
-unsupported. The portal was not restarted. No model/render job is active.
+unsupported. The portal was not restarted. The serial native-MPS training process
+is active on `plate_pick_place`; no competing model/render job may start.
 
 Training and the default workflow use the same `.model-job.lock`. A competing
 start is rejected before run allocation, the lease becomes available after the

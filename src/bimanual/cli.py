@@ -263,6 +263,11 @@ def main(argv: list[str] | None = None) -> int:
         "workflow-release-check", help="Verify a frozen local workflow release declaration"
     )
     workflow_release_check.add_argument("protocol", type=Path)
+    workflow_release_run = commands.add_parser(
+        "workflow-release-run", help="Execute and score one frozen local release scene once"
+    )
+    workflow_release_run.add_argument("protocol", type=Path)
+    workflow_release_run.add_argument("case_id")
 
     cup = commands.add_parser("cup", help="Physically carry and release a hollow cup upright")
     cup.add_argument("--no-render", action="store_true")
@@ -784,6 +789,17 @@ def main(argv: list[str] | None = None) -> int:
 
             result = load_workflow_release_protocol(args.protocol)
             emit(result.model_dump(mode="json"))
+        elif args.command == "workflow-release-run":
+            from bimanual.workflow_release_runner import run_workflow_release_case
+
+            result = run_workflow_release_case(
+                args.protocol,
+                args.case_id,
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.metrics["independent_task_success"] is True else 1
         elif args.command == "cup":
             from bimanual.cup import CupConfig, run_cup
 
