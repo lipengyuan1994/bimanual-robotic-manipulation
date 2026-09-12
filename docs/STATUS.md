@@ -152,10 +152,14 @@ limits before release evaluation. Its schema cannot claim release or Intel succe
 The one-case runner now reserves a frozen scene before spawning, blocks automatic
 retry after an interrupted reservation, preserves the process and child evidence,
 and independently scores a verified copy. It reports execution completion, clean
-process transport and physical task success separately; it cannot claim aggregate
-release or Intel success. Four runner fixtures pass, and the combined release,
-scene-suite and workflow-process group passes39tests. The sixteen-case aggregate
-report remains to be implemented. [Release freeze](WORKFLOW_RELEASE.md).
+process transport and physical task success separately. The aggregate reporter
+requires exactly one verified result for all sixteen cases in frozen order, rejects
+missing/interrupted/duplicate cases, and retains the full result table, observed
+rate and Wilson95 interval. Local prequalification requires16/16; final release
+success remains null and Intel validation remains false. Four runner and four
+aggregate fixtures pass, including nested process/child/evaluation re-verification;
+the combined release, scene-suite and workflow-process group passes43tests.
+[Release freeze](WORKFLOW_RELEASE.md).
 
 The next seven-checkpoint manifest version now seals the per-skill execution
 profile alongside checkpoint lineage: all seven ordered skill/capability IDs,
@@ -209,8 +213,8 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `b2707ca2d4a8eeba44e218e566ffb3d6a53299895cc77b5c7b9fce0cdbdc62c6`.
-It binds the training cohort and 105 package/runtime and authored-scene/SO-101 asset
+seal `3d5ec35eae87ac60e51b076eb383898f45450bf9d0f72c60c9e0760501760263`.
+It binds the training cohort and 106 package/runtime and authored-scene/SO-101 asset
 files,
 final-update20,000 selection,
 MPS, execution prefix2, exact teacher preparation, fixed nominal-v2 scene,
@@ -250,7 +254,7 @@ action beyond its explicit budget, leaving the executor as the single stopping
 authority and preventing premature v2 plate termination. The unused protocol was
 regenerated before any outcome with all then-current transitive evaluator/control/scoring
 sources pinned. The later guardian hardening, step-report addition and local release
-case runner produced the current 105-source-and-asset
+case runner and aggregate report produced the current 106-source-and-asset
 seal before any component evaluation. The combined executor/outcome/protocol/evaluator group passes61
 tests; the corrected protocol re-verifies.
 

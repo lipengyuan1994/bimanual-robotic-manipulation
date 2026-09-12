@@ -24,8 +24,14 @@ the isolated workflow process. It will never retry an interrupted reservation or
 select a replacement scene. A clean process child is copied into a separate evidence
 store and scored by the independent dinner evaluator. The sealed case wrapper keeps
 execution completion, process integrity and physical task success as separate fields.
-It can claim only that one local scene passed; an aggregate release report still
-requires every frozen case.
+It can claim only that one local scene passed.
+
+After all sixteen reserved cases have sealed, `workflow-release-suite PROTOCOL`
+re-verifies every wrapper and its nested process, execution copy and independent
+evaluation. Missing, interrupted and duplicate cases stop aggregation. The report
+retains the complete ordered result table, observed success rate and Wilson 95%
+interval. `local_prequalification_passed` is true only at 16/16; `release_success`
+stays null and `intel_validated` stays false.
 
 After the serial training cohort and component checks finish, create it with:
 
@@ -41,6 +47,8 @@ After the serial training cohort and component checks finish, create it with:
   .artifacts/releases/local-candidate-v1.json
 .artifacts/workflow-venv/bin/bimanual workflow-release-run \
   .artifacts/releases/local-candidate-v1.json placement-29001
+.artifacts/workflow-venv/bin/bimanual workflow-release-suite \
+  .artifacts/releases/local-candidate-v1.json
 ```
 
 The destination is exclusive-create. Any later source, checkpoint, Qwen manifest,

@@ -7,6 +7,7 @@ import pytest
 from bimanual.evidence import EvidenceStore
 from bimanual.scene_variant_suite import SceneVariantSuiteEntry
 from bimanual.workflow_release_runner import run_workflow_release_case
+from bimanual.workflow_release_suite import _validate_wrapper
 
 
 def _fixture(tmp_path, monkeypatch, *, score_success=True, process_error=False):
@@ -108,16 +109,16 @@ def _fixture(tmp_path, monkeypatch, *, score_success=True, process_error=False):
 
     monkeypatch.setattr(module, "run_workflow_process", process)
     monkeypatch.setattr(module, "evaluate_dinner_run", evaluate)
-    return protocol_path, EvidenceStore(tmp_path / "evidence"), calls
+    return protocol_path, protocol, EvidenceStore(tmp_path / "evidence"), calls
 
 
 def test_runs_and_scores_one_frozen_case_exactly_once(tmp_path, monkeypatch):
-    protocol, store, calls = _fixture(tmp_path, monkeypatch)
+    protocol_path, protocol, store, calls = _fixture(tmp_path, monkeypatch)
     first = run_workflow_release_case(
-        protocol, "placement-29001", store=store, project_root=tmp_path
+        protocol_path, "placement-29001", store=store, project_root=tmp_path
     )
     second = run_workflow_release_case(
-        protocol, "placement-29001", store=store, project_root=tmp_path
+        protocol_path, "placement-29001", store=store, project_root=tmp_path
     )
     assert first == second
     assert len(calls) == 1
@@ -127,10 +128,12 @@ def test_runs_and_scores_one_frozen_case_exactly_once(tmp_path, monkeypatch):
     assert first.metrics["independent_task_success"] is True
     assert first.metrics["intel_validated"] is False
     assert first.metrics["release_success"] is None
+    row = _validate_wrapper(store, first, protocol, protocol.cases[0])
+    assert row["independent_task_success"] is True
 
 
 def test_failed_independent_score_is_preserved(tmp_path, monkeypatch):
-    protocol, store, calls = _fixture(tmp_path, monkeypatch, score_success=False)
+    protocol, _, store, calls = _fixture(tmp_path, monkeypatch, score_success=False)
     result = run_workflow_release_case(
         protocol, "placement-29001", store=store, project_root=tmp_path
     )
@@ -142,7 +145,7 @@ def test_failed_independent_score_is_preserved(tmp_path, monkeypatch):
 
 
 def test_interrupted_reservation_blocks_automatic_retry(tmp_path, monkeypatch):
-    protocol, store, calls = _fixture(tmp_path, monkeypatch, process_error=True)
+    protocol, _, store, calls = _fixture(tmp_path, monkeypatch, process_error=True)
     with pytest.raises(RuntimeError, match="simulated interruption"):
         run_workflow_release_case(protocol, "placement-29001", store=store, project_root=tmp_path)
     with pytest.raises(RuntimeError, match="manual adjudication"):
@@ -151,7 +154,7 @@ def test_interrupted_reservation_blocks_automatic_retry(tmp_path, monkeypatch):
 
 
 def test_unknown_case_fails_before_reservation(tmp_path, monkeypatch):
-    protocol, store, calls = _fixture(tmp_path, monkeypatch)
+    protocol, _, store, calls = _fixture(tmp_path, monkeypatch)
     with pytest.raises(ValueError, match="not a member"):
         run_workflow_release_case(protocol, "mass-29001", store=store, project_root=tmp_path)
     assert calls == []

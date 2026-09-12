@@ -268,6 +268,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     workflow_release_run.add_argument("protocol", type=Path)
     workflow_release_run.add_argument("case_id")
+    workflow_release_suite = commands.add_parser(
+        "workflow-release-suite", help="Aggregate all sixteen frozen local release outcomes"
+    )
+    workflow_release_suite.add_argument("protocol", type=Path)
 
     cup = commands.add_parser("cup", help="Physically carry and release a hollow cup upright")
     cup.add_argument("--no-render", action="store_true")
@@ -800,6 +804,16 @@ def main(argv: list[str] | None = None) -> int:
             )
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.metrics["independent_task_success"] is True else 1
+        elif args.command == "workflow-release-suite":
+            from bimanual.workflow_release_suite import create_workflow_release_suite
+
+            result = create_workflow_release_suite(
+                args.protocol,
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.metrics["local_prequalification_passed"] is True else 1
         elif args.command == "cup":
             from bimanual.cup import CupConfig, run_cup
 
