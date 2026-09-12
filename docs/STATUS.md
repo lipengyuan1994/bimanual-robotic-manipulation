@@ -695,4 +695,8 @@ wrappers, children, and the one-time v1 replacement authorization are retained i
 work; the full image/decoded-row verifier remains a separate explicit gate. Frozen
 [`experiments/six-skill-corrective-training-protocol-v2.json`](experiments/six-skill-corrective-training-protocol-v2.json),
 seal `08f59ef6a7a5f4524d0b0958ee19318270c304e238ef65a4a5ad1ce2c83257e1`, is the
-next local training boundary. No corrective model has completed or been promoted.
+active local training boundary. The supported `training-cohort-create` command now
+accepts the explicit v2 corrective profile and rechecks its archive binding on load;
+future corrective cohorts no longer require manual protocol construction. Focused
+native-ARM64 protocol and CLI checks pass 19 tests. No corrective model has
+completed or been promoted.

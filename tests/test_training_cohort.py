@@ -109,6 +109,45 @@ def test_exact_write_once_relative_protocol(inputs):
         create(inputs)
 
 
+def test_corrective_v2_profile_is_created_only_with_a_corrective_archive(inputs, monkeypatch):
+    dataset, views, store, ids, path = inputs
+    corrective = path.parent / "corrective"
+    corrective.mkdir()
+    (corrective / "export_manifest.json").write_text("{}")
+    monkeypatch.setattr(
+        "bimanual.corrective_profiles.verify_supported_corrective_dataset",
+        lambda root: {"manifest_sha256": "c" * 64},
+    )
+    monkeypatch.setattr(
+        "bimanual.corrective_profiles.verify_supported_corrective_dataset_binding",
+        lambda root: {"manifest_sha256": "c" * 64},
+    )
+    result = module.create_training_cohort_protocol(
+        dataset,
+        views,
+        ids,
+        store=store,
+        destination=path,
+        corrective_dataset_root=corrective,
+        corrective_profile="six_skill_corrective_act_training_protocol_v2",
+    )
+    assert result.profile == "six_skill_corrective_act_training_protocol_v2"
+    assert result.corrective_dataset_root == "corrective"
+
+
+def test_corrective_profile_requires_archive(inputs):
+    dataset, views, store, ids, path = inputs
+    with pytest.raises(ValueError, match="corrective archive"):
+        module.create_training_cohort_protocol(
+            dataset,
+            views,
+            ids,
+            store=store,
+            destination=path,
+            corrective_profile="six_skill_corrective_act_training_protocol_v2",
+        )
+
+
 @pytest.mark.parametrize(
     "change",
     [

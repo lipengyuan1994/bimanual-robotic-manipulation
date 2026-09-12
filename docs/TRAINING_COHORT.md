@@ -12,6 +12,25 @@ were frozen before it: the630-frame recorded-input run and physical prefix2/pref
 Both physical runs failed and remain recorded as failures. They authorize no
 quality claim; the remaining skill datasets are independent bounded intervals.
 
+For a new corrective cohort, use `training-cohort-create` with the corrective
+archive and an explicit versioned contract. The v2 contract is the current choice
+for a replacement boundary; it records the same immutable sources and configurations
+under a distinct profile, so earlier failed v1 attempts remain unmodified:
+
+```sh
+.venv/bin/bimanual training-cohort-create \
+  --dataset DATASET --skill-views SKILL_VIEWS \
+  --corrective-dataset CORRECTIVE_ARCHIVE \
+  --corrective-profile six_skill_corrective_act_training_protocol_v2 \
+  --destination docs/experiments/NEW-CORRECTIVE-COHORT.json \
+  --experiment-protocol-run RUN --training-run RUN --recorded-run RUN \
+  --physical-prefix2-run RUN --physical-prefix5-run RUN
+```
+
+The command performs the full source verification when freezing the protocol.
+At runtime, the runner rechecks the sealed archive binding before it allocates a
+model job. Neither command treats a checkpoint or a loss value as physical success.
+
 Reverify the protocol before starting or resuming any skill:
 
 ```sh

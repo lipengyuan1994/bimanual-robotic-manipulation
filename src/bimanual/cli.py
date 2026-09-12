@@ -177,6 +177,15 @@ def main(argv: list[str] | None = None) -> int:
             "sources"
         ),
     )
+    cohort_create.add_argument(
+        "--corrective-profile",
+        choices=[
+            "six_skill_corrective_act_training_protocol_v1",
+            "six_skill_corrective_act_training_protocol_v2",
+        ],
+        default="six_skill_corrective_act_training_protocol_v1",
+        help="Versioned corrective-cohort contract; requires --corrective-dataset",
+    )
     cohort_create.add_argument("--destination", type=Path, required=True)
     for role in (
         "experiment-protocol",
@@ -818,6 +827,7 @@ def main(argv: list[str] | None = None) -> int:
                 store=store,
                 destination=args.destination,
                 corrective_dataset_root=args.corrective_dataset,
+                corrective_profile=args.corrective_profile,
             )
             emit(result.model_dump(mode="json"))
         elif args.command == "training-cohort-check":

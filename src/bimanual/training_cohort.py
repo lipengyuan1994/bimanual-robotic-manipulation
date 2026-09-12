@@ -243,6 +243,10 @@ def create_training_cohort_protocol(
     store,
     destination,
     corrective_dataset_root=None,
+    corrective_profile: Literal[
+        "six_skill_corrective_act_training_protocol_v1",
+        "six_skill_corrective_act_training_protocol_v2",
+    ] = "six_skill_corrective_act_training_protocol_v1",
 ):
     """Freeze inputs; callers must separately arrange exclusion and execution."""
     destination = Path(destination).absolute()
@@ -271,7 +275,9 @@ def create_training_cohort_protocol(
         corrective_path = os.path.relpath(corrective_root, destination.parent)
         corrective_file_sha = digest_file(corrective_root / "export_manifest.json")
         corrective_manifest_sha = corrective_manifest["manifest_sha256"]
-        profile = "six_skill_corrective_act_training_protocol_v1"
+        profile = corrective_profile
+    elif corrective_profile != "six_skill_corrective_act_training_protocol_v1":
+        raise ValueError("A corrective profile requires a corrective archive")
     body = dict(
         schema_version=1,
         profile=profile,
@@ -324,7 +330,10 @@ def load_training_cohort_protocol(path):
         or views.export_manifest_sha256 != result.dataset_manifest_sha256
     ):
         raise ValueError("Cohort nominal v2 source identity mismatch")
-    if result.profile == "six_skill_corrective_act_training_protocol_v1":
+    if result.profile in {
+        "six_skill_corrective_act_training_protocol_v1",
+        "six_skill_corrective_act_training_protocol_v2",
+    }:
         from bimanual.corrective_profiles import verify_supported_corrective_dataset_binding
 
         corrective_root = (path.parent / result.corrective_dataset_root).resolve()
