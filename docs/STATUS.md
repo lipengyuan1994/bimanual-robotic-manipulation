@@ -208,28 +208,32 @@ run `six-skill-corrective-cc34b2b728ae06ccef92f059`, manifest
 the 630-action prefix but exhausted an incorrect servo-convergence recovery budget
 before replay. Both manifests independently verify. The collector now uses one
 bounded probe and exact measured-state recovery command before replay; focused
-collector/protocol/outcome tests pass 35 cases. Corrected case
-`bar_contact_avoidance-51002` then completed as run
+collector/protocol/outcome tests pass 35 cases. Corrected case `bar_contact_avoidance-51002` completed as run
 `six-skill-corrective-9d2fae6f6ad5f8027a2a4991`, manifest
-`8f48660c9de78be9c4f7db49ff914c55934a4d518ccaee51c77b31abb009b07c`: its
-teacher prefix (630 actions), bounded probe/recovery (2 actions), and 531-action
-replay were recorded with 1,164 synchronized observations. The independent monitor
-reproduced its physical bar-placement result. The read-only validator rechecks that
-trace, every action/camera alignment, and source lineage; it froze view
-[`experiments/six-skill-corrective-views-v1.json`](experiments/six-skill-corrective-views-v1.json),
-seal `b6c7cddc8177744e07bb3e70adf948eb7aa7e58c521b6099110a42aa7b7074a4`, which
-selects only replay actions 632–1162. A separate native, offline LeRobot v0.6.1
-export completed at `.artifacts/datasets/six-skill-corrective-bar-v2`: it retains
-the raw sealed source, contains exactly 531 replay transitions, and independently
-reverified decoded RGB, joint observations, actions, timestamps and indices. Export
-manifest seal `b7e74a2b5c58d24d9f45ebd5ef27214770782dda025bdb2b9971ad89adc383d1`.
-An earlier destination remains preserved as a failed artifact after the restricted
-process could not lock the user-level Hugging Face cache; the successful run uses
-an explicitly project-local offline cache. This export is teacher data only and has
-not trained or promoted any policy. Focused export/validator/collector tests pass
-52 cases. The next executable step is to collect additional distinct frozen cases
-with the verified collector, validate and export them before local retraining. Intel
-setup remains deferred until that local correction work completes.
+`8f48660c9de78be9c4f7db49ff914c55934a4d518ccaee51c77b31abb009b07c`; distinct
+case `bar_contact_avoidance-51003` completed as run
+`six-skill-corrective-f9ba76ad0df9d6d1bc355e5d`, manifest
+`8363c12c3a53310e2c1da816f201e174fa6faf148e8057ec88c83d85d61f2408`. Each has
+a 630-action teacher prefix, two bounded measured-state actions, a 531-action
+replay, 1,164 synchronized observations, and an independently reproduced physical
+bar-placement result. The read-only validator rechecks every action, camera and
+lineage record; frozen
+[`experiments/six-skill-corrective-views-v2.json`](experiments/six-skill-corrective-views-v2.json),
+seal `dcbff865c718170c767b9d48fe183227bb984ba4aa5662dd9719148e3f241d29`, binds
+both source replay intervals (actions 632–1162) for 1,062 transitions. A separate
+native, offline LeRobot v0.6.1 export at
+`.artifacts/datasets/six-skill-corrective-bar-v3` retains both raw sealed sources
+and independently reverified decoded RGB, joint observations, actions, timestamps
+and indices. Export manifest seal
+`d3c6a12cf915264eb249b7a9bb9df2a12e18528575b1da7282900fd29aa225fb`. The
+one-source v2 export remains preserved; the earlier v1 failed artifact remains
+preserved after a restricted process could not lock the user-level Hugging Face
+cache. These exports are teacher data only and have not trained or promoted any
+policy. Focused export/validator/collector tests pass 52 cases; the full repository
+gate passes 1,383 tests with 18 documented skips, 9 render deselections and 503
+documentation links. The next executable step is to collect additional distinct
+frozen cases, validate and export them before local retraining. Intel setup remains
+deferred until that local correction work completes.
 
 The continuity collector now runs below a bounded guardian and native spawned
 worker. It reserves the shared model lease before allocating output, retains
