@@ -68,6 +68,7 @@ class Worker:
         self.episode_id = "episode-1"
         self.supervisor = Supervisor()
         self.closed = False
+        self.applied_control_steps = 0
 
     def capture(self):
         return Observation.model_validate(observation())
@@ -163,6 +164,22 @@ def test_missing_readiness_cannot_pass_or_claim_success(tmp_path, monkeypatch):
     assert result.metrics["physical_success"] is True
     assert result.metrics["component_passed"] is False
     assert result.claims == []
+
+
+def test_partial_applied_action_count_survives_executor_error(tmp_path, monkeypatch):
+    install_fixtures(monkeypatch)
+
+    class FailingExecutor(PassingExecutor):
+        def tick(self):
+            self.worker.applied_control_steps = 3
+            raise ValueError("fixture guard failure")
+
+    monkeypatch.setattr("bimanual.skill_physical_evaluation.DinnerSkillExecutor", FailingExecutor)
+    result = run_skill_physical_evaluation(
+        config(tmp_path), store=EvidenceStore(tmp_path / "evidence"), project_root=Path.cwd()
+    )
+    assert result.outcome == "failed"
+    assert result.metrics["autonomous_skill_actions"] == 3
 
 
 def test_shared_model_lease_blocks_before_evidence_allocation(tmp_path, monkeypatch):

@@ -85,13 +85,18 @@ def run_skill_physical_protocol(protocol_path: Path, skill_id: str, training_att
     cohort_path = (protocol_path.parent / protocol.training_cohort_path).resolve(strict=True)
     cohort = load_training_cohort_protocol(cohort_path)
     raw_training = cohort.configs[COHORT_SKILLS.index(skill_id)]
-    training = ACTTrainingConfig.model_validate(
-        raw_training
-        | {
-            "dataset_path": (cohort_path.parent / raw_training["dataset_path"]).resolve(),
-            "skill_views_path": (cohort_path.parent / raw_training["skill_views_path"]).resolve(),
-        }
-    )
+    resolved_training_paths = {
+        "dataset_path": (cohort_path.parent / raw_training["dataset_path"]).resolve(),
+        "skill_views_path": (cohort_path.parent / raw_training["skill_views_path"]).resolve(),
+    }
+    # The training runner seals both dataset roots as absolute paths.  Preserve
+    # that exact representation when this evaluator compares a corrective
+    # checkpoint to its frozen cohort configuration.
+    if raw_training.get("corrective_dataset_path") is not None:
+        resolved_training_paths["corrective_dataset_path"] = (
+            cohort_path.parent / raw_training["corrective_dataset_path"]
+        ).resolve()
+    training = ACTTrainingConfig.model_validate(raw_training | resolved_training_paths)
     store = EvidenceStore((cohort_path.parent / cohort.evidence_root).resolve())
     store.root.mkdir(parents=True, exist_ok=True)
     wrapper = store.verify(training_attempt_id)

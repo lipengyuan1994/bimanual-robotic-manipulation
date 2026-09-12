@@ -185,8 +185,9 @@ def test_physical_contact_guard_retains_partial_failed_step(worker):
     mujoco.mj_forward(env.model, env.data)
     assert any(float(contact.dist) < -0.0025 for contact in env.data.contact)
     attempt, current, _ = start(worker)
-    with pytest.raises(ValueError, match="contact guard"):
+    with pytest.raises(ValueError, match="contact guard") as error:
         instance.step(attempt.attempt_id, current)
+    assert "overlap_m=" in str(error.value)
     assert 0 < env.data.time < 0.05 and env.sequence == 0 and not env.active
     env.trace.flush()
     row = json.loads((instance.directory / "physics.jsonl").read_text().splitlines()[-1])

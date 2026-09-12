@@ -473,6 +473,12 @@ class DinnerControlWorker:
             raise ValueError("Physical model changed after worker initialization")
         self.supervisor.tick()
 
+    @property
+    def applied_control_steps(self) -> int:
+        """Number of fully applied autonomous controls in this worker."""
+
+        return self._applied
+
     def capture(self) -> Observation:
         self._available()
         env = self._env

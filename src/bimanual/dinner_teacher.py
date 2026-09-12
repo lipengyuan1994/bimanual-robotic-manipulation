@@ -236,7 +236,10 @@ class DinnerEnvironment(DualArm):
         self.trace.write(json.dumps(row, separators=(",", ":"), allow_nan=False) + "\n")
         if row["bad"] or max(row["overlap"], row["overtravel"]) > 0.0025:
             self.stop()
-            raise ValueError(f"Dinner contact guard at {row['t']}: {row['bad']}")
+            raise ValueError(
+                f"Dinner contact guard at {row['t']}: bad_contacts={row['bad']}; "
+                f"overlap_m={row['overlap']:.9f}; overtravel_m={row['overtravel']:.9f}"
+            )
         if self.cancelled():
             self.stop()
             raise InterruptedError("Dinner teacher cancelled")

@@ -698,5 +698,20 @@ seal `08f59ef6a7a5f4524d0b0958ee19318270c304e238ef65a4a5ad1ce2c83257e1`, is the
 active local training boundary. The supported `training-cohort-create` command now
 accepts the explicit v2 corrective profile and rechecks its archive binding on load;
 future corrective cohorts no longer require manual protocol construction. Focused
-native-ARM64 protocol and CLI checks pass 19 tests. No corrective model has
-completed or been promoted.
+native-ARM64 protocol and CLI checks pass 19 tests.
+
+Corrective v2 bar training wrapper `20260912T125007-553bada5f697` then completed
+all 20,000 native-MPS updates and its checkpoint/archive bindings independently
+reverified. The checkpoint is not promoted. Its first evaluator declaration is
+preserved unused after it exposed a relative corrective-dataset comparison defect;
+the successor frozen protocol executed exactly once. Physical process
+`20260912T143358-3ea6bb7d8be8` and child `20260912T143359-6110d95794f2` failed
+cleanly after 213 logged learned controls on `mps:0`: the practice object reached
+0.002515121 m overlap, above the 0.0025 m contact-guard limit. The original child
+metric recorded zero autonomous actions because its exception interrupted result
+publication; its immutable action log is authoritative for the partial count. The
+contact error now reports bad contacts, overlap and overtravel, and the evaluator
+preserves partial applied-action counts on errors; focused native tests pass 70
+cases. This is a physical failure, not a successful component. The next executable
+step is read-only trace diagnosis before any distinct corrective-data decision.
+See [the experiment record](experiments/2026-09-12-corrective-bar-policy-v2.md).

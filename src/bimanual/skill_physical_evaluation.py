@@ -259,6 +259,10 @@ def run_skill_physical_evaluation(
                 error=f"{type(error).__name__}: {error}",
                 component_passed=False,
             )
+            if worker is not None:
+                metrics["autonomous_skill_actions"] = int(
+                    getattr(worker, "applied_control_steps", 0)
+                )
         finally:
             if worker is not None:
                 try:

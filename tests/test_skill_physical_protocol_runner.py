@@ -29,6 +29,7 @@ def setup(
     cohort_path.write_text("training")
     raw = ACTTrainingConfig(
         dataset_path="../dataset",
+        corrective_dataset_path="../corrective-dataset",
         skill_views_path="views.json",
         skill_id=skill,
         device="mps",
@@ -63,6 +64,7 @@ def setup(
         | {
             "dataset_path": (documents / raw["dataset_path"]).resolve(),
             "skill_views_path": (documents / raw["skill_views_path"]).resolve(),
+            "corrective_dataset_path": (documents / raw["corrective_dataset_path"]).resolve(),
         }
     )
     child = child_store.seal(
