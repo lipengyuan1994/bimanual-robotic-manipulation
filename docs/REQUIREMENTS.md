@@ -3,7 +3,7 @@
 Source: the user-supplied [Intel online-track brief](https://drive.google.com/file/d/1xSisqTQUAFQiLOpjLZrCVTCsQi4bMCpO/view),
 five pages, inspected 2026-09-05. See [source register](sources/README.md).
 
-Updated against the implementation on 2026-09-10. “Implemented” below describes
+Updated against the implementation on 2026-09-11. “Implemented” below describes
 code and the linked, bounded evidence; it does not mark a milestone or release
 complete. Read [STATUS](STATUS.md) for the current checkpoint and
 [EVIDENCE](EVIDENCE.md) for scoring, lineage and evaluation rules.
