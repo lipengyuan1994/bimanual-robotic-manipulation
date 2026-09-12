@@ -142,6 +142,29 @@ def test_duplicate_case_stops_aggregation(tmp_path, monkeypatch):
         create_workflow_release_suite(protocol_path, store=store, project_root=tmp_path)
 
 
+def test_existing_report_rechecks_later_duplicate(tmp_path, monkeypatch):
+    protocol_path, protocol, store = _setup(tmp_path, monkeypatch)
+    create_workflow_release_suite(protocol_path, store=store, project_root=tmp_path)
+    case = protocol.cases[0]
+    request = {
+        "protocol_manifest_sha256": protocol.manifest_sha256,
+        "case_id": case.case_id,
+    }
+    directory = store.new_run()
+    (directory / REQUEST).write_text(json.dumps(request))
+    store.seal(
+        directory,
+        kind=CASE_KIND,
+        outcome="completed",
+        config=request,
+        metrics={"case_id": case.case_id},
+        source={},
+        claims=[],
+    )
+    with pytest.raises(RuntimeError, match="duplicated"):
+        create_workflow_release_suite(protocol_path, store=store, project_root=tmp_path)
+
+
 def test_failed_case_is_retained_without_local_pass_claim(tmp_path, monkeypatch):
     protocol_path, _, store = _setup(tmp_path, monkeypatch, failed_case="combined-30010")
     result = create_workflow_release_suite(protocol_path, store=store, project_root=tmp_path)

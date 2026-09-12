@@ -156,9 +156,11 @@ process transport and physical task success separately. The aggregate reporter
 requires exactly one verified result for all sixteen cases in frozen order, rejects
 missing/interrupted/duplicate cases, and retains the full result table, observed
 rate and Wilson95 interval. Local prequalification requires16/16; final release
-success remains null and Intel validation remains false. Four runner and four
-aggregate fixtures pass, including nested process/child/evaluation re-verification;
-the combined release, scene-suite and workflow-process group passes43tests.
+success remains null and Intel validation remains false. Four runner and five
+aggregate fixtures pass, including nested process/child/evaluation re-verification
+and rechecking source wrappers when an existing report is reopened. The aggregate
+cannot hide a later duplicate or source change. The combined release, scene-suite
+and workflow-process group passes44tests.
 [Release freeze](WORKFLOW_RELEASE.md).
 
 The next seven-checkpoint manifest version now seals the per-skill execution
@@ -213,7 +215,7 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `3d5ec35eae87ac60e51b076eb383898f45450bf9d0f72c60c9e0760501760263`.
+seal `6acc567dfb58ec76392a811eef868a8eb8a48d57f6b507695438cf34551d8a00`.
 It binds the training cohort and 106 package/runtime and authored-scene/SO-101 asset
 files,
 final-update20,000 selection,
@@ -396,11 +398,12 @@ Parent-record reconstruction remains unresolved. The original portal service was
 
 ## Verification and delivery
 
-- Current repository-wide non-render regression passes:1,251tests,18optional
-  skips and9render deselections in568.30seconds. It includes the frozen planner
-  suite, six-family scene generation, scene-bound learned workflow and evaluator
-  checks. Documentation476links and README synchronization pass. Log
-  `.artifacts/checks-planner-perturbation-integration.log`.
+- Current repository-wide non-render regression passes:1,267tests,18optional
+  skips and9render deselections in596.37seconds. It includes the frozen planner,
+  scene generation, workflow release runner/aggregate and portal checks.
+  Documentation481links and README synchronization pass. Log
+  `.artifacts/checks-workflow-release.log`. It predates the aggregate reload
+  hardening, whose focused runner/aggregate group passes9tests.
 - Current repository-wide CPU regression `42144` exits0:1,181passed,18optional
   skips,9render deselections and2dependency deprecation warnings in555.75seconds.
   Documentation checks cover465links and README synchronization. Log

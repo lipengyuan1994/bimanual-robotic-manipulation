@@ -132,6 +132,36 @@ def _discover(store: EvidenceStore, protocol) -> dict[str, Manifest]:
     return {case_id: matches[0] for case_id, matches in found.items()}
 
 
+def _rows(store: EvidenceStore, protocol) -> list[dict]:
+    wrappers = _discover(store, protocol)
+    return [
+        _validate_wrapper(store, wrappers[case.case_id], protocol, case) for case in protocol.cases
+    ]
+
+
+def _metrics(rows: list[dict]) -> dict:
+    successes = sum(row["independent_task_success"] for row in rows)
+    return {
+        "case_count": len(rows),
+        "successful_cases": successes,
+        "failed_cases": len(rows) - successes,
+        "success_rate": successes / len(rows),
+        "success_rate_wilson95": _wilson(successes, len(rows)),
+        "local_prequalification_passed": successes == len(rows),
+        "intel_validated": False,
+        "release_success": None,
+        "cases": rows,
+    }
+
+
+def _reverify_protocol(path: Path, file_sha256: str, manifest_sha256: str) -> None:
+    if (
+        digest_file(path) != file_sha256
+        or load_workflow_release_protocol(path).manifest_sha256 != manifest_sha256
+    ):
+        raise ValueError("Frozen workflow release protocol changed during aggregation")
+
+
 def create_workflow_release_suite(
     protocol_path: Path,
     *,
@@ -171,31 +201,26 @@ def create_workflow_release_suite(
         if existing:
             if existing[0].config != config:
                 raise ValueError("Existing release suite contradicts the frozen protocol")
+            rows = _rows(store, protocol)
+            expected_metrics = _metrics(rows)
+            local_passed = expected_metrics["local_prequalification_passed"]
+            expected_claims = (
+                ["All frozen local scenes passed independent dinner scoring; Intel not evaluated"]
+                if local_passed
+                else []
+            )
+            if (
+                existing[0].metrics != expected_metrics
+                or existing[0].outcome != ("completed" if local_passed else "failed")
+                or existing[0].claims != expected_claims
+            ):
+                raise ValueError("Existing release suite no longer matches its source cases")
+            _reverify_protocol(protocol_path, protocol_file_sha256, protocol.manifest_sha256)
             return existing[0]
-        wrappers = _discover(store, protocol)
-        rows = [
-            _validate_wrapper(store, wrappers[case.case_id], protocol, case)
-            for case in protocol.cases
-        ]
-        if (
-            digest_file(protocol_path) != protocol_file_sha256
-            or load_workflow_release_protocol(protocol_path).manifest_sha256
-            != protocol.manifest_sha256
-        ):
-            raise ValueError("Frozen workflow release protocol changed during aggregation")
-        successes = sum(row["independent_task_success"] for row in rows)
-        local_passed = successes == len(rows)
-        metrics = {
-            "case_count": len(rows),
-            "successful_cases": successes,
-            "failed_cases": len(rows) - successes,
-            "success_rate": successes / len(rows),
-            "success_rate_wilson95": _wilson(successes, len(rows)),
-            "local_prequalification_passed": local_passed,
-            "intel_validated": False,
-            "release_success": None,
-            "cases": rows,
-        }
+        rows = _rows(store, protocol)
+        _reverify_protocol(protocol_path, protocol_file_sha256, protocol.manifest_sha256)
+        metrics = _metrics(rows)
+        local_passed = metrics["local_prequalification_passed"]
         directory = store.new_run()
         (directory / "protocol.json").write_bytes(protocol_path.read_bytes())
         (directory / "result.json").write_bytes(canonical(metrics) + b"\n")
