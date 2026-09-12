@@ -271,6 +271,10 @@ def main(argv: list[str] | None = None) -> int:
         help="Reverify a frozen six-skill corrective collection protocol",
     )
     corrective_protocol_check.add_argument("protocol", type=Path)
+    bar_overlap_protocol_check = commands.add_parser(
+        "bar-overlap-protocol-check", help="Reverify the frozen bar-overlap corrective protocol"
+    )
+    bar_overlap_protocol_check.add_argument("protocol", type=Path)
     corrective_run = commands.add_parser(
         "skill-corrective-run",
         help="Collect one frozen six-skill corrective teacher source once",
@@ -953,6 +957,12 @@ def main(argv: list[str] | None = None) -> int:
             from bimanual.skill_corrective_protocol import load_skill_corrective_collection_protocol
 
             emit(load_skill_corrective_collection_protocol(args.protocol).model_dump(mode="json"))
+        elif args.command == "bar-overlap-protocol-check":
+            from bimanual.bar_overlap_correction_protocol import (
+                load_bar_overlap_correction_protocol,
+            )
+
+            emit(load_bar_overlap_correction_protocol(args.protocol).model_dump(mode="json"))
         elif args.command == "skill-corrective-run":
             from bimanual.skill_corrective_teacher import run_skill_corrective_case
 
