@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from bimanual.cli import main
 from bimanual.evidence import EvidenceStore
 from bimanual.scene_variant_suite import SceneVariantSuiteEntry
 from bimanual.workflow_release_runner import KIND as CASE_KIND
@@ -179,3 +180,25 @@ def test_failed_case_is_retained_without_local_pass_claim(tmp_path, monkeypatch)
     assert result.metrics["hackathon_10_seed_target_met"] is False
     assert result.metrics["local_prequalification_passed"] is False
     assert result.claims == []
+
+
+@pytest.mark.parametrize("success,expected", [(True, 0), (False, 1)])
+def test_release_suite_cli_uses_local_prequalification(
+    tmp_path, monkeypatch, capsys, success, expected
+):
+    import bimanual.workflow_release_suite as module
+
+    seen = []
+    result = SimpleNamespace(
+        metrics={"local_prequalification_passed": success},
+        model_dump=lambda **kwargs: {"local_prequalification_passed": success},
+    )
+    monkeypatch.setattr(
+        module,
+        "create_workflow_release_suite",
+        lambda path, **kwargs: seen.append(path) or result,
+    )
+    protocol = tmp_path / "release.json"
+    assert main(["workflow-release-suite", str(protocol)]) == expected
+    assert seen == [protocol]
+    assert f'"local_prequalification_passed": {str(success).lower()}' in capsys.readouterr().out

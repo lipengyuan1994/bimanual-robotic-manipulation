@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from bimanual.cli import main
 from bimanual.evidence import EvidenceStore
 from bimanual.scene_variant_suite import SceneVariantSuiteEntry
 from bimanual.workflow_release_runner import run_workflow_release_case
@@ -159,3 +160,23 @@ def test_unknown_case_fails_before_reservation(tmp_path, monkeypatch):
         run_workflow_release_case(protocol, "mass-29001", store=store, project_root=tmp_path)
     assert calls == []
     assert not (store.root / "runs").exists()
+
+
+@pytest.mark.parametrize("success,expected", [(True, 0), (False, 1)])
+def test_release_case_cli_uses_independent_score(tmp_path, monkeypatch, capsys, success, expected):
+    import bimanual.workflow_release_runner as module
+
+    seen = []
+    result = SimpleNamespace(
+        metrics={"independent_task_success": success},
+        model_dump=lambda **kwargs: {"independent_task_success": success},
+    )
+    monkeypatch.setattr(
+        module,
+        "run_workflow_release_case",
+        lambda path, case_id, **kwargs: seen.append((path, case_id)) or result,
+    )
+    protocol = tmp_path / "release.json"
+    assert main(["workflow-release-run", str(protocol), "combined-30001"]) == expected
+    assert seen == [(protocol, "combined-30001")]
+    assert f'"independent_task_success": {str(success).lower()}' in capsys.readouterr().out

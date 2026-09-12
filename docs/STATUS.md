@@ -158,11 +158,11 @@ missing/interrupted/duplicate cases, and retains the full result table, observed
 rate and Wilson95 interval. It also reports the six diagnostic scenes and ten
 combined frozen test seeds separately, including the observed 10-seed target.
 Local prequalification requires16/16; final release success remains null and Intel
-validation remains false. Four runner and five
-aggregate fixtures pass, including nested process/child/evaluation re-verification
+validation remains false. Six runner and seven
+aggregate/CLI fixtures pass, including nested process/child/evaluation re-verification
 and rechecking source wrappers when an existing report is reopened. The aggregate
 cannot hide a later duplicate or source change. The combined release, scene-suite
-and workflow-process group passes44tests.
+and workflow-process group passes48tests.
 [Release freeze](WORKFLOW_RELEASE.md).
 
 The next seven-checkpoint manifest version now seals the per-skill execution
