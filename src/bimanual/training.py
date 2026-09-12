@@ -518,13 +518,18 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
             if store.root.resolve().is_relative_to(corrective_root):
                 raise ValueError("Training evidence must be outside the corrective dataset")
             corrective_manifest = verify_supported_corrective_dataset_binding(corrective_root)
+            corrective_views_name = (
+                "skill_corrective_views.json"
+                if corrective_manifest.get("profile") == "six_skill_corrective_lerobot_v1"
+                else "corrective_views.json"
+            )
             (directory / "corrective_views.json").write_bytes(
-                (corrective_root / "corrective_views.json").read_bytes()
+                (corrective_root / corrective_views_name).read_bytes()
             )
             metrics["corrective_dataset_root"] = str(corrective_root)
             metrics["corrective_config_base"] = str(project_root.resolve())
             metrics["corrective_views_sha256"] = digest_file(
-                corrective_root / "corrective_views.json"
+                corrective_root / corrective_views_name
             )
             if (
                 digest_file(directory / "corrective_views.json")
@@ -879,7 +884,14 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
                     digest_file(corrective_root / "export_manifest.json")
                     != sampling_plan["corrective_dataset"]["export_manifest_sha256"]
                 )
-                or digest_file(corrective_root / "corrective_views.json")
+                or digest_file(
+                    corrective_root
+                    / (
+                        "skill_corrective_views.json"
+                        if corrective_manifest.get("profile") == "six_skill_corrective_lerobot_v1"
+                        else "corrective_views.json"
+                    )
+                )
                 != metrics["corrective_views_sha256"]
             ):
                 raise ValueError("Corrective dataset changed during training")

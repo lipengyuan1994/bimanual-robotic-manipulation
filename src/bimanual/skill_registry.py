@@ -266,7 +266,12 @@ def load_skill_checkpoint(
             config, metrics, recorded, corrective_dataset_root
         )
         corrective_manifest = verify_supported_corrective_dataset_binding(corrective_root)
-        views_sha = digest_file(corrective_root / "corrective_views.json")
+        views_name = (
+            "skill_corrective_views.json"
+            if corrective_manifest.get("profile") == "six_skill_corrective_lerobot_v1"
+            else "corrective_views.json"
+        )
+        views_sha = digest_file(corrective_root / views_name)
         if (
             digest_file(root / "corrective_views.json") != views_sha
             or metrics.get("corrective_views_sha256") != views_sha
