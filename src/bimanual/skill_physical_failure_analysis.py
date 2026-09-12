@@ -32,6 +32,14 @@ class SkillPhysicalFailureAnalysisConfig(BaseModel):
     suite_run_id: str
 
 
+class SingleSkillPhysicalFailureAnalysisConfig(BaseModel):
+    """Read-only diagnosis input for one sealed failed component."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    evaluation_run_id: str
+
+
 def _sealed_worker_paths(store: EvidenceStore, child: Manifest) -> tuple[Path, Path]:
     root = store.directory(child.run_id) / "worker"
     actions, physics = root / "actions.jsonl", root / "physics.jsonl"
@@ -95,8 +103,20 @@ def _target_displacement(rows: list[dict], target: str) -> float:
     )
 
 
-def _recommendation(skill_id: str, target_contact_samples: int, progress: float) -> str:
+def _recommendation(
+    skill_id: str,
+    target_contact_samples: int,
+    progress: float,
+    *,
+    forbidden_contact_events: int,
+    maximum_overlap_m: float,
+) -> str:
     if skill_id == "bar_place_and_return":
+        if maximum_overlap_m > 0.0025 and forbidden_contact_events == 0:
+            return (
+                "Inspect the learned bar trajectory that exceeded the overlap guard; "
+                "do not weaken the contact guard or count the partial trajectory as success."
+            )
         return (
             "Inspect the policy trajectory that introduces the forbidden left-arm bar contact; "
             "do not weaken the contact guard."
@@ -151,6 +171,8 @@ def _analyse_child(store: EvidenceStore, child: Manifest, expected_skill: str) -
         "forbidden_contact_events": bad,
         "failure_reason": child.metrics.get("reason") or child.metrics.get("error"),
         "physical_success": False,
+        "maximum_overlap_m": float(max(row.get("overlap", 0.0) for row in rows)),
+        "maximum_overtravel_m": float(max(row.get("overtravel", 0.0) for row in rows)),
     }
     if target is None:
         drawer_forces = [min(row["drawer_forces"]) for row in rows]
@@ -175,9 +197,49 @@ def _analyse_child(store: EvidenceStore, child: Manifest, expected_skill: str) -
         )
         progress = displacement
     report["recommended_next_step"] = _recommendation(
-        expected_skill, report["target_contact_samples"], progress
+        expected_skill,
+        report["target_contact_samples"],
+        progress,
+        forbidden_contact_events=len(bad),
+        maximum_overlap_m=report["maximum_overlap_m"],
     )
     return report
+
+
+def analyse_single_skill_physical_failure(
+    config: SingleSkillPhysicalFailureAnalysisConfig,
+    *,
+    store: EvidenceStore,
+    project_root: Path,
+) -> Manifest:
+    """Seal a read-only diagnosis for one actual-MPS component failure."""
+
+    config = SingleSkillPhysicalFailureAnalysisConfig.model_validate(config.model_dump())
+    child = store.verify(config.evaluation_run_id)
+    skill_id = child.config.get("skill_id")
+    if skill_id not in TARGETS:
+        raise ValueError("Physical evaluation has an unknown skill identifier")
+    component = _analyse_child(store, child, skill_id)
+    if store.verify(config.evaluation_run_id).manifest_sha256 != child.manifest_sha256:
+        raise ValueError("Physical evaluation changed during analysis")
+    finding = {
+        "profile": "single_skill_physical_failure_analysis_v1",
+        "component": component,
+        "independent_task_success": None,
+        "autonomous_workflow_success": None,
+        "release_qualified": False,
+    }
+    directory = store.new_run()
+    (directory / "analysis.json").write_bytes(canonical(finding))
+    return store.seal(
+        directory,
+        kind="single_skill_physical_failure_analysis",
+        outcome="completed",
+        config=config.model_dump(mode="json"),
+        metrics=finding,
+        source=provenance(project_root),
+        claims=["Read-only failure diagnosis; no model, dataset, or physical result was changed"],
+    )
 
 
 def analyse_skill_physical_failures(

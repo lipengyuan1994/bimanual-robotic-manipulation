@@ -55,10 +55,22 @@ immutable action log is the authoritative evidence for the 213 completed control
 The runtime now preserves that partial count and includes overlap and overtravel in
 future contact-guard errors. Those diagnostics do not change this frozen result.
 
+## Read-only trace diagnosis
+
+Successor diagnosis `20260912T145146-e257ac568053`, seal
+`c659981a4a6bc91dab9e099d7f13be581b95ae2efc98f662b4d88374a5bc1537`, reverified
+the sealed child and streamed its worker traces without loading a model or changing
+the result. It found 213 confirmed action-log controls plus one rejected partial
+control, 10,670 post-prefix physics rows, 10,649 target-contact samples, maximum
+target displacement of 0.134962956 m, no forbidden-contact events, and maximum
+overlap of 0.002515121 m. The correction direction is to inspect the learned
+trajectory that exceeds the overlap guard; the contact guard remains mandatory.
+
 ## Outcome and next step
 
 This candidate is **not promoted**. Its physical success, component pass,
 independent task success, autonomous workflow success, and release qualification are
-all false or unproven. The next step is a read-only trace diagnosis followed, only if
-the evidence supports it, by a separately frozen corrective-data protocol. There is
-no automatic evaluation retry or retraining authorization in this record.
+all false or unproven. The next step is to define a separately frozen corrective-data
+protocol only if a trajectory review supplies a bounded, measurable correction
+objective. There is no automatic evaluation retry or retraining authorization in
+this record.

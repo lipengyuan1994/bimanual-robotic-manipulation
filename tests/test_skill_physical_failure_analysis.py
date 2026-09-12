@@ -2,13 +2,15 @@ import json
 
 from bimanual.evidence import EvidenceStore
 from bimanual.skill_physical_failure_analysis import (
+    SingleSkillPhysicalFailureAnalysisConfig,
     SkillPhysicalFailureAnalysisConfig,
     _rows_for_actions,
+    analyse_single_skill_physical_failure,
     analyse_skill_physical_failures,
 )
 
 
-def _worker(directory, *, skill, actions=1, contact=False, opening=0.0, bad=False):
+def _worker(directory, *, skill, actions=1, contact=False, opening=0.0, bad=False, overlap=0.0):
     worker = directory / "worker"
     worker.mkdir()
     target = {
@@ -35,6 +37,7 @@ def _worker(directory, *, skill, actions=1, contact=False, opening=0.0, bad=Fals
                         "objects": objects,
                         "drawer_forces": [0.02 if contact else 0.0, 0.02 if contact else 0.0],
                         "opening": opening,
+                        "overlap": overlap,
                         "bad": [["x", "y"]] if bad and index == 0 else [],
                     }
                 )
@@ -110,3 +113,32 @@ def test_retains_a_rejected_terminal_partial_action(tmp_path):
     assert len(confirmed) == 1
     assert len(rows) == total == 98
     assert rejected == 1
+
+
+def test_seals_single_component_overlap_diagnosis(tmp_path):
+    store = EvidenceStore(tmp_path / "evidence")
+    directory = store.new_run()
+    _worker(directory, skill="bar_place_and_return", actions=1, overlap=0.003)
+    child = store.seal(
+        directory,
+        kind="learned_skill_teacher_prepared_physical_evaluation",
+        outcome="failed",
+        config={"skill_id": "bar_place_and_return"},
+        metrics={
+            "component_passed": False,
+            "actual_policy_devices": ["mps:0"],
+            "autonomous_skill_actions": 1,
+            "teacher_prefix_actions": 0,
+            "reason": "guarded overlap",
+        },
+        source={},
+        claims=[],
+    )
+    result = analyse_single_skill_physical_failure(
+        SingleSkillPhysicalFailureAnalysisConfig(evaluation_run_id=child.run_id),
+        store=store,
+        project_root=tmp_path,
+    )
+    assert result.outcome == "completed"
+    assert result.metrics["component"]["maximum_overlap_m"] == 0.003
+    assert "exceeded the overlap guard" in result.metrics["component"]["recommended_next_step"]

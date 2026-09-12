@@ -712,6 +712,10 @@ metric recorded zero autonomous actions because its exception interrupted result
 publication; its immutable action log is authoritative for the partial count. The
 contact error now reports bad contacts, overlap and overtravel, and the evaluator
 preserves partial applied-action counts on errors; focused native tests pass 70
-cases. This is a physical failure, not a successful component. The next executable
-step is read-only trace diagnosis before any distinct corrective-data decision.
+cases. This is a physical failure, not a successful component. Successor read-only
+analysis `20260912T145146-e257ac568053` independently counted 213 confirmed learned
+controls and one partial rejected control, with 10,649 target-contact samples, no
+forbidden contacts, maximum target displacement 0.134962956 m, and maximum overlap
+0.002515121 m. It supports trajectory-focused correction and does not authorize a
+retry or weakened safety guard.
 See [the experiment record](experiments/2026-09-12-corrective-bar-policy-v2.md).

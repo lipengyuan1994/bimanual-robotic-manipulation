@@ -255,6 +255,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Seal a read-only diagnosis of a completed six-skill component suite",
     )
     physical_failure_analysis.add_argument("suite_run_id")
+    single_physical_failure_analysis = commands.add_parser(
+        "skill-physical-single-failure-analyze",
+        help="Seal a read-only diagnosis of one failed learned-skill component",
+    )
+    single_physical_failure_analysis.add_argument("evaluation_run_id")
     corrective_protocol_create = commands.add_parser(
         "skill-corrective-protocol-create",
         help="Freeze bounded corrective teacher-data collection from a failed component suite",
@@ -917,6 +922,18 @@ def main(argv: list[str] | None = None) -> int:
 
             result = analyse_skill_physical_failures(
                 SkillPhysicalFailureAnalysisConfig(suite_run_id=args.suite_run_id),
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+        elif args.command == "skill-physical-single-failure-analyze":
+            from bimanual.skill_physical_failure_analysis import (
+                SingleSkillPhysicalFailureAnalysisConfig,
+                analyse_single_skill_physical_failure,
+            )
+
+            result = analyse_single_skill_physical_failure(
+                SingleSkillPhysicalFailureAnalysisConfig(evaluation_run_id=args.evaluation_run_id),
                 store=store,
                 project_root=root,
             )
