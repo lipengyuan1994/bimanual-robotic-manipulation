@@ -726,6 +726,9 @@ engineering step is to implement and freeze a transport-to-placement sampling
 protocol over the sealed source data, then train a fresh unpromoted checkpoint;
 it must not duplicate the existing uniform corrective replay, weaken the guard, or
 reuse the already-consumed physical-evaluation declaration.
+The first bar-overlap collection window stopped before release/settling and remains
+preserved as a failed source. ADR 0005 defines a fresh successor collection window
+that includes the successful teacher release boundary before any further cases run.
 ADR 0004 freezes the intended source interval and equal-mass sampling rule before
 the runtime implementation.
 See [the experiment record](experiments/2026-09-12-corrective-bar-policy-v2.md).
