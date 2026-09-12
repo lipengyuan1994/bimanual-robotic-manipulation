@@ -197,11 +197,21 @@ teacher prefix, bounded measured-state acquisition/recovery, and frozen replay i
 the real `DinnerEnvironment`, preserves every failure, and records all actions as
 training-ineligible. It does not load a learned policy, attach objects, or edit
 object state. The five approach cases deterministically assign their frozen seeds
-to cup, plate, fork, cup, and plate. Focused collector/protocol/outcome tests pass
-34 cases. No physical corrective case has run. The next executable step is one
-frozen teacher case, followed by a separate source validator/export boundary before
-any local retraining. Intel setup remains deferred until that local correction work
-completes.
+to cup, plate, fork, cup, and plate. The complete repository gate passes 1,365
+tests with 18 documented skips, 9 render deselections, and 501 documentation links.
+The first two bar cases are sealed failures and remain consumed: run
+`six-skill-corrective-7f894f4545c3db3c5fc123ed`, manifest
+`0b969340ea6cfe53fbafe49598dc328a5b1cef4e8f8760cc5f61f44ee5f87654`, failed
+before physics because the restricted process could not open macOS CoreGraphics;
+run `six-skill-corrective-cc34b2b728ae06ccef92f059`, manifest
+`88411c36034c39ae688d37a9754451fbece03bf212e468321bde2c579da21e99`, recorded
+the 630-action prefix but exhausted an incorrect servo-convergence recovery budget
+before replay. Both manifests independently verify. The collector now uses one
+bounded probe and exact measured-state recovery command before replay; focused
+collector/protocol/outcome tests pass 35 cases. The next executable step is a
+distinct remaining frozen case with the corrected collector, followed by a separate
+source validator/export boundary before any local retraining. Intel setup remains
+deferred until that local correction work completes.
 
 The continuity collector now runs below a bounded guardian and native spawned
 worker. It reserves the shared model lease before allocating output, retains

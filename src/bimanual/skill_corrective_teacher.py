@@ -22,7 +22,6 @@ from bimanual.contracts import Artifact, EpisodeLineage, JointLimits
 from bimanual.demonstrations import DemonstrationRecorder
 from bimanual.dinner_teacher import DinnerEnvironment, load_plan, phase_permissions
 from bimanual.evidence import EvidenceStore, Manifest, canonical, digest_file, provenance
-from bimanual.feedback_teacher import feedback_target
 from bimanual.skill_corrective_protocol import load_skill_corrective_collection_protocol
 from bimanual.skill_outcomes import SkillOutcomeMonitor
 from bimanual.skill_views import INTERVALS_V2
@@ -31,9 +30,8 @@ from bimanual.worker_lease import WorkerLease
 
 KIND = "six_skill_corrective_teacher_recording"
 REQUEST = "corrective-case-request.json"
-MAX_ACQUISITION_ACTIONS = 120
-MAX_DELTA_RAD = 0.03
-ACQUISITION_TOLERANCE_RAD = 0.01
+MAX_ACQUISITION_ACTIONS = 2
+MAX_ACQUISITION_DELTA_RAD = 0.015
 
 _INTERVALS = {
     skill: (start, end) for skill, start, end in INTERVALS_V2 if skill != "handoff_transfer"
@@ -136,8 +134,26 @@ def _acquisition_goal(measured: np.ndarray, *, seed: int, family_id: str) -> np.
         "drawer_pull": slice(0, 5),
     }
     arm = slices[family_id]
-    goal[arm] += rng.uniform(-0.015, 0.015, arm.stop - arm.start)
+    goal[arm] += rng.uniform(
+        -MAX_ACQUISITION_DELTA_RAD, MAX_ACQUISITION_DELTA_RAD, arm.stop - arm.start
+    )
     return goal
+
+
+def _acquisition_targets(
+    measured: np.ndarray, *, seed: int, family_id: str
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return one bounded measured-state probe and its exact measured-state recovery.
+
+    The teacher replays the frozen interval immediately after recovery.  It must not
+    wait for a position servo to converge to an authored target: that is neither a
+    measured-state acquisition nor a bounded correction, and it consumed a frozen
+    case without producing a replay on the first field run.
+    """
+    baseline = np.asarray(measured, dtype=float).copy()
+    if baseline.shape != (12,) or not np.isfinite(baseline).all():
+        raise ValueError("Invalid measured state for corrective acquisition")
+    return _acquisition_goal(baseline, seed=seed, family_id=family_id), baseline
 
 
 def _score_monitor(monitor: SkillOutcomeMonitor, action: dict, rows: list[dict]) -> dict:
@@ -322,30 +338,11 @@ def run_skill_corrective_case(
             for index, step in enumerate(plan_rows[:start]):
                 apply(step["q"], step["phase"], segment="prefix", source_index=index)
                 metrics["prefix_actions"] += 1
-            acquisition = _acquisition_goal(
+            acquisition, recovery = _acquisition_targets(
                 env.data.qpos[env.qadr].copy(), seed=case["seed"], family_id=case["family_id"]
             )
-            while np.max(np.abs(acquisition - env.data.qpos[env.qadr])) > ACQUISITION_TOLERANCE_RAD:
-                if metrics["acquisition_actions"] >= MAX_ACQUISITION_ACTIONS:
-                    raise TimeoutError("Corrective acquisition exceeded bounded action budget")
-                target = feedback_target(
-                    env.data.qpos[env.qadr].copy(), acquisition, max_delta_rad=MAX_DELTA_RAD
-                )
-                apply(
-                    target,
-                    plan_rows[start]["phase"],
-                    segment="acquisition",
-                    source_index=start,
-                )
-                metrics["acquisition_actions"] += 1
-            # Return from the displaced measured state to the verified source start.
-            goal = np.asarray(plan_rows[start]["q"], dtype=float)
-            while np.max(np.abs(goal - env.data.qpos[env.qadr])) > ACQUISITION_TOLERANCE_RAD:
-                if metrics["acquisition_actions"] >= MAX_ACQUISITION_ACTIONS:
-                    raise TimeoutError("Corrective recovery exceeded bounded action budget")
-                target = feedback_target(
-                    env.data.qpos[env.qadr].copy(), goal, max_delta_rad=MAX_DELTA_RAD
-                )
+            acquisition = np.clip(acquisition, env.lower, env.upper)
+            for target in (acquisition, recovery):
                 apply(
                     target,
                     plan_rows[start]["phase"],

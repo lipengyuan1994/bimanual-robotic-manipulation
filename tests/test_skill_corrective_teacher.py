@@ -1,13 +1,16 @@
 import json
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from bimanual.evidence import EvidenceStore
 from bimanual.skill_corrective_protocol import load_skill_corrective_collection_protocol
 from bimanual.skill_corrective_teacher import (
     KIND,
+    MAX_ACQUISITION_DELTA_RAD,
     REQUEST,
+    _acquisition_targets,
     _case_rows,
     _reservation_name,
     build_skill_corrective_request,
@@ -43,6 +46,14 @@ def test_request_binds_exact_case_and_protocol():
     assert request["training_only"] is True
     with pytest.raises(ValueError, match="not in"):
         build_skill_corrective_request(PROTOCOL, "bar_contact_avoidance-0")
+
+
+def test_acquisition_is_one_bounded_probe_and_exact_measured_state_recovery():
+    measured = np.linspace(-0.4, 0.4, 12)
+    probe, recovery = _acquisition_targets(measured, seed=51000, family_id="bar_contact_avoidance")
+    assert recovery.tolist() == measured.tolist()
+    assert (abs(probe - measured) <= MAX_ACQUISITION_DELTA_RAD).all()
+    assert (probe[:6] == measured[:6]).all()
 
 
 def test_existing_incomplete_reservation_is_never_retried(tmp_path):

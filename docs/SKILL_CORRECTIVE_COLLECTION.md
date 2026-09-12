@@ -9,7 +9,7 @@ or create a training dataset.
 Each source records three synchronized parts through `DemonstrationRecorder`:
 
 1. the contact-checked teacher prefix that reaches the component’s starting state;
-2. a bounded measured-joint acquisition and recovery motion; and
+2. one bounded measured-joint probe and exact measured-state recovery command; and
 3. the frozen source-plan replay interval.
 
 All recorded actions are initially `training_eligible: false`. Acquisition has no
