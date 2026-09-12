@@ -67,3 +67,5 @@ Complete learned workflow: [pinned checkpoint cohort](WORKFLOW_MANIFEST.md) and
 [serialized planning/execution runner](WORKFLOW_RUNNER.md), with a
 [local execution command](WORKFLOW_EXECUTION.md) and
 [sealed per-step evidence](WORKFLOW_STEP_REPORT.md).
+
+Local release freeze: [candidate and sixteen-scene input protocol](WORKFLOW_RELEASE.md).

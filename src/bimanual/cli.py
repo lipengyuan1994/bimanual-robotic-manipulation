@@ -250,6 +250,20 @@ def main(argv: list[str] | None = None) -> int:
         help="Diagnostic mode: cooperative stops only; default uses an isolated process",
     )
 
+    workflow_release_create = commands.add_parser(
+        "workflow-release-create", help="Freeze a local candidate and all release-suite inputs"
+    )
+    workflow_release_create.add_argument("--workflow-manifest", type=Path, required=True)
+    workflow_release_create.add_argument("--planner-model", type=Path, required=True)
+    workflow_release_create.add_argument("--scene-suite-run", type=Path, required=True)
+    workflow_release_create.add_argument("--perturbation-protocol", type=Path, required=True)
+    workflow_release_create.add_argument("--instruction", required=True)
+    workflow_release_create.add_argument("--destination", type=Path, required=True)
+    workflow_release_check = commands.add_parser(
+        "workflow-release-check", help="Verify a frozen local workflow release declaration"
+    )
+    workflow_release_check.add_argument("protocol", type=Path)
+
     cup = commands.add_parser("cup", help="Physically carry and release a hollow cup upright")
     cup.add_argument("--no-render", action="store_true")
     cup.add_argument("--arm", choices=["left", "right"], default="left")
@@ -753,6 +767,23 @@ def main(argv: list[str] | None = None) -> int:
             result = invoke_with_diagnostics(function, config, store=store, project_root=root)
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1
+        elif args.command == "workflow-release-create":
+            from bimanual.workflow_release_protocol import create_workflow_release_protocol
+
+            result = create_workflow_release_protocol(
+                workflow_manifest=args.workflow_manifest,
+                planner_model_root=args.planner_model,
+                scene_suite_run=args.scene_suite_run,
+                perturbation_protocol_path=args.perturbation_protocol,
+                instruction=args.instruction,
+                destination=args.destination,
+            )
+            emit(result.model_dump(mode="json"))
+        elif args.command == "workflow-release-check":
+            from bimanual.workflow_release_protocol import load_workflow_release_protocol
+
+            result = load_workflow_release_protocol(args.protocol)
+            emit(result.model_dump(mode="json"))
         elif args.command == "cup":
             from bimanual.cup import CupConfig, run_cup
 

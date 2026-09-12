@@ -138,6 +138,13 @@ layout; a second preparation call returned the same suite without allocating a
 duplicate. Its `evaluation_attempted=false` and `task_success=null` remain
 unchanged. These inputs await a completed seven-checkpoint candidate.
 
+The local release declaration is implemented but not instantiated. Once seven
+completed checkpoints exist, it will freeze their workflow/execution profile,
+Qwen revision and manifest, the verified16-scene suite, every package Python
+source, canonical instruction, MPS devices, 1920-pixel planner camera and time
+limits before release evaluation. Its schema cannot claim release or Intel success.
+Four focused fixtures pass. [Release freeze](WORKFLOW_RELEASE.md).
+
 The next seven-checkpoint manifest version now seals the per-skill execution
 profile alongside checkpoint lineage: all seven ordered skill/capability IDs,
 checkpoint digests, exact twice-nominal-v2 action budgets, prefix2 and no temporal
@@ -190,8 +197,8 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `dbda38d1c309ae1e29df4c074e59c9a9df5a28ae589513e4d761b1ca2508788c`.
-It binds the training cohort and 103 package/runtime and authored-scene/SO-101 asset
+seal `b50899967fa45c38419b02aadcdeae4224110a82edde3d433ebe8c0e83f823d7`.
+It binds the training cohort and 104 package/runtime and authored-scene/SO-101 asset
 files,
 final-update20,000 selection,
 MPS, execution prefix2, exact teacher preparation, fixed nominal-v2 scene,
@@ -231,7 +238,7 @@ action beyond its explicit budget, leaving the executor as the single stopping
 authority and preventing premature v2 plate termination. The unused protocol was
 regenerated before any outcome with all then-current transitive evaluator/control/scoring
 sources pinned. The later guardian hardening and step-report addition produced the current
-103-source-and-asset
+104-source-and-asset
 seal before any component evaluation. The combined executor/outcome/protocol/evaluator group passes61
 tests; the corrected protocol re-verifies.
 
