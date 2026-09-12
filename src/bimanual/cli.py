@@ -249,6 +249,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Reverify a frozen six-skill corrective collection protocol",
     )
     corrective_protocol_check.add_argument("protocol", type=Path)
+    corrective_run = commands.add_parser(
+        "skill-corrective-run",
+        help="Collect one frozen six-skill corrective teacher source once",
+    )
+    corrective_run.add_argument("protocol", type=Path)
+    corrective_run.add_argument("case_id")
     cohort_adjudicate = commands.add_parser(
         "training-cohort-adjudicate-preflight",
         help="Classify one zero-update MPS environment failure before a replacement",
@@ -888,6 +894,14 @@ def main(argv: list[str] | None = None) -> int:
             from bimanual.skill_corrective_protocol import load_skill_corrective_collection_protocol
 
             emit(load_skill_corrective_collection_protocol(args.protocol).model_dump(mode="json"))
+        elif args.command == "skill-corrective-run":
+            from bimanual.skill_corrective_teacher import run_skill_corrective_case
+
+            result = run_skill_corrective_case(
+                args.protocol, args.case_id, store=store, project_root=root
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
         elif args.command == "handoff-failure-analyze":
             from bimanual.handoff_failure_analysis import (
                 HandoffFailureAnalysisConfig,

@@ -1,0 +1,102 @@
+import json
+from pathlib import Path
+
+import pytest
+
+from bimanual.evidence import EvidenceStore
+from bimanual.skill_corrective_protocol import load_skill_corrective_collection_protocol
+from bimanual.skill_corrective_teacher import (
+    KIND,
+    REQUEST,
+    _case_rows,
+    _reservation_name,
+    build_skill_corrective_request,
+    run_skill_corrective_case,
+)
+
+PROTOCOL = (
+    Path(__file__).parents[1] / "docs/experiments/six-skill-corrective-collection-protocol-v1.json"
+)
+
+
+def test_frozen_cases_are_complete_and_approach_assignment_is_deterministic():
+    protocol = load_skill_corrective_collection_protocol(PROTOCOL)
+    rows = _case_rows(protocol)
+    assert len(rows) == 20
+    assert len({row["case_id"] for row in rows}) == 20
+    assert all(row["teacher_assisted"] and not row["learned_execution"] for row in rows)
+    assert all(row["training_eligible"] is False for row in rows)
+    approach = [row["skill_id"] for row in rows if row["family_id"] == "approach_contact"]
+    assert approach == [
+        "cup_pick_place",
+        "plate_pick_place",
+        "fork_retrieve_place",
+        "cup_pick_place",
+        "plate_pick_place",
+    ]
+
+
+def test_request_binds_exact_case_and_protocol():
+    request = build_skill_corrective_request(PROTOCOL, "bar_contact_avoidance-51000")
+    assert request["case"]["skill_id"] == "bar_place_and_return"
+    assert request["case"]["training_eligible"] is False
+    assert request["training_only"] is True
+    with pytest.raises(ValueError, match="not in"):
+        build_skill_corrective_request(PROTOCOL, "bar_contact_avoidance-0")
+
+
+def test_existing_incomplete_reservation_is_never_retried(tmp_path):
+    request = build_skill_corrective_request(PROTOCOL, "bar_contact_avoidance-51000")
+    store = EvidenceStore(tmp_path / "evidence")
+    directory = store.directory(
+        _reservation_name(request["protocol_manifest_sha256"], request["case_id"])
+    )
+    directory.mkdir(parents=True)
+    (directory / REQUEST).write_text(json.dumps(request))
+    with pytest.raises(RuntimeError, match="consumes"):
+        run_skill_corrective_case(
+            PROTOCOL, request["case_id"], store=store, project_root=Path.cwd()
+        )
+
+
+def test_existing_different_request_is_rejected(tmp_path):
+    request = build_skill_corrective_request(PROTOCOL, "bar_contact_avoidance-51000")
+    store = EvidenceStore(tmp_path / "evidence")
+    directory = store.directory(
+        _reservation_name(request["protocol_manifest_sha256"], request["case_id"])
+    )
+    directory.mkdir(parents=True)
+    (directory / REQUEST).write_text(json.dumps(request | {"case_id": "contradiction"}))
+    with pytest.raises(ValueError, match="contradicts"):
+        run_skill_corrective_case(
+            PROTOCOL, request["case_id"], store=store, project_root=Path.cwd()
+        )
+
+
+def test_kind_is_not_handoff_continuity_kind():
+    assert KIND == "six_skill_corrective_teacher_recording"
+
+
+def test_cancelled_case_is_sealed_and_then_consumed(tmp_path):
+    store = EvidenceStore(tmp_path / "evidence")
+    result = run_skill_corrective_case(
+        PROTOCOL,
+        "bar_contact_avoidance-51000",
+        store=store,
+        project_root=Path.cwd(),
+        cancelled=lambda: True,
+    )
+    assert result.kind == KIND
+    assert result.outcome == "failed"
+    assert result.metrics["error"].startswith("InterruptedError:")
+    assert result.metrics["prefix_actions"] == 0
+    assert result.metrics["training_eligible"] is False
+    assert (
+        run_skill_corrective_case(
+            PROTOCOL,
+            "bar_contact_avoidance-51000",
+            store=store,
+            project_root=Path.cwd(),
+        )
+        == result
+    )

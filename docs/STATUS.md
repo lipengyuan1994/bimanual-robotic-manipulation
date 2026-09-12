@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 12, 2026. Latest implementation checkpoint: `e1fa8c1` on
+Updated September 12, 2026. Latest implementation: corrective collection foundation on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -190,9 +190,18 @@ binds that diagnosis, the v2 scene assets, and twenty one-attempt teacher-assist
 cases: five each for bar-contact avoidance, cup/plate/fork approach-contact, spoon
 grasp/lift, and drawer pull. Every case is explicitly non-learned and
 training-ineligible until its future collection evidence is separately validated.
-The next executable step is to implement the contact-only teacher collectors and
-their source validators for those frozen cases before any local retraining. Intel
-setup remains deferred until that local correction work completes.
+The contact-only teacher collector is now implemented and documented in
+[`SKILL_CORRECTIVE_COLLECTION.md`](SKILL_CORRECTIVE_COLLECTION.md). It creates a
+durable one-attempt reservation before physics, records the full contact-checked
+teacher prefix, bounded measured-state acquisition/recovery, and frozen replay in
+the real `DinnerEnvironment`, preserves every failure, and records all actions as
+training-ineligible. It does not load a learned policy, attach objects, or edit
+object state. The five approach cases deterministically assign their frozen seeds
+to cup, plate, fork, cup, and plate. Focused collector/protocol/outcome tests pass
+34 cases. No physical corrective case has run. The next executable step is one
+frozen teacher case, followed by a separate source validator/export boundary before
+any local retraining. Intel setup remains deferred until that local correction work
+completes.
 
 The continuity collector now runs below a bounded guardian and native spawned
 worker. It reserves the shared model lease before allocating output, retains
