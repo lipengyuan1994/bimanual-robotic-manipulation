@@ -12,7 +12,7 @@ Updated September 11, 2026. Latest implementation checkpoint: `eee7430` on
 | M1 locally complete | Continuous contact-based teacher passes one physical layout |
 | M2 in progress | ACT and planner integration exists; learned hand-off and full dinner success remain unproven |
 | M3 incomplete | Frozen release suite, Intel/OpenVINO execution and submission package remain |
-| M4 incomplete | Reliability suites, native-hang crash recovery, rollback and support gates remain |
+| M4 incomplete | Reliability suites, real-candidate rollback trials and support gates remain |
 
 Implementation is authorized by [decision 0003](decisions/0003-event-window-implementation.md).
 Spend stays zero. Existing-code eligibility is unconfirmed. Physical robot deployment
@@ -115,8 +115,15 @@ child `20260911T223642-9b4a6482722b`, seal
 checkpoint `d0e2a96d7b29c841e707b5fa929469edc95ac9828fe62f3176891b8824adf328`.
 This proves training completion only. The same native process allocated active
 `plate_pick_place` wrapper `20260912T001417-968c928850a3`, child
-`20260912T001417-2e614f4afc6e`, and will continue serially through drawer, spoon
-and fork after each completed checkpoint, stopping on any failure. Log
+`20260912T001417-2e614f4afc6e`, which completed and sealed all 20,000 updates.
+Wrapper seal `c5a3c58acd086cef0e5a9be104b9b2c9a275a2781a087e0f495c3960e4651a0a`;
+child seal `b624fa31d4ba163259d1a8fd7ac67186a7393ac52e81090e894d61960fbd500c`;
+checkpoint `49a2cdd82d1a457b132049155a17d7222de5fc29400e2c42f20f43120389bd83`.
+This is training completion only; plate manipulation remains untested. The same
+coordinator allocated active `drawer_open` wrapper
+`20260912T014959-e04ee487ae95`, child `20260912T014959-e973f584306d`, and will
+continue serially through spoon and fork after each completed checkpoint, stopping
+on any failure. Log
 `.artifacts/cohort-remaining-sequence-replacement.log`. Poll session 1714; do not
 start another model, inference or render job.
 
@@ -190,6 +197,16 @@ nested process/child/evaluation re-verification and source-bound scoring checks.
 The aggregate cannot hide an orphaned reservation or later source change.
 [Release freeze](WORKFLOW_RELEASE.md).
 
+A host-local deployment registry now verifies and activates one complete workflow
+manifest without loading models. Immutable generations bind the manifest file and
+body seals, prior activation and rollback target; the current pointer is replaced
+atomically. Deployed `workflow-run` resolves and reverifies this identity before
+model loading, while the direct manifest path remains diagnostic. Rollback creates
+a new generation only after the target's full dataset/checkpoint lineage reverifies.
+Changed sources, corrupt pointers, missing history and orphaned pre-pointer records
+fail closed. Twenty-nine deployment/manifest tests pass; actual rollback between
+two physically evaluated candidates remains untested. [Operations](WORKFLOW_DEPLOYMENT.md).
+
 The next seven-checkpoint manifest version now seals the per-skill execution
 profile alongside checkpoint lineage: all seven ordered skill/capability IDs,
 checkpoint digests, exact twice-nominal-v2 action budgets, prefix2 and no temporal
@@ -242,8 +259,8 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `e0fda04ec36855945ba9d6f613cb892de0d165d9ab096361d3758a7e61358f94`.
-It binds the training cohort and 111 package/runtime and authored-scene/SO-101 asset
+seal `cdb3d48e51da00146a19573d3496425bbb3445fe0c789461cb7250719e7c5bf0`.
+It binds the training cohort and 112 package/runtime and authored-scene/SO-101 asset
 files,
 final-update20,000 selection,
 MPS, execution prefix2, exact teacher preparation, fixed nominal-v2 scene,
@@ -284,9 +301,9 @@ still came from shorter v1 skill intervals. The executor now passes a guard one
 action beyond its explicit budget, leaving the executor as the single stopping
 authority and preventing premature v2 plate termination. The unused protocol was
 regenerated before any outcome with all then-current transitive evaluator/control/scoring
-sources pinned. The later guardian hardening, step-report addition and local release
-case runner and aggregate report produced the current 106-source-and-asset
-seal before any component evaluation. The combined executor/outcome/protocol/evaluator group passes61
+sources pinned. Later guardian, step-report, local-release and deployment hardening
+produced the current 112-source-and-asset seal before any component evaluation.
+The combined executor/outcome/protocol/evaluator group passes61
 tests; the corrected protocol re-verifies.
 
 CPU-only analysis run `20260911T210617-481ff0b6e8eb`, seal
@@ -425,6 +442,12 @@ Parent-record reconstruction remains unresolved. The original portal service was
 
 ## Verification and delivery
 
+- Current stable non-render repository gate passes 1,326 tests with 18 documented
+  optional skips, 9 render deselections and 2 dependency deprecation warnings in
+  594.56 seconds. Ruff lint/format, 491 documentation links and README synchronization
+  pass in the same run. It includes the deployment generation/pointer tamper checks
+  and the refreshed 112-source physical protocol. Rendering was not rerun while
+  native-MPS drawer training owns the model/render slot.
 - Current repository-wide non-render regression passes:1,267tests,18optional
   skips and9render deselections in596.37seconds. It includes the frozen planner,
   scene generation, workflow release runner/aggregate and portal checks.

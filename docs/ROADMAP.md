@@ -62,7 +62,8 @@ threshold; do not reclassify it for the deadline.
 ## M4 — Production hardening (after hackathon)
 
 Evaluate nominal and perturbation suites, expand fault injection, test process
-interruption and checkpoint rollback, document support/runbooks, and validate the
+interruption and the implemented verified checkpoint rollback path with real
+candidates, document support/runbooks, and validate the
 declared operating envelope. Run at least 100 nominal and 100 perturbed episodes
 for the accepted internal targets. Examine confidence intervals and failure classes.
 

@@ -11,6 +11,7 @@ Read [STATUS](STATUS.md) first when resuming work.
 | Component and truth boundaries | [Architecture](ARCHITECTURE.md) |
 | Native install and commands | [Setup](SETUP.md) |
 | Reproducibility and release evidence | [Evidence](EVIDENCE.md) |
+| Activate or roll back a verified cohort | [Local workflow deployment](WORKFLOW_DEPLOYMENT.md) |
 | Future Intel deployment | [Deployment](DEPLOYMENT.md) |
 | Free Intel hardware access | [Access routes and request drafts](INTEL_ACCESS.md) |
 | First dual-arm implementation | [Foundation walkthrough](DUAL_ARM_FOUNDATION.md) |
@@ -68,5 +69,7 @@ Complete learned workflow: [pinned checkpoint cohort](WORKFLOW_MANIFEST.md) and
 [serialized planning/execution runner](WORKFLOW_RUNNER.md), with a
 [local execution command](WORKFLOW_EXECUTION.md) and
 [sealed per-step evidence](WORKFLOW_STEP_REPORT.md).
+
+Operational selection: [verified activation and rollback](WORKFLOW_DEPLOYMENT.md).
 
 Local release freeze: [candidate and sixteen-scene input protocol](WORKFLOW_RELEASE.md).

@@ -264,10 +264,27 @@ def main(argv: list[str] | None = None) -> int:
         "workflow-check", help="Verify a pinned skill cohort without loading models"
     )
     workflow_check.add_argument("manifest", type=Path)
+    workflow_activate = commands.add_parser(
+        "workflow-activate", help="Activate a fully verified local workflow manifest"
+    )
+    workflow_activate.add_argument("manifest", type=Path)
+    workflow_activate.add_argument("--deployment-root", type=Path)
+    workflow_deployment_status = commands.add_parser(
+        "workflow-deployment-status", help="Reverify the active local workflow identity"
+    )
+    workflow_deployment_status.add_argument("--deployment-root", type=Path)
+    workflow_rollback = commands.add_parser(
+        "workflow-rollback", help="Return to a previously verified local workflow manifest"
+    )
+    workflow_rollback.add_argument("--deployment-root", type=Path)
+    workflow_rollback.add_argument("--target-id")
     workflow_run = commands.add_parser(
         "workflow-run", help="Execute a verified local seven-skill workflow; not a quality approval"
     )
-    workflow_run.add_argument("manifest", type=Path)
+    workflow_run.add_argument("manifest", type=Path, nargs="?", help="Direct diagnostic manifest")
+    workflow_run.add_argument(
+        "--deployment-root", type=Path, help="Run the reverified active deployment"
+    )
     workflow_run.add_argument("--planner-model", type=Path, required=True)
     workflow_run.add_argument(
         "--scene-variant", type=Path, help="Optional verified prepared perturbation run"
@@ -845,11 +862,43 @@ def main(argv: list[str] | None = None) -> int:
             from bimanual.workflow_manifest import load_workflow_manifest
 
             emit(load_workflow_manifest(args.manifest).report())
+        elif args.command in {
+            "workflow-activate",
+            "workflow-deployment-status",
+            "workflow-rollback",
+        }:
+            from bimanual.workflow_deployment import (
+                activate_workflow,
+                deployment_report,
+                load_active_workflow,
+                rollback_workflow,
+            )
+
+            deployment_root = args.deployment_root or artifacts / "workflow-deployment"
+            if not deployment_root.is_absolute():
+                deployment_root = root / deployment_root
+            if args.command == "workflow-activate":
+                result = activate_workflow(args.manifest, deployment_root)
+            elif args.command == "workflow-rollback":
+                result = rollback_workflow(deployment_root, args.target_id)
+            else:
+                result = load_active_workflow(deployment_root)
+            emit(deployment_report(result))
         elif args.command == "workflow-run":
             from bimanual.workflow_execution import WorkflowExecutionConfig, run_workflow_execution
 
+            if (args.manifest is None) == (args.deployment_root is None):
+                raise ValueError("Supply exactly one manifest or --deployment-root")
+            workflow_manifest = args.manifest
+            if args.deployment_root is not None:
+                from bimanual.workflow_deployment import active_workflow_path
+
+                deployment_root = args.deployment_root
+                if not deployment_root.is_absolute():
+                    deployment_root = root / deployment_root
+                workflow_manifest = active_workflow_path(deployment_root)
             execution = WorkflowExecutionConfig(
-                workflow_manifest=args.manifest,
+                workflow_manifest=workflow_manifest,
                 planner_model_directory=args.planner_model,
                 scene_variant_run=args.scene_variant,
                 instruction=args.instruction,

@@ -40,6 +40,11 @@ seal is rejected. Missing, repeated or reordered skills cannot form a cohort.
 Changing an execution entry, its order, its checkpoint binding or its profile seal
 also fails verification.
 
+After physical evaluation selects a candidate, use the separate
+[activation and rollback registry](WORKFLOW_DEPLOYMENT.md). This keeps checkpoint
+selection auditable and lets the operator return to an earlier still-verifiable
+manifest without changing model files.
+
 The manifest keeps **file digests and canonical body seals distinct**. The
 export file digest binds exact JSON bytes. Successor references carry the
 export's verified body seal and measured terminal observations. Comparing these

@@ -24,12 +24,15 @@ is active.
 
 The six-skill suite was frozen before any of those checkpoints completed at
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `e0fda04ec36855945ba9d6f613cb892de0d165d9ab096361d3758a7e61358f94`.
+seal `cdb3d48e51da00146a19573d3496425bbb3445fe0c789461cb7250719e7c5bf0`.
 It selects final-update20,000 checkpoints, MPS, a two-action execution prefix,
 the authored nominal-v2 scene, exact teacher preparation, per-skill action budgets
 equal to twice the nominal duration, and a1,200-second wall limit. It requires one
 attempt for every completed cohort checkpoint; observed outcomes cannot change the
 suite.
+The current seal covers 112 package/runtime and authored-scene/SO-101 files,
+including the deployment selection path used before guarded execution. No component
+case had run when this unused protocol was regenerated.
 
 Run a completed cohort attempt through the frozen path:
 

@@ -30,6 +30,9 @@ each model. Do not share the GPU with a training or benchmark job.
 Create and verify the [explicit checkpoint manifest](WORKFLOW_MANIFEST.md) and
 prepare a [sealed local Qwen model](PLANNER.md). The paths below are examples;
 they must refer to actual verified artifacts, not empty placeholder directories.
+Release-like local operation should first use the
+[activation registry](WORKFLOW_DEPLOYMENT.md); the positional manifest below is
+also retained for direct diagnostics.
 
 ```sh
 PYTORCH_ENABLE_MPS_FALLBACK=0 \
@@ -41,6 +44,11 @@ HF_HOME="$PWD/.artifacts/huggingface" HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
   --policy-device cpu --planner-device cpu \
   --wall-timeout-seconds 1800 --step-timeout-seconds 300
 ```
+
+Replace the positional manifest with
+`--deployment-root .artifacts/workflow-deployment` to run the active manifest.
+The command reverifies the active record and all checkpoint lineage before model
+loading. Exactly one of these two inputs is required.
 
 For a frozen robustness case, add a prepared run from the
 [six-family scene protocol](SCENE_VARIANTS.md):
