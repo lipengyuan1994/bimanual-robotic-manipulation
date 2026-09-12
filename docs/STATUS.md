@@ -683,3 +683,16 @@ lease. The cup preflight exposed an additional operational rule: an MPS coordina
 must itself run with Metal access. The failed zero-update record and its explicit
 one-replacement adjudication are retained. Sixteen coordinator/adjudication CPU
 fixtures pass. Full regression for the current adjudication changes remains required.
+
+
+## Corrective runtime recovery
+
+Corrective cohort v1 remains unpromoted after two sealed zero-update bar attempts: the
+first was deliberately interrupted while repeatedly validating copied raw images and
+the second exposed a missing `skill_corrective_views.json` runtime binding. Both
+wrappers, children, and the one-time v1 replacement authorization are retained in
+`.artifacts/runs`. The runtime now verifies the sealed archive binding before model
+work; the full image/decoded-row verifier remains a separate explicit gate. Frozen
+[`experiments/six-skill-corrective-training-protocol-v2.json`](experiments/six-skill-corrective-training-protocol-v2.json),
+seal `08f59ef6a7a5f4524d0b0958ee19318270c304e238ef65a4a5ad1ce2c83257e1`, is the
+next local training boundary. No corrective model has completed or been promoted.

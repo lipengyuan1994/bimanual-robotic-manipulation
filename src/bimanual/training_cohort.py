@@ -64,7 +64,9 @@ class CohortPrerequisite(Contract):
 
 class TrainingCohortProtocol(Contract):
     profile: Literal[
-        "six_skill_act_training_protocol_v1", "six_skill_corrective_act_training_protocol_v1"
+        "six_skill_act_training_protocol_v1",
+        "six_skill_corrective_act_training_protocol_v1",
+        "six_skill_corrective_act_training_protocol_v2",
     ] = "six_skill_act_training_protocol_v1"
     dataset_root: str
     skill_views_path: str
@@ -102,7 +104,10 @@ class TrainingCohortProtocol(Contract):
             )
         ):
             raise ValueError("Nominal cohort cannot declare a corrective archive")
-        if self.profile == "six_skill_corrective_act_training_protocol_v1" and (
+        if self.profile in {
+            "six_skill_corrective_act_training_protocol_v1",
+            "six_skill_corrective_act_training_protocol_v2",
+        } and (
             not corrective
             or Path(corrective).is_absolute()
             or self.corrective_dataset_file_sha256 is None
