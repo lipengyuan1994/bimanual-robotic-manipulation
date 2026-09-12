@@ -21,6 +21,7 @@ from bimanual.workflow_process import WorkflowProcessConfig, run_workflow_proces
 _PROFILE = "operator_job_journal_v1"
 _MAX_RECORD_BYTES = 16_384
 _MAX_POINTER_BYTES = 1_024
+_MAX_RECORDS = 10_000
 _STATES = Literal[
     "active",
     "stopping",
@@ -178,11 +179,42 @@ class OperatorJobs:
             or any(value not in "0123456789abcdef" for value in record_id)
         ):
             raise ValueError("Invalid operator record id")
-        record = _JournalRecord.model_validate(
-            _read_regular_json(self._records / f"{record_id}.json", limit=_MAX_RECORD_BYTES)
-        )
+        paths = list(self._records.iterdir())
+        if len(paths) > _MAX_RECORDS:
+            raise ValueError("Operator journal has too many records")
+        records: dict[str, _JournalRecord] = {}
+        by_sha256: dict[str, _JournalRecord] = {}
+        for path in paths:
+            if path.is_symlink() or path.suffix != ".json":
+                raise ValueError("Operator journal contains an invalid record path")
+            candidate = _JournalRecord.model_validate(
+                _read_regular_json(path, limit=_MAX_RECORD_BYTES)
+            )
+            if path.name != f"{candidate.record_id}.json" or candidate.record_id in records:
+                raise ValueError("Operator record identity is invalid or duplicated")
+            if candidate.record_sha256 in by_sha256:
+                raise ValueError("Operator record seal is duplicated")
+            records[candidate.record_id] = candidate
+            by_sha256[candidate.record_sha256] = candidate
+        record = records.get(record_id)
+        if record is None:
+            raise ValueError("Operator current record is missing")
         if record.record_id != record_id or pointer.get("record_sha256") != record.record_sha256:
             raise ValueError("Operator pointer and record identity disagree")
+        visited: set[str] = set()
+        cursor = record
+        while True:
+            if cursor.record_sha256 in visited:
+                raise ValueError("Operator journal chain contains a cycle")
+            visited.add(cursor.record_sha256)
+            previous = cursor.previous_record_sha256
+            if previous is None:
+                break
+            cursor = by_sha256.get(previous)
+            if cursor is None:
+                raise ValueError("Operator journal chain has a missing predecessor")
+        if len(visited) != len(records):
+            raise ValueError("Operator journal contains orphaned records")
         self._record_sha256 = record.record_sha256
         return record
 

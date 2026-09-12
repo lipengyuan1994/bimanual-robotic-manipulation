@@ -1,5 +1,6 @@
 """Operator ownership tests with sealed CPU fixtures, not learned task execution."""
 
+import json
 from threading import Event, Thread
 
 import pytest
@@ -325,3 +326,23 @@ def test_invalid_persistent_state_fails_closed_without_launch(tmp_path, fault):
         jobs.start("Replacement")
     assert calls == []
     jobs.close()
+
+
+def test_missing_journal_predecessor_fails_closed(tmp_path):
+    evidence = tmp_path / "evidence"
+    original = OperatorJobs(
+        config(), store=EvidenceStore(evidence), project_root=tmp_path, _runner=None
+    )
+    original._publish(OperatorJob("a" * 32, "active", "Set the table"))
+    original._publish(OperatorJob("a" * 32, "stopping", "Set the table"))
+    pointer = json.loads((evidence / "operator-jobs" / "current.json").read_text())
+    records = list((evidence / "operator-jobs" / "records").glob("*.json"))
+    predecessor = next(path for path in records if path.stem != pointer["record_id"])
+    predecessor.unlink()
+
+    restored = OperatorJobs(
+        config(), store=EvidenceStore(evidence), project_root=tmp_path, _runner=None
+    )
+    assert restored.snapshot().state == "recovery_required"
+    with pytest.raises(RuntimeError, match="journal requires recovery"):
+        restored.start("Replacement")
