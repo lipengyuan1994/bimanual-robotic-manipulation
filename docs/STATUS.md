@@ -767,3 +767,9 @@ not started: the restricted command runner cannot see MPS, and the normal deskto
 execution surface is currently unavailable while the Mac is locked. This is an
 execution-environment blocker only; no CPU substitute is being claimed as the MPS
 candidate.
+
+The sampling declaration now rejects a substituted failure-localization seal; it is
+hard-bound to the immutable bar-placement diagnosis that established this corrective
+work. A focused contract check verifies both the accepted declared seal and rejection
+of a correctly re-hashed but substituted one. Local MPS execution remains pending an
+unlocked desktop surface.

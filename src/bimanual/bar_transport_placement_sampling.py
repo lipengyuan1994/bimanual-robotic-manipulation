@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import os
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field, model_validator
 
@@ -12,10 +13,13 @@ from bimanual.contracts import Contract, Digest
 from bimanual.evidence import canonical
 
 PROFILE = "bar_transport_placement_sampling_v1"
+FAILURE_LOCALIZATION_MANIFEST_SHA256 = (
+    "f4798d6b4412851ee747c7584d37652329f170a5f5c6588f5a2e91d2e8216633"
+)
 
 
 class BarTransportPlacementSampling(Contract):
-    profile: str = PROFILE
+    profile: Literal[PROFILE] = PROFILE
     corrective_export_root: str
     corrective_export_manifest_sha256: Digest
     corrective_views_sha256: Digest
@@ -29,6 +33,7 @@ class BarTransportPlacementSampling(Contract):
         if (
             self.profile != PROFILE
             or Path(self.corrective_export_root).is_absolute()
+            or self.failure_localization_manifest_sha256 != FAILURE_LOCALIZATION_MANIFEST_SHA256
             or self.emphasis_source_interval != (770, 1070)
             or self.nominal_probability != 0.5
         ):
@@ -49,6 +54,8 @@ def create_bar_transport_placement_sampling(
     from bimanual.bar_overlap_correction_export import verify_bar_overlap_dataset
 
     root = Path(corrective_export_root).resolve(strict=True)
+    if failure_localization_manifest_sha256 != FAILURE_LOCALIZATION_MANIFEST_SHA256:
+        raise ValueError("Bar transport sampling requires the sealed bar failure localization")
     manifest = verify_bar_overlap_dataset(root)
     body = dict(
         schema_version=1,
