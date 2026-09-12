@@ -732,3 +732,14 @@ that includes the successful teacher release boundary before any further cases r
 ADR 0004 freezes the intended source interval and equal-mass sampling rule before
 the runtime implementation.
 See [the experiment record](experiments/2026-09-12-corrective-bar-policy-v2.md).
+
+The successor bar-overlap archive is now exported at the ignored local path
+`.artifacts/datasets/bar-overlap-corrective-v3`. Its immutable manifest seal is
+`f382d5ac6ced8e09901c634a70dd8ebf6ab28328b8ee7d1851e5165c3f724e93` and binds
+three independently successful teacher replay sources (seeds 53000–53002), with
+391 actions each and 1,173 image-backed LeRobot transitions total. The export command
+revalidates every copied source before writing labels, and its lightweight runtime
+binding verification has passed. The slower complete decoded-row audit is running as
+a distinct gate and must pass before the archive is used for training. This remains
+teacher data only. The next executable implementation step is the source-bound,
+equal-mass transport-versus-remainder sampling profile specified in ADR 0004.

@@ -275,6 +275,18 @@ def main(argv: list[str] | None = None) -> int:
         "bar-overlap-protocol-check", help="Reverify the frozen bar-overlap corrective protocol"
     )
     bar_overlap_protocol_check.add_argument("protocol", type=Path)
+    bar_overlap_export = commands.add_parser(
+        "bar-overlap-export",
+        help="Export frozen bar-overlap replay views to local LeRobot",
+    )
+    bar_overlap_export.add_argument("--views", type=Path, required=True)
+    bar_overlap_export.add_argument("--destination", type=Path, required=True)
+    bar_overlap_export.add_argument("--repo-id", required=True)
+    bar_overlap_export_check = commands.add_parser(
+        "bar-overlap-export-check",
+        help="Fully verify a frozen bar-overlap local LeRobot export",
+    )
+    bar_overlap_export_check.add_argument("dataset", type=Path)
     corrective_run = commands.add_parser(
         "skill-corrective-run",
         help="Collect one frozen six-skill corrective teacher source once",
@@ -963,6 +975,21 @@ def main(argv: list[str] | None = None) -> int:
             )
 
             emit(load_bar_overlap_correction_protocol(args.protocol).model_dump(mode="json"))
+        elif args.command == "bar-overlap-export":
+            from bimanual.bar_overlap_correction_export import export_bar_overlap_dataset
+
+            result = invoke_with_diagnostics(
+                export_bar_overlap_dataset,
+                args.views,
+                store,
+                args.destination,
+                args.repo_id,
+            )
+            emit({"destination": str(result), "manifest": str(result / "export_manifest.json")})
+        elif args.command == "bar-overlap-export-check":
+            from bimanual.bar_overlap_correction_export import verify_bar_overlap_dataset
+
+            emit(invoke_with_diagnostics(verify_bar_overlap_dataset, args.dataset))
         elif args.command == "skill-corrective-run":
             from bimanual.skill_corrective_teacher import run_skill_corrective_case
 
