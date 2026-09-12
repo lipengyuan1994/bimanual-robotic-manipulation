@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "profile": "six_skill_corrective_views_v1",
+  "split": "train",
+  "task_scope": "bounded_component_replay_only",
+  "independent_scene_count": null,
+  "sources": [
+    {
+      "schema_version": 1,
+      "run_id": "six-skill-corrective-9d2fae6f6ad5f8027a2a4991",
+      "source_manifest_sha256": "8f48660c9de78be9c4f7db49ff914c55934a4d518ccaee51c77b31abb009b07c",
+      "case_id": "bar_contact_avoidance-51002",
+      "family_id": "bar_contact_avoidance",
+      "skill_id": "bar_place_and_return",
+      "seed": 51002,
+      "episode_id": "72074c7f60394caf84a8d610586210ad",
+      "episode": {
+        "schema_version": 1,
+        "path": "demonstration/episode.json",
+        "sha256": "0366a62fc58b5d12f6dbf5d30ebcab7857ab62fc82de196c23730279942dc5fb"
+      },
+      "source_sha256": "4f2dbd27c69be304dc42187760a7bf9fbf9397565f46d85892c0aaaae116befe",
+      "start": 632,
+      "end": 1163,
+      "terminal_parent_frame": 1163
+    }
+  ],
+  "manifest_sha256": "b6c7cddc8177744e07bb3e70adf948eb7aa7e58c521b6099110a42aa7b7074a4"
+}

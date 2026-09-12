@@ -1,8 +1,9 @@
 # First contact grasp on your Mac
 
 This is the first manipulation experiment: the left SO-101 reaches for a small
-block, closes its fingers, lifts, holds, lowers, opens, and retreats. The right arm
-holds its home pose. It runs entirely on the local CPU; no Intel machine, paid
+block, closes its fingers, lifts, holds, optionally carries it to a new position,
+lowers, opens, and retreats. Either arm can execute this skill; the other arm
+holds its home pose and cannot receive movement commands. It runs on the local CPU; no Intel machine, paid
 service, physical robot or model download is needed.
 
 ## Run and inspect
@@ -11,6 +12,8 @@ From the verified native environment:
 
 ```sh
 .venv/bin/bimanual grasp
+.venv/bin/bimanual grasp --destination -.15 .08
+.venv/bin/bimanual grasp --arm right --destination .15 -.08
 .venv/bin/bimanual serve --port 8768
 ```
 
@@ -62,7 +65,9 @@ movement from allowed images/joints, without receiving this object position.
 The default object is a 20 × 20 × 32 mm box of 25 g, placed at world coordinates
 (-0.15, -0.08, 0.391) m on the existing workbench. Robot dynamics and upstream assets
 are unchanged. A separate pinch site is added at local (0.008, -0.000218, -0.09) m
-in the left gripper frame. It is a kinematic reference, not a constraint.
+in each gripper frame. It is a kinematic reference, not a constraint. The mirrored
+right-arm pickup starts at (0.15, 0.08, 0.391) m. Destinations are world-frame
+XY metres; the selected arm must reach both the elevated and release poses.
 
 A pass requires:
 
@@ -72,11 +77,14 @@ A pass requires:
   no jaw contact forces, position within 3 cm horizontally and 4 mm vertically
   of the starting location, speed below 1 cm/s and angular speed below 0.1 rad/s.
 - No forbidden contact anywhere in the run, and contact overlap at most 2.5 mm.
+- When a distinct destination is requested, all 600 physics samples of the
+  three-second transport must retain bilateral airborne support; final settling
+  must be within 2 cm horizontally and 4 mm vertically of that destination.
 
 The overlap limit is a bound on this compliant simulation model, not physical
 validation. Gripper contact uses the original model's friction and actuator force
 limits. A short drop onto the support surface is allowed during release. This is
-not yet a transport-to-another-place task.
+a transport task only when an explicit distinct destination is requested.
 
 The trajectory checker samples joint interpolation every at most 0.02 rad. The
 runtime checks contacts after every 5 ms physics step and stops on prohibited
@@ -90,7 +98,21 @@ values are refreshed at the recorded physics timestamp.
 `scoring-truth.jsonl` separately contains object pose, free-joint velocity
 (translation m/s then rotation rad/s), jaw forces, contact pairs and penetration at
 200 Hz. Object truth never enters the observation record. This experiment records
-camera replay at 10 Hz to reduce local rendering cost; it is not a LeRobot dataset.
+camera replay at 10 Hz to reduce local rendering cost. An optional raw recording
+adds all three cameras at 20 Hz for later LeRobot export:
+
+```sh
+.venv/bin/bimanual grasp --destination -.15 .08 --record-demo --seed 0 --split train
+```
+
+This writes `demonstration/episode.json` and lossless RGB PNGs. Each applied action
+belongs to its preceding observation; the final observation has no action. A
+failed partial physics step is excluded from training transitions and preserved
+in ordinary failure evidence. Failed episodes are retained and rejected by the
+success-only training intake. The seed is a lineage label only: no scene
+randomization exists yet, and changing it does not create a new test condition.
+See [interface and recording contracts](INTERFACES.md). Recording increases
+wall-clock cost without changing the 20 Hz simulation interface.
 
 Runs also contain a portable scene with licensed assets, configuration, joint
 mapping, source digest, platform, outcome and timings. `grasp_success` describes
@@ -100,6 +122,9 @@ full dinner workflow. Failed attempts remain visible and selectable in the porta
 The [experiment record](experiments/2026-09-10-contact-grasp.md) includes unsuccessful
 geometry attempts and measured local results. One nominal success does not establish
 robustness to different objects, poses, friction, or hardware.
+The [placement register](experiments/2026-09-10-placement.md) records transport
+attempts and the first synchronized demonstration. The separate [hand-off](HANDOFF.md)
+uses a shared-workspace sequence and a longer object.
 
 ## Five-minute exercise with feedback
 

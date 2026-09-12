@@ -1,0 +1,320 @@
+<mujoco model="dinner_north_plate_v12">
+  <option integrator="implicitfast" timestep=".001" cone="elliptic" iterations="10" ls_iterations="20" impratio="10" />
+
+  <compiler angle="radian" meshdir="assets" autolimits="true" />
+
+  <visual>
+    <scale contactwidth="0.1" contactheight="0.05" forcewidth="0.02" framelength="0.75" framewidth="0.025" camera="0.2" />
+  <global offwidth="960" offheight="540" /></visual>
+
+  <default>
+    <mesh maxhullvert="128" />
+
+    <default class="so101">
+      <joint damping="1" frictionloss="0.1" armature="0.005" />
+      <position kp="50" />
+      <default class="visual">
+        <geom type="mesh" contype="0" conaffinity="0" group="2" />
+      </default>
+      <default class="collision">
+        <geom group="3" condim="3" />
+      </default>
+      <default class="collision_gripper">
+        <geom group="3" condim="6" friction="1 5e-3 5e-4" solref="0.01 1" priority="1" rgba="1.0 0 0 1.0" mass="0" />
+      </default>
+      <default class="collision_gripper_mesh">
+        <geom group="4" condim="6" friction="1 5e-3 5e-4" solref="0.01 1" priority="1" rgba="1.0 0 0 1.0" mass="0" />
+      </default>
+    </default>
+
+    <default class="sts3215">
+      <geom contype="0" conaffinity="0" />
+      <joint damping="0.60" frictionloss="0.052" armature="0.028" />
+      
+      <position kp="998.22" kv="2.731" forcerange="-2.94 2.94" />
+    </default>
+
+    <default class="backlash">
+      
+      <joint damping="0.01" frictionloss="0" armature="0.01" limited="true" range="-0.0087267 0.0087267" />
+    </default>
+  </default>
+
+  <asset>
+    <mesh file="waveshare_mounting_plate_so101_v2.stl" />
+    <mesh file="sts3215_03a_v1.stl" />
+    <mesh file="motor_holder_so101_base_v1.stl" />
+    <mesh file="wrist_roll_follower_so101_v1.stl" />
+    <mesh file="moving_jaw_so101_v1.stl" />
+    <mesh file="base_motor_holder_so101_v1.stl" />
+    <mesh file="upper_arm_so101_v1.stl" />
+    <mesh file="wrist_roll_pitch_so101_v2.stl" />
+    <mesh file="under_arm_so101_v1.stl" />
+    <mesh file="rotation_pitch_so101_v1.stl" />
+    <mesh file="motor_holder_so101_wrist_v1.stl" />
+    <mesh file="sts3215_03a_no_horn_v1.stl" />
+    <mesh file="base_so101_v2.stl" />
+    <mesh file="moving_jaw_so101_gripper_v1.stl" />
+    <mesh file="wrist_roll_follower_so101_camera_mount.stl" />
+    
+    <mesh maxhullvert="64" file="wrist_roll_follower_so101_gripper_part0_v1.stl" />
+    <mesh maxhullvert="64" file="moving_jaw_so101_gripper_part0_v1.stl" />
+    <mesh maxhullvert="64" file="moving_jaw_so101_gripper_part1_v1.stl" />
+    <material name="base_motor_holder_so101_v1_material" rgba="1 0.82 0.12 1" />
+    <material name="base_so101_v2_material" rgba="1 0.82 0.12 1" />
+    <material name="sts3215_03a_v1_material" rgba="0.1 0.1 0.1 1" />
+    <material name="waveshare_mounting_plate_so101_v2_material" rgba="1 0.82 0.12 1" />
+    <material name="motor_holder_so101_base_v1_material" rgba="1 0.82 0.12 1" />
+    <material name="rotation_pitch_so101_v1_material" rgba="1 0.82 0.12 1" />
+    <material name="upper_arm_so101_v1_material" rgba="1 0.82 0.12 1" />
+    <material name="under_arm_so101_v1_material" rgba="1 0.82 0.12 1" />
+    <material name="motor_holder_so101_wrist_v1_material" rgba="1 0.82 0.12 1" />
+    <material name="sts3215_03a_no_horn_v1_material" rgba="0.1 0.1 0.1 1.0" />
+    <material name="wrist_roll_pitch_so101_v2_material" rgba="1 0.82 0.12 1" />
+    <material name="wrist_roll_follower_so101_v1_material" rgba="1 0.82 0.12 1" />
+    <material name="moving_jaw_so101_v1_material" rgba="1 0.82 0.12 1" />
+  </asset>
+
+  <worldbody><light pos="0 -0.2 1.8" dir="0 0 -1" directional="true" /><geom name="floor" type="plane" size="2 2 0.1" rgba="0.18 0.21 0.25 1" /><geom name="workbench" type="box" pos="0 0 0.35" size="0.55 0.45 0.025" rgba="0.48 0.38 0.27 1" /><camera name="overhead" pos="0 0 1.65" quat="1 0 0 0" fovy="55" /><body name="left/base" pos="-0.28 0 0.385" quat="1 0 0 0" childclass="so101">
+      <inertial pos="0.0137179 -5.19711e-05 0.0334843" mass="0.147" fullinertia="0.000114686 0.000136117 0.000130364 -4.59787e-07 4.97151e-06 9.75275e-08" />
+      
+      <geom type="mesh" class="visual" pos="-0.006365 -9.9e-05 -0.0024" quat="1 1 1 1" mesh="base_motor_holder_so101_v1" material="base_motor_holder_so101_v1_material" name="left/collision_or_visual_0" />
+      
+      <geom type="mesh" class="visual" pos="-0.006365 0 -0.0024" quat="1 1 1 1" mesh="base_so101_v2" material="base_so101_v2_material" name="left/collision_or_visual_1" />
+      
+      <geom type="mesh" class="visual" pos="0.0263353 0 0.0437" quat="1 0 0 0" mesh="sts3215_03a_v1" material="sts3215_03a_v1_material" name="left/collision_or_visual_2" />
+      
+      <geom type="mesh" class="visual" pos="-0.0309827 -0.000199 0.0474" quat="1 1 1 1" mesh="waveshare_mounting_plate_so101_v2" material="waveshare_mounting_plate_so101_v2_material" name="left/collision_or_visual_3" />
+      
+      <site group="3" name="left/baseframe" pos="0 0 0" quat="1 0 0 0" />
+      
+      <body name="left/shoulder" pos="0.0388353 0 0.0624" quat="0 0 -1 0">
+        
+        <joint axis="0 0 1" name="left/shoulder_pan" type="hinge" range="-1.91986 1.91986" class="sts3215" />
+        <inertial pos="-0.0307604 -1.7e-05 -0.0252713" mass="0.100006" fullinertia="8.3759e-05 8.10403e-05 2.39783e-05 7.55525e-08 -1.16342e-06 1.54663e-07" />
+        
+        <geom type="mesh" class="visual" pos="-0.030399 0.000422 -0.0417" quat="1 1 1 -1" mesh="sts3215_03a_v1" material="sts3215_03a_v1_material" name="left/collision_or_visual_4" />
+        <geom type="box" class="collision" pos="-0.030399 0.000422 -0.0387" quat="1 1 1 -1" size="0.023 0.015 0.01" name="left/collision_or_visual_5" />
+        
+        <geom type="mesh" class="visual" pos="-0.067599 -0.0001778 0.01585" quat="1 1 -1 1" mesh="motor_holder_so101_base_v1" material="motor_holder_so101_base_v1_material" name="left/collision_or_visual_6" />
+        <geom type="box" class="collision" pos="-0.025 0 0.0" quat="1 1 -1 1" size="0.038 0.025 0.02" name="left/collision_or_visual_7" />
+        
+        <geom type="mesh" class="visual" pos="0.012201 2.2e-05 0.0464" quat="1 -1 0 0" mesh="rotation_pitch_so101_v1" material="rotation_pitch_so101_v1_material" name="left/collision_or_visual_8" />
+        
+        <body name="left/upper_arm" pos="-0.0303992 -0.0182778 -0.0542" quat="1 -1 -1 -1">
+          
+          <joint axis="0 0 1" name="left/shoulder_lift" type="hinge" range="-1.7453293 1.7453293" class="sts3215" />
+          <inertial pos="-0.089847 -0.008382 0.018409" mass="0.103" fullinertia="4.08002e-05 0.000147318 0.000142487 -1.97819e-05 -4.03016e-08 8.97326e-09" />
+          
+          <geom type="mesh" class="visual" pos="-0.11257 -0.0155 0.0187" quat="0 -1 1 0" mesh="sts3215_03a_v1" material="sts3215_03a_v1_material" name="left/collision_or_visual_9" />
+          <geom type="box" class="collision" pos="-0.06 0 0.02" quat="0 -1 1 0" size="0.01 0.07 0.03" name="left/collision_or_visual_10" />
+          
+          <geom type="mesh" class="visual" pos="-0.065085 0.012 0.0182" quat="0 1 0 0" mesh="upper_arm_so101_v1" material="upper_arm_so101_v1_material" name="left/collision_or_visual_11" />
+          <geom type="box" class="collision" pos="-0.12 -0.014 0.0182" quat="0 1 0 0" size="0.01 0.02 0.015" name="left/collision_or_visual_12" />
+          
+          <body name="left/lower_arm" pos="-0.11257 -0.028 0" quat="1 0 0 1">
+            
+            
+            <joint axis="0 0 1" name="left/elbow_flex" type="hinge" range="-1.69 1.69" class="sts3215" />
+            <inertial pos="-0.098070 0.0032438 0.018283" mass="0.104" fullinertia="2.87438e-05 0.000159844 0.00014529 7.41152e-06 1.26409e-06 -4.90188e-08" />
+            
+            <geom type="mesh" class="visual" pos="-0.06485 -0.032 0.0182" quat="0 1 0 0" mesh="under_arm_so101_v1" material="under_arm_so101_v1_material" name="left/collision_or_visual_13" />
+            <geom type="box" class="collision" pos="-0.05 0 0.0182" quat="0 1 0 0" size="0.07 0.01 0.03" name="left/collision_or_visual_14" />
+            
+            <geom type="mesh" class="visual" pos="-0.06485 -0.032 0.018" quat="0 -1 0 0" mesh="motor_holder_so101_wrist_v1" material="motor_holder_so101_wrist_v1_material" name="left/collision_or_visual_15" />
+            <geom type="box" class="collision" pos="-0.125 0.005 0.018" quat="0 -1 0 0" size="0.023 0.013 0.018" name="left/collision_or_visual_16" />
+            
+            <geom type="mesh" class="visual" pos="-0.1224 0.0052 0.0187" quat="0 0 1 0" mesh="sts3215_03a_v1" material="sts3215_03a_v1_material" name="left/collision_or_visual_17" />
+            
+            <body name="left/wrist" pos="-0.1349 0.0052 0" quat="1 0 0 -1">
+              
+              <joint axis="0 0 1" name="left/wrist_flex" type="hinge" range="-1.658063 1.658063" class="sts3215" />
+              <inertial pos="-0.000103312 -0.0386143 0.0281156" mass="0.079" fullinertia="3.68263e-05 2.5391e-05 2.1e-05 1.7893e-08 -5.28128e-08 3.6412e-06" />
+              
+              <geom type="mesh" class="visual" pos="0 -0.0424 0.0306" quat="1 1 1 -1" mesh="sts3215_03a_no_horn_v1" material="sts3215_03a_no_horn_v1_material" name="left/collision_or_visual_18" />
+              <geom type="box" class="collision" pos="0 -0.0424 0.0256" quat="1 1 1 -1" size="0.029 0.015 0.018" name="left/collision_or_visual_19" />
+              
+              <geom type="mesh" class="visual" pos="0 -0.028 0.0181" quat="1 -1 -1 -1" mesh="wrist_roll_pitch_so101_v2" material="wrist_roll_pitch_so101_v2_material" name="left/collision_or_visual_20" />
+              <geom type="box" class="collision" pos="0 -0.02 0.0191" quat="1 -1 -1 -1" size="0.027 0.01 0.03" name="left/collision_or_visual_21" />
+              
+              <body name="left/gripper" pos="5.55112e-17 -0.0611 0.0181" quat="0.0172091 -0.0172091 0.706897 0.706897">
+                
+                <joint axis="0 0 1" name="left/wrist_roll" type="hinge" range="-2.7438473 2.7438473" class="sts3215" />
+                <inertial pos="0.000214 0.000245 -0.025187" mass="0.087" fullinertia="2.75087e-05 4.33657e-05 3.45059e-05 -3.35241e-07 -5.7352e-06 -5.17847e-08" />
+                
+                <geom type="mesh" class="visual" pos="0.0077 0.0001 -0.0234" quat="1 -1 0 0" mesh="sts3215_03a_v1" material="sts3215_03a_v1_material" name="left/collision_or_visual_22" />
+                
+                <geom type="mesh" class="visual" pos="0 -0.000218 0.00095" quat="0 1 0 0" mesh="wrist_roll_follower_so101_v1" material="wrist_roll_follower_so101_v1_material" name="left/collision_or_visual_23" />
+                <geom type="box" class="collision" pos="0 -0.000218 0.00095" quat="0 1 0 0" size="0.01 0.01 0.018" name="left/collision_or_visual_24" />
+                
+                <geom name="left/fixed_jaw_box1" class="collision_gripper" type="box" size="0.0325 0.015 0.015" pos="-0.0025 0 -0.022" />
+                <geom name="left/fixed_jaw_box2" class="collision_gripper" type="box" size="0.01 0.015 0.005" pos="-0.024 0 -0.04" />
+                <geom name="left/fixed_jaw_sph_tip1" class="collision_gripper" type="sphere" size="0.00075" pos="-0.0081 0 -0.101" />
+                <geom name="left/fixed_jaw_sph_tip2" class="collision_gripper" type="sphere" size="0.00075" pos="-0.0081 0.0035 -0.0975" />
+                <geom name="left/fixed_jaw_sph_tip3" class="collision_gripper" type="sphere" size="0.00075" pos="-0.0081 -0.0035 -0.0975" />
+                <geom type="mesh" class="collision_gripper_mesh" pos="0 -0.000218 0.00095" quat="0 1 0 0" mesh="wrist_roll_follower_so101_gripper_part0_v1" name="left/collision_or_visual_30" />
+                <geom name="left/fixed_jaw_box3" class="collision_gripper" type="capsule" size="0.0011 0.002" pos="-0.009 0 -0.103" euler="1.57 0 0" />
+                <geom name="left/fixed_jaw_box4" class="collision_gripper" type="box" size="0.001 0.004 0.004" pos="-0.009 0 -0.0982" />
+                <geom name="left/fixed_jaw_box5" class="collision_gripper" type="box" size="0.001 0.005 0.006" pos="-0.0108 0 -0.0905" />
+                <geom name="left/fixed_jaw_box6" class="collision_gripper" type="box" size="0.001 0.009 0.008" pos="-0.0125 0 -0.0727" />
+                <geom name="left/fixed_jaw_box7" class="collision_gripper" type="box" size="0.001 0.01 0.008" pos="-0.0143 0 -0.053" />
+                
+                <site group="3" name="left/gripperframe" pos="0.012 -0.000218 -0.098127" quat="1 0 1 0" />
+                
+                <body name="left/camera_mount">
+                  <camera name="left/wrist_cam" mode="fixed" pos="0.0 0.055 -0.045" resolution="1920 1080" sensorsize="0.00576 0.00324" focal="0.0036 0.0036" xyaxes="0.9754268753673545 -0.0 0.22032342320116424 0.1568574944104099 0.7022382896552765 -0.6944473421284872" />
+                  <geom type="mesh" mass="0.012" class="visual" pos="0 -0.000218 0.00095" quat="0 1 0 0" mesh="wrist_roll_follower_so101_camera_mount" material="wrist_roll_follower_so101_v1_material" name="left/collision_or_visual_36" />
+                  <geom name="left/camera_box1" class="collision_gripper" type="box" size="0.015 0.015 0.003" pos="-0.0025 0.03 -0.03" />
+                  <geom name="left/camera_box2" class="collision_gripper" type="box" size="0.021 0.021 0.003" pos="-0.001 0.06 -0.04" euler="-0.55 0 0" />
+                </body>
+                
+                <body name="left/moving_jaw_so101_v1" pos="0.0202 0.0188 -0.0234" quat="1 1 0 0">
+                  
+                  <joint axis="0 0 1" name="left/gripper" type="hinge" range="-0.174533 1.7453292" class="sts3215" />
+                  <inertial pos="-0.001575 -0.0300244 0.0192755" mass="0.012" fullinertia="6.61427e-06 1.89032e-06 5.28738e-06 -3.19807e-07 -5.90717e-09 -1.09945e-07" />
+                  
+                  <geom type="mesh" class="visual" pos="0 0 0.0189" quat="1 0 0 0" mesh="moving_jaw_so101_v1" material="moving_jaw_so101_v1_material" name="left/collision_or_visual_39" />
+                  
+                  <geom type="mesh" class="collision_gripper_mesh" pos="0 0 0.0189" quat="1 0 0 0" mesh="moving_jaw_so101_gripper_part0_v1" name="left/collision_or_visual_40" />
+                  <geom type="mesh" class="collision_gripper_mesh" pos="0 0 0.0189" quat="1 0 0 0" mesh="moving_jaw_so101_gripper_part1_v1" name="left/collision_or_visual_41" />
+                  <geom name="left/moving_jaw_box1" class="collision_gripper" type="box" size="0.01 0.01 0.015" pos="-0.0 -0.013 0.019" />
+                  <geom name="left/moving_jaw_sph_tip1" class="collision_gripper" type="sphere" size="0.00075" pos="-0.012 -0.078 0.0192" />
+                  <geom name="left/moving_jaw_sph_tip2" class="collision_gripper" type="sphere" size="0.00075" pos="-0.012 -0.0745 0.0225" />
+                  <geom name="left/moving_jaw_sph_tip3" class="collision_gripper" type="sphere" size="0.00075" pos="-0.012 -0.0745 0.0155" />
+                  <geom name="left/moving_jaw_box2" class="collision_gripper" type="box" size="0.001 0.004 0.004" pos="-0.0113 -0.076 0.01875" />
+                  <geom name="left/moving_jaw_box3" class="collision_gripper" type="box" size="0.001 0.005 0.006" pos="-0.0093 -0.067 0.01875" />
+                </body>
+              <site name="left/pinch" pos=".008 -.000218 -.09" quat="1 0 1 0" size=".002" rgba="0 1 0 1" group="3" /><site name="left/utensil_pinch" pos="-.001 -.000218 -.0982" quat="1 0 1 0" size=".002" group="3" /></body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  <body name="right/base" pos="0.28 0 0.385" quat="0 0 0 1" childclass="so101">
+      <inertial pos="0.0137179 -5.19711e-05 0.0334843" mass="0.147" fullinertia="0.000114686 0.000136117 0.000130364 -4.59787e-07 4.97151e-06 9.75275e-08" />
+      
+      <geom type="mesh" class="visual" pos="-0.006365 -9.9e-05 -0.0024" quat="1 1 1 1" mesh="base_motor_holder_so101_v1" material="base_motor_holder_so101_v1_material" name="right/collision_or_visual_0" />
+      
+      <geom type="mesh" class="visual" pos="-0.006365 0 -0.0024" quat="1 1 1 1" mesh="base_so101_v2" material="base_so101_v2_material" name="right/collision_or_visual_1" />
+      
+      <geom type="mesh" class="visual" pos="0.0263353 0 0.0437" quat="1 0 0 0" mesh="sts3215_03a_v1" material="sts3215_03a_v1_material" name="right/collision_or_visual_2" />
+      
+      <geom type="mesh" class="visual" pos="-0.0309827 -0.000199 0.0474" quat="1 1 1 1" mesh="waveshare_mounting_plate_so101_v2" material="waveshare_mounting_plate_so101_v2_material" name="right/collision_or_visual_3" />
+      
+      <site group="3" name="right/baseframe" pos="0 0 0" quat="1 0 0 0" />
+      
+      <body name="right/shoulder" pos="0.0388353 0 0.0624" quat="0 0 -1 0">
+        
+        <joint axis="0 0 1" name="right/shoulder_pan" type="hinge" range="-1.91986 1.91986" class="sts3215" />
+        <inertial pos="-0.0307604 -1.7e-05 -0.0252713" mass="0.100006" fullinertia="8.3759e-05 8.10403e-05 2.39783e-05 7.55525e-08 -1.16342e-06 1.54663e-07" />
+        
+        <geom type="mesh" class="visual" pos="-0.030399 0.000422 -0.0417" quat="1 1 1 -1" mesh="sts3215_03a_v1" material="sts3215_03a_v1_material" name="right/collision_or_visual_4" />
+        <geom type="box" class="collision" pos="-0.030399 0.000422 -0.0387" quat="1 1 1 -1" size="0.023 0.015 0.01" name="right/collision_or_visual_5" />
+        
+        <geom type="mesh" class="visual" pos="-0.067599 -0.0001778 0.01585" quat="1 1 -1 1" mesh="motor_holder_so101_base_v1" material="motor_holder_so101_base_v1_material" name="right/collision_or_visual_6" />
+        <geom type="box" class="collision" pos="-0.025 0 0.0" quat="1 1 -1 1" size="0.038 0.025 0.02" name="right/collision_or_visual_7" />
+        
+        <geom type="mesh" class="visual" pos="0.012201 2.2e-05 0.0464" quat="1 -1 0 0" mesh="rotation_pitch_so101_v1" material="rotation_pitch_so101_v1_material" name="right/collision_or_visual_8" />
+        
+        <body name="right/upper_arm" pos="-0.0303992 -0.0182778 -0.0542" quat="1 -1 -1 -1">
+          
+          <joint axis="0 0 1" name="right/shoulder_lift" type="hinge" range="-1.7453293 1.7453293" class="sts3215" />
+          <inertial pos="-0.089847 -0.008382 0.018409" mass="0.103" fullinertia="4.08002e-05 0.000147318 0.000142487 -1.97819e-05 -4.03016e-08 8.97326e-09" />
+          
+          <geom type="mesh" class="visual" pos="-0.11257 -0.0155 0.0187" quat="0 -1 1 0" mesh="sts3215_03a_v1" material="sts3215_03a_v1_material" name="right/collision_or_visual_9" />
+          <geom type="box" class="collision" pos="-0.06 0 0.02" quat="0 -1 1 0" size="0.01 0.07 0.03" name="right/collision_or_visual_10" />
+          
+          <geom type="mesh" class="visual" pos="-0.065085 0.012 0.0182" quat="0 1 0 0" mesh="upper_arm_so101_v1" material="upper_arm_so101_v1_material" name="right/collision_or_visual_11" />
+          <geom type="box" class="collision" pos="-0.12 -0.014 0.0182" quat="0 1 0 0" size="0.01 0.02 0.015" name="right/collision_or_visual_12" />
+          
+          <body name="right/lower_arm" pos="-0.11257 -0.028 0" quat="1 0 0 1">
+            
+            
+            <joint axis="0 0 1" name="right/elbow_flex" type="hinge" range="-1.69 1.69" class="sts3215" />
+            <inertial pos="-0.098070 0.0032438 0.018283" mass="0.104" fullinertia="2.87438e-05 0.000159844 0.00014529 7.41152e-06 1.26409e-06 -4.90188e-08" />
+            
+            <geom type="mesh" class="visual" pos="-0.06485 -0.032 0.0182" quat="0 1 0 0" mesh="under_arm_so101_v1" material="under_arm_so101_v1_material" name="right/collision_or_visual_13" />
+            <geom type="box" class="collision" pos="-0.05 0 0.0182" quat="0 1 0 0" size="0.07 0.01 0.03" name="right/collision_or_visual_14" />
+            
+            <geom type="mesh" class="visual" pos="-0.06485 -0.032 0.018" quat="0 -1 0 0" mesh="motor_holder_so101_wrist_v1" material="motor_holder_so101_wrist_v1_material" name="right/collision_or_visual_15" />
+            <geom type="box" class="collision" pos="-0.125 0.005 0.018" quat="0 -1 0 0" size="0.023 0.013 0.018" name="right/collision_or_visual_16" />
+            
+            <geom type="mesh" class="visual" pos="-0.1224 0.0052 0.0187" quat="0 0 1 0" mesh="sts3215_03a_v1" material="sts3215_03a_v1_material" name="right/collision_or_visual_17" />
+            
+            <body name="right/wrist" pos="-0.1349 0.0052 0" quat="1 0 0 -1">
+              
+              <joint axis="0 0 1" name="right/wrist_flex" type="hinge" range="-1.658063 1.658063" class="sts3215" />
+              <inertial pos="-0.000103312 -0.0386143 0.0281156" mass="0.079" fullinertia="3.68263e-05 2.5391e-05 2.1e-05 1.7893e-08 -5.28128e-08 3.6412e-06" />
+              
+              <geom type="mesh" class="visual" pos="0 -0.0424 0.0306" quat="1 1 1 -1" mesh="sts3215_03a_no_horn_v1" material="sts3215_03a_no_horn_v1_material" name="right/collision_or_visual_18" />
+              <geom type="box" class="collision" pos="0 -0.0424 0.0256" quat="1 1 1 -1" size="0.029 0.015 0.018" name="right/collision_or_visual_19" />
+              
+              <geom type="mesh" class="visual" pos="0 -0.028 0.0181" quat="1 -1 -1 -1" mesh="wrist_roll_pitch_so101_v2" material="wrist_roll_pitch_so101_v2_material" name="right/collision_or_visual_20" />
+              <geom type="box" class="collision" pos="0 -0.02 0.0191" quat="1 -1 -1 -1" size="0.027 0.01 0.03" name="right/collision_or_visual_21" />
+              
+              <body name="right/gripper" pos="5.55112e-17 -0.0611 0.0181" quat="0.0172091 -0.0172091 0.706897 0.706897">
+                
+                <joint axis="0 0 1" name="right/wrist_roll" type="hinge" range="-2.7438473 2.7438473" class="sts3215" />
+                <inertial pos="0.000214 0.000245 -0.025187" mass="0.087" fullinertia="2.75087e-05 4.33657e-05 3.45059e-05 -3.35241e-07 -5.7352e-06 -5.17847e-08" />
+                
+                <geom type="mesh" class="visual" pos="0.0077 0.0001 -0.0234" quat="1 -1 0 0" mesh="sts3215_03a_v1" material="sts3215_03a_v1_material" name="right/collision_or_visual_22" />
+                
+                <geom type="mesh" class="visual" pos="0 -0.000218 0.00095" quat="0 1 0 0" mesh="wrist_roll_follower_so101_v1" material="wrist_roll_follower_so101_v1_material" name="right/collision_or_visual_23" />
+                <geom type="box" class="collision" pos="0 -0.000218 0.00095" quat="0 1 0 0" size="0.01 0.01 0.018" name="right/collision_or_visual_24" />
+                
+                <geom name="right/fixed_jaw_box1" class="collision_gripper" type="box" size="0.0325 0.015 0.015" pos="-0.0025 0 -0.022" />
+                <geom name="right/fixed_jaw_box2" class="collision_gripper" type="box" size="0.01 0.015 0.005" pos="-0.024 0 -0.04" />
+                <geom name="right/fixed_jaw_sph_tip1" class="collision_gripper" type="sphere" size="0.00075" pos="-0.0081 0 -0.101" />
+                <geom name="right/fixed_jaw_sph_tip2" class="collision_gripper" type="sphere" size="0.00075" pos="-0.0081 0.0035 -0.0975" />
+                <geom name="right/fixed_jaw_sph_tip3" class="collision_gripper" type="sphere" size="0.00075" pos="-0.0081 -0.0035 -0.0975" />
+                <geom type="mesh" class="collision_gripper_mesh" pos="0 -0.000218 0.00095" quat="0 1 0 0" mesh="wrist_roll_follower_so101_gripper_part0_v1" name="right/collision_or_visual_30" />
+                <geom name="right/fixed_jaw_box3" class="collision_gripper" type="capsule" size="0.0011 0.002" pos="-0.009 0 -0.103" euler="1.57 0 0" />
+                <geom name="right/fixed_jaw_box4" class="collision_gripper" type="box" size="0.001 0.004 0.004" pos="-0.009 0 -0.0982" />
+                <geom name="right/fixed_jaw_box5" class="collision_gripper" type="box" size="0.001 0.005 0.006" pos="-0.0108 0 -0.0905" />
+                <geom name="right/fixed_jaw_box6" class="collision_gripper" type="box" size="0.001 0.009 0.008" pos="-0.0125 0 -0.0727" />
+                <geom name="right/fixed_jaw_box7" class="collision_gripper" type="box" size="0.001 0.01 0.008" pos="-0.0143 0 -0.053" />
+                
+                <site group="3" name="right/gripperframe" pos="0.012 -0.000218 -0.098127" quat="1 0 1 0" />
+                
+                <body name="right/camera_mount">
+                  <camera name="right/wrist_cam" mode="fixed" pos="0.0 0.055 -0.045" resolution="1920 1080" sensorsize="0.00576 0.00324" focal="0.0036 0.0036" xyaxes="0.9754268753673545 -0.0 0.22032342320116424 0.1568574944104099 0.7022382896552765 -0.6944473421284872" />
+                  <geom type="mesh" mass="0.012" class="visual" pos="0 -0.000218 0.00095" quat="0 1 0 0" mesh="wrist_roll_follower_so101_camera_mount" material="wrist_roll_follower_so101_v1_material" name="right/collision_or_visual_36" />
+                  <geom name="right/camera_box1" class="collision_gripper" type="box" size="0.015 0.015 0.003" pos="-0.0025 0.03 -0.03" />
+                  <geom name="right/camera_box2" class="collision_gripper" type="box" size="0.021 0.021 0.003" pos="-0.001 0.06 -0.04" euler="-0.55 0 0" />
+                </body>
+                
+                <body name="right/moving_jaw_so101_v1" pos="0.0202 0.0188 -0.0234" quat="1 1 0 0">
+                  
+                  <joint axis="0 0 1" name="right/gripper" type="hinge" range="-0.174533 1.7453292" class="sts3215" />
+                  <inertial pos="-0.001575 -0.0300244 0.0192755" mass="0.012" fullinertia="6.61427e-06 1.89032e-06 5.28738e-06 -3.19807e-07 -5.90717e-09 -1.09945e-07" />
+                  
+                  <geom type="mesh" class="visual" pos="0 0 0.0189" quat="1 0 0 0" mesh="moving_jaw_so101_v1" material="moving_jaw_so101_v1_material" name="right/collision_or_visual_39" />
+                  
+                  <geom type="mesh" class="collision_gripper_mesh" pos="0 0 0.0189" quat="1 0 0 0" mesh="moving_jaw_so101_gripper_part0_v1" name="right/collision_or_visual_40" />
+                  <geom type="mesh" class="collision_gripper_mesh" pos="0 0 0.0189" quat="1 0 0 0" mesh="moving_jaw_so101_gripper_part1_v1" name="right/collision_or_visual_41" />
+                  <geom name="right/moving_jaw_box1" class="collision_gripper" type="box" size="0.01 0.01 0.015" pos="-0.0 -0.013 0.019" />
+                  <geom name="right/moving_jaw_sph_tip1" class="collision_gripper" type="sphere" size="0.00075" pos="-0.012 -0.078 0.0192" />
+                  <geom name="right/moving_jaw_sph_tip2" class="collision_gripper" type="sphere" size="0.00075" pos="-0.012 -0.0745 0.0225" />
+                  <geom name="right/moving_jaw_sph_tip3" class="collision_gripper" type="sphere" size="0.00075" pos="-0.012 -0.0745 0.0155" />
+                  <geom name="right/moving_jaw_box2" class="collision_gripper" type="box" size="0.001 0.004 0.004" pos="-0.0113 -0.076 0.01875" />
+                  <geom name="right/moving_jaw_box3" class="collision_gripper" type="box" size="0.001 0.005 0.006" pos="-0.0093 -0.067 0.01875" />
+                </body>
+              <site name="right/pinch" pos=".008 -.000218 -.09" quat="1 0 1 0" size=".002" rgba="0 1 0 1" group="3" /></body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  <body name="drawer" pos="-.02 -.18 .39"><joint name="drawer/slide" type="slide" axis="-1 0 0" range="0 .11" damping="1" frictionloss=".4" /><geom name="drawer/floor" type="box" pos="0 0 0" size=".09 .09 .004" mass=".04" rgba=".4 .5 .6 1" friction=".5 .005 .0001" /><geom name="drawer/front" type="box" pos="-.086 0 .017" size=".004 .09 .017" mass=".04" rgba=".4 .5 .6 1" friction=".5 .005 .0001" /><geom name="drawer/back" type="box" pos=".086 0 .017" size=".004 .09 .017" mass=".04" rgba=".4 .5 .6 1" friction=".5 .005 .0001" /><geom name="drawer/left" type="box" pos="0 -.086 .017" size=".082 .004 .017" mass=".04" rgba=".4 .5 .6 1" friction=".5 .005 .0001" /><geom name="drawer/right" type="box" pos="0 .086 .017" size=".082 .004 .017" mass=".04" rgba=".4 .5 .6 1" friction=".5 .005 .0001" /><geom name="drawer/stem" type="box" pos="-.11 0 .005" size=".02 .006 .006" mass=".005" rgba=".7 .7 .7 1" /><geom name="drawer/handle" type="box" pos="-.137 0 .01" size=".01 .01 .016" mass=".015" rgba=".1 .7 .8 1" friction="1 .005 .0001" /></body><geom name="cabinet_left" type="box" pos="-.02 -.277 .404" size=".102 .004 .025" rgba=".3 .3 .3 1" /><geom name="cabinet_right" type="box" pos="-.02 -.083 .404" size=".102 .004 .025" rgba=".3 .3 .3 1" /><geom name="cabinet_back" type="box" pos=".078 -.18 .404" size=".004 .093 .025" rgba=".3 .3 .3 1" /><geom name="cabinet_floor" type="box" pos="-.02 -.18 .38" size=".102 .093 .003" rgba=".3 .3 .3 1" /><geom name="cabinet_roof" type="box" pos="-.014 -.18 .433" size=".096 .093 .004" rgba=".3 .3 .3 1" /><body name="spoon" pos="-0.065 -0.18 0.4"><freejoint name="spoon/free" /><geom name="spoon/shaft" type="box" size=".006 .02 .006" mass=".012" rgba=".8 .8 .85 1" pos="0 -.032 0" priority="1" condim="6" friction="1 .01 .002" solref=".01 1" /><geom name="spoon/bowl" type="ellipsoid" pos="0 .045 0" size=".011 .014 .003" mass=".003" rgba=".8 .8 .85 1" /><geom name="spoon/neck" type="capsule" fromto="0 -.012 0 0 .035 0" size=".0025" mass=".002" rgba=".8 .8 .85 1" /></body><body name="fork" pos="-0.035 -0.18 0.4"><freejoint name="fork/free" /><geom name="fork/shaft" type="box" size=".006 .02 .006" mass=".012" rgba=".8 .8 .85 1" pos="0 -.032 0" priority="1" condim="6" friction="1 .01 .002" solref=".01 1" /><geom name="fork/bridge" type="box" pos="0 .034 0" size=".01 .003 .002" mass=".002" rgba=".8 .8 .85 1" /><geom name="fork/tine0" type="box" pos="-0.008 .046 0" size=".001 .012 .002" mass=".0004" rgba=".8 .8 .85 1" /><geom name="fork/tine1" type="box" pos="-0.003 .046 0" size=".001 .012 .002" mass=".0004" rgba=".8 .8 .85 1" /><geom name="fork/tine2" type="box" pos="0.003 .046 0" size=".001 .012 .002" mass=".0004" rgba=".8 .8 .85 1" /><geom name="fork/tine3" type="box" pos="0.008 .046 0" size=".001 .012 .002" mass=".0004" rgba=".8 .8 .85 1" /><geom name="fork/neck" type="capsule" fromto="0 -.012 0 0 .035 0" size=".0025" mass=".002" rgba=".8 .8 .85 1" /></body><body name="cup" pos=".136 .110 .378" euler="0 0 3.141592653589793"><freejoint name="cup/free" /><geom name="cup/base" rgba=".86 .75 .55 1" friction="1 .005 .0001" solref=".01 1" solimp=".95 .99 .001" type="cylinder" size=".028 .003" mass=".018" /><geom name="cup/wall0" rgba=".86 .75 .55 1" friction="1 .005 .0001" solref=".01 1" solimp=".95 .99 .001" type="box" pos="0.029 0.0 .03" size=".0018 .0059 .03" euler="0 0 0.0" mass="0.0020625" /><geom name="cup/wall1" rgba=".86 .75 .55 1" friction="1 .005 .0001" solref=".01 1" solimp=".95 .99 .001" type="box" pos="0.026792506442827317 0.011097819538587603 .03" size=".0018 .0059 .03" euler="0 0 0.39269908169872414" mass="0.0020625" /><geom name="cup/wall2" rgba=".86 .75 .55 1" friction="1 .005 .0001" solref=".01 1" solimp=".95 .99 .001" type="box" pos="0.020506096654409882 0.02050609665440988 .03" size=".0018 .0059 .03" euler="0 0 0.7853981633974483" mass="0.0020625" /><geom name="cup/wall3" rgba=".86 .75 .55 1" friction="1 .005 .0001" solref=".01 1" solimp=".95 .99 .001" type="box" pos="0.011097819538587605 0.026792506442827317 .03" size=".0018 .0059 .03" euler="0 0 1.1780972450961724" mass="0.0020625" /><geom name="cup/wall4" rgba=".86 .75 .55 1" friction="1 .005 .0001" solref=".01 1" solimp=".95 .99 .001" type="box" pos="1.775737858763662e-18 0.029 .03" size=".0018 .0059 .03" euler="0 0 1.5707963267948966" mass="0.0020625" /><geom name="cup/wall5" rgba=".86 .75 .55 1" friction="1 .005 .0001" solref=".01 1" solimp=".95 .99 .001" type="box" pos="-0.011097819538587603 0.026792506442827317 .03" size=".0018 .0059 .03" euler="0 0 1.9634954084936207" mass="0.0020625" /><geom name="cup/wall6" rgba=".86 .75 .55 1" friction="1 .005 .0001" solref=".01 1" solimp=".95 .99 .001" type="box" pos="-0.02050609665440988 0.020506096654409882 .03" size=".0018 .0059 .03" euler="0 0 2.356194490192345" mass="0.0020625" /><geom name="cup/wall7" rgba=".86 .75 .55 1" friction="1 .005 .0001" solref=".01 1" solimp=".95 .99 .001" type="box" pos="-0.026792506442827317 0.011097819538587607 .03" size=".0018 .0059 .03" euler="0 0 2.748893571891069" mass="0.0020625" /><geom name="cup/wall8" rgba=".86 .75 .55 1" friction="1 .005 .0001" solref=".01 1" solimp=".95 .99 .001" type="box" pos="-0.029 3.551475717527324e-18 .03" size=".0018 .0059 .03" euler="0 0 3.141592653589793" mass="0.0020625" /><geom name="cup/wall9" rgba=".86 .75 .55 1" friction="1 .005 .0001" solref=".01 1" solimp=".95 .99 .001" type="box" pos="-0.02679250644282732 -0.011097819538587602 .03" size=".0018 .0059 .03" euler="0 0 3.5342917352885173" mass="0.0020625" /><geom name="cup/wall10" rgba=".86 .75 .55 1" friction="1 .005 .0001" solref=".01 1" solimp=".95 .99 .001" type="box" pos="-0.020506096654409885 -0.02050609665440988 .03" size=".0018 .0059 .03" euler="0 0 3.9269908169872414" mass="0.0020625" /><geom name="cup/wall11" rgba=".86 .75 .55 1" friction="1 .005 .0001" solref=".01 1" solimp=".95 .99 .001" type="box" pos="-0.01109781953858762 -0.02679250644282731 .03" size=".0018 .0059 .03" euler="0 0 4.319689898685965" mass="0.0020625" /><geom name="cup/wall12" rgba=".86 .75 .55 1" friction="1 .005 .0001" solref=".01 1" solimp=".95 .99 .001" type="box" pos="-5.327213576290986e-18 -0.029 .03" size=".0018 .0059 .03" euler="0 0 4.71238898038469" mass="0.0020625" /><geom name="cup/wall13" rgba=".86 .75 .55 1" friction="1 .005 .0001" solref=".01 1" solimp=".95 .99 .001" type="box" pos="0.01109781953858761 -0.026792506442827314 .03" size=".0018 .0059 .03" euler="0 0 5.105088062083414" mass="0.0020625" /><geom name="cup/wall14" rgba=".86 .75 .55 1" friction="1 .005 .0001" solref=".01 1" solimp=".95 .99 .001" type="box" pos="0.020506096654409875 -0.020506096654409885 .03" size=".0018 .0059 .03" euler="0 0 5.497787143782138" mass="0.0020625" /><geom name="cup/wall15" rgba=".86 .75 .55 1" friction="1 .005 .0001" solref=".01 1" solimp=".95 .99 .001" type="box" pos="0.02679250644282731 -0.011097819538587623 .03" size=".0018 .0059 .03" euler="0 0 5.890486225480862" mass="0.0020625" /><geom name="cup/handle_top" rgba=".86 .75 .55 1" friction="1 .005 .0001" solref=".01 1" solimp=".95 .99 .001" type="capsule" fromto=".028 0 0.047 .049 0 0.047" size=".004" mass=".003" /><geom name="cup/handle_bottom" rgba=".86 .75 .55 1" friction="1 .005 .0001" solref=".01 1" solimp=".95 .99 .001" type="capsule" fromto=".028 0 0.013 .049 0 0.013" size=".004" mass=".003" /><geom name="cup/handle_outer" rgba=".86 .75 .55 1" friction="1 .005 .0001" solref=".01 1" solimp=".95 .99 .001" type="capsule" fromto=".049 0 .013 .049 0 .047" size=".004" mass=".003" /></body><geom name="plate_rack" type="cylinder" pos="0 .30 .3925" size=".035 .0175" rgba=".3 .3 .3 1" /><body name="plate" pos="0 .30 .413"><freejoint name="plate/free" /><geom name="plate/base" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="cylinder" size=".065 .003" mass=".06" /><geom name="plate/rim0" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="0.063 0.0 .007" size=".003 .0084 .007" euler="0 0 0.0" mass="0.0008333333333333334" /><geom name="plate/rim1" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="0.060853327056211305 0.016305599841458806 .007" size=".003 .0084 .007" euler="0 0 0.2617993877991494" mass="0.0008333333333333334" /><geom name="plate/rim2" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="0.05455960043841964 0.03149999999999999 .007" size=".003 .0084 .007" euler="0 0 0.5235987755982988" mass="0.0008333333333333334" /><geom name="plate/rim3" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="0.044547727214752496 0.04454772721475249 .007" size=".003 .0084 .007" euler="0 0 0.7853981633974483" mass="0.0008333333333333334" /><geom name="plate/rim4" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="0.03150000000000001 0.054559600438419634 .007" size=".003 .0084 .007" euler="0 0 1.0471975511965976" mass="0.0008333333333333334" /><geom name="plate/rim5" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="0.016305599841458806 0.060853327056211305 .007" size=".003 .0084 .007" euler="0 0 1.3089969389957472" mass="0.0008333333333333334" /><geom name="plate/rim6" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="3.8576374173141625e-18 0.063 .007" size=".003 .0084 .007" euler="0 0 1.5707963267948966" mass="0.0008333333333333334" /><geom name="plate/rim7" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="-0.0163055998414588 0.060853327056211305 .007" size=".003 .0084 .007" euler="0 0 1.832595714594046" mass="0.0008333333333333334" /><geom name="plate/rim8" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="-0.031499999999999986 0.05455960043841964 .007" size=".003 .0084 .007" euler="0 0 2.0943951023931953" mass="0.0008333333333333334" /><geom name="plate/rim9" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="-0.04454772721475249 0.044547727214752496 .007" size=".003 .0084 .007" euler="0 0 2.356194490192345" mass="0.0008333333333333334" /><geom name="plate/rim10" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="-0.05455960043841964 0.03149999999999999 .007" size=".003 .0084 .007" euler="0 0 2.6179938779914944" mass="0.0008333333333333334" /><geom name="plate/rim11" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="-0.0608533270562113 0.016305599841458823 .007" size=".003 .0084 .007" euler="0 0 2.8797932657906435" mass="0.0008333333333333334" /><geom name="plate/rim12" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="-0.063 7.715274834628325e-18 .007" size=".003 .0084 .007" euler="0 0 3.141592653589793" mass="0.0008333333333333334" /><geom name="plate/rim13" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="-0.060853327056211305 -0.01630559984145881 .007" size=".003 .0084 .007" euler="0 0 3.4033920413889427" mass="0.0008333333333333334" /><geom name="plate/rim14" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="-0.05455960043841965 -0.031499999999999986 .007" size=".003 .0084 .007" euler="0 0 3.665191429188092" mass="0.0008333333333333334" /><geom name="plate/rim15" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="-0.04454772721475252 -0.04454772721475247 .007" size=".003 .0084 .007" euler="0 0 3.926990816987241" mass="0.0008333333333333334" /><geom name="plate/rim16" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="-0.03150000000000003 -0.05455960043841962 .007" size=".003 .0084 .007" euler="0 0 4.1887902047863905" mass="0.0008333333333333334" /><geom name="plate/rim17" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="-0.0163055998414588 -0.060853327056211305 .007" size=".003 .0084 .007" euler="0 0 4.4505895925855405" mass="0.0008333333333333334" /><geom name="plate/rim18" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="-1.1572912251942487e-17 -0.063 .007" size=".003 .0084 .007" euler="0 0 4.71238898038469" mass="0.0008333333333333334" /><geom name="plate/rim19" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="0.016305599841458778 -0.06085332705621131 .007" size=".003 .0084 .007" euler="0 0 4.974188368183839" mass="0.0008333333333333334" /><geom name="plate/rim20" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="0.03150000000000001 -0.054559600438419634 .007" size=".003 .0084 .007" euler="0 0 5.235987755982989" mass="0.0008333333333333334" /><geom name="plate/rim21" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="0.04454772721475248 -0.0445477272147525 .007" size=".003 .0084 .007" euler="0 0 5.497787143782138" mass="0.0008333333333333334" /><geom name="plate/rim22" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="0.05455960043841962 -0.03150000000000003 .007" size=".003 .0084 .007" euler="0 0 5.759586531581287" mass="0.0008333333333333334" /><geom name="plate/rim23" rgba=".86 .75 .55 1" friction="1.5 .01 .0001" priority="1" solref=".005 1" solimp=".95 .99 .001" type="box" pos="0.06085332705621129 -0.016305599841458858 .007" size=".003 .0084 .007" euler="0 0 6.021385919380436" mass="0.0008333333333333334" /></body><body name="practice_object" pos="0 0 .391"><freejoint name="practice_object/free" /><geom name="practice_object" type="box" size=".09 .01 .016" mass=".025" rgba=".1 .7 .8 1" friction="1 .01 .002" condim="6" priority="1" solref=".01 1" /></body></worldbody><actuator><position class="sts3215" name="left/shoulder_pan" joint="left/shoulder_pan" ctrlrange="-1.91986 1.91986" />
+    <position class="sts3215" name="left/shoulder_lift" joint="left/shoulder_lift" ctrlrange="-1.74533 1.74533" />
+    <position class="sts3215" name="left/elbow_flex" joint="left/elbow_flex" ctrlrange="-1.69 1.69" />
+    <position class="sts3215" name="left/wrist_flex" joint="left/wrist_flex" ctrlrange="-1.65806 1.65806" />
+    <position class="sts3215" name="left/wrist_roll" joint="left/wrist_roll" ctrlrange="-2.74385 2.84121" />
+    <position class="sts3215" name="left/gripper" joint="left/gripper" ctrlrange="-0.17453 1.74533" />
+  <position class="sts3215" name="right/shoulder_pan" joint="right/shoulder_pan" ctrlrange="-1.91986 1.91986" />
+    <position class="sts3215" name="right/shoulder_lift" joint="right/shoulder_lift" ctrlrange="-1.74533 1.74533" />
+    <position class="sts3215" name="right/elbow_flex" joint="right/elbow_flex" ctrlrange="-1.69 1.69" />
+    <position class="sts3215" name="right/wrist_flex" joint="right/wrist_flex" ctrlrange="-1.65806 1.65806" />
+    <position class="sts3215" name="right/wrist_roll" joint="right/wrist_roll" ctrlrange="-2.74385 2.84121" />
+    <position class="sts3215" name="right/gripper" joint="right/gripper" ctrlrange="-0.17453 1.74533" />
+  </actuator></mujoco>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
+import { OperatorPanel } from "./OperatorPanel";
 
 type Milestone = { id: string; title: string; state: string; detail: string };
 type Project = {
@@ -29,6 +30,7 @@ type Run = {
   created_at?: string;
   files?: Record<string, string>;
   metrics?: Record<string, unknown>;
+  summary?: { recorded_training_steps: number; omitted_metric_fields: string[] };
   error?: string;
 };
 
@@ -44,14 +46,16 @@ function RunLink({ run, select }: { run: Run; select: (id: string) => void }) {
     return <span title={run.error}>Check local files</span>;
   if (run.files?.["replay.gif"])
     return <button onClick={() => select(run.run_id)}>Replay ↑</button>;
-  const filename = ["error.txt", "doctor.json", "trajectory.csv", "observations.jsonl"].find(
+  const filename = ["error.txt", "failure.txt", "proposal.json", "response.txt", "result.json", "suite-results.json", "metrics.json", "score.json", "doctor.json", "trajectory.csv", "observations.jsonl", "steps.jsonl", "act_config.json"].find(
     (name) => run.files?.[name],
   );
   return filename ? (
     <a href={`/api/runs/${run.run_id}/files/${filename}`}>
-      {filename === "error.txt"
+      {filename === "error.txt" || filename === "failure.txt"
         ? "Error"
-        : filename === "trajectory.csv" || filename === "observations.jsonl"
+        : filename === "proposal.json" || filename === "response.txt"
+          ? "Decision"
+        : filename === "trajectory.csv" || filename === "observations.jsonl" || filename === "steps.jsonl"
           ? "Trace"
           : "Report"}{" "}
       ↗
@@ -67,21 +71,22 @@ function App() {
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [before, setBefore] = useState<string | null>(null);
+  const [loadingRuns, setLoadingRuns] = useState(false);
   useEffect(() => {
     let active = true;
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 15000);
     setError("");
+    setLoadingRuns(true);
     Promise.all([
-      readJson<Project>("/api/project", controller.signal),
-      readJson<Run[]>("/api/runs", controller.signal),
+      readJson<Project>("/api/project", controller.signal).then(data => {
+        if (active) setProject(data);
+      }),
+      readJson<Run[]>(`/api/runs?limit=20${before ? `&before=${encodeURIComponent(before)}` : ""}`, controller.signal).then(history => {
+        if (active) setRuns(history);
+      }),
     ])
-      .then(([data, history]) => {
-        if (active) {
-          setProject(data);
-          setRuns(history);
-        }
-      })
       .catch((reason: Error) => {
         if (active)
           setError(
@@ -90,25 +95,38 @@ function App() {
               : reason.message,
           );
       })
-      .finally(() => window.clearTimeout(timeout));
+      .finally(() => {
+        window.clearTimeout(timeout);
+        if (active) setLoadingRuns(false);
+      });
     return () => {
       active = false;
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [revision]);
+  }, [revision, before]);
   const labs = runs.filter(
     (run) =>
-      ["preparation_pendulum", "dual_arm_foundation", "contact_grasp_teacher"].includes(run.kind ?? "") &&
+      ["preparation_pendulum", "dual_arm_foundation", "contact_grasp_teacher", "contact_placement_teacher", "contact_handoff_teacher", "contact_drawer_teacher", "contact_cup_teacher", "contact_plate_teacher", "contact_utensils_teacher", "act_policy_rollout", "dinner_teacher"].includes(run.kind ?? "") &&
       run.integrity === "verified",
   );
   const selected = labs.find((run) => run.run_id === selectedId) ?? labs.find((run) => run.files?.["replay.gif"]) ?? labs[0];
-  const isGrasp = selected?.kind === "contact_grasp_teacher";
-  const isDual = selected?.kind === "dual_arm_foundation" || isGrasp;
+  const isDinner = selected?.kind === "dinner_teacher";
+  const dinnerScore = selected?.metrics?.score as { full_workflow_success?: boolean } | undefined;
+  const isHandoff = selected?.kind === "contact_handoff_teacher";
+  const isLearned = selected?.kind === "act_policy_rollout";
+  const isPlate = selected?.kind === "contact_plate_teacher";
+  const isUtensils = selected?.kind === "contact_utensils_teacher";
+  const isCup = selected?.kind === "contact_cup_teacher";
+  const isDrawer = selected?.kind === "contact_drawer_teacher";
+  const isPlacement = selected?.kind === "contact_placement_teacher";
+  const isGrasp = selected?.kind === "contact_grasp_teacher" || isPlacement || isHandoff || isDrawer || isCup || isPlate || isUtensils || isLearned;
+  const isDual = selected?.kind === "dual_arm_foundation" || isGrasp || isDinner;
   const doctor = runs.find(
     (run) => run.kind === "preparation_runtime" && run.integrity === "verified",
   );
   const mps = doctor?.metrics?.mps as { status?: string } | undefined;
+  const actProbe = runs.find(run => run.kind === "act_runtime_probe" && run.integrity === "verified" && run.outcome === "completed");
   const replay = selected?.files?.["replay.gif"]
     ? `/api/runs/${selected.run_id}/files/replay.gif`
     : null;
@@ -195,16 +213,16 @@ function App() {
           <div>
             <span className="fact-label">CURRENT SCOPE</span>
             <strong>{project?.phase_label ?? "Loading"}</strong>
-            <small>Dinner-table control is pending</small>
+            <small>Learned dinner-table control is pending</small>
           </div>
           <div>
             <span className="fact-label">LOCAL ML PROBE</span>
             <strong>
-              {mps?.status === "passed"
+              {actProbe ? `ACT on ${String(actProbe.metrics?.actual_device ?? "local device")}` : mps?.status === "passed"
                 ? "MPS + CPU checked"
                 : "Awaiting recorded probe"}
             </strong>
-            <small>Arithmetic only · model tests come later</small>
+            <small>{actProbe ? "Runtime checked · task learning unproven" : "Arithmetic only · model tests come later"}</small>
           </div>
           <div>
             <span className="fact-label">FINAL INTEL TARGET</span>
@@ -219,7 +237,7 @@ function App() {
             <div className="card-heading">
               <div>
                 <span className="small-label">MUJOCO LEARNING LAB</span>
-                <h2>{isGrasp ? "Reach. Grasp. Release." : isDual ? "Two arms. Three camera views." : "One joint. A complete loop."}</h2>
+                <h2>{isDinner ? "Set the table. One continuous run." : isLearned ? "What did the policy learn?" : isUtensils ? "Open the drawer. Set out the utensils." : isPlate ? "Lift the plate. Set it down." : isCup ? "Carry the cup. Set it upright." : isDrawer ? "Grasp the handle. Open the drawer." : isHandoff ? "Grasp. Share. Hand over." : isPlacement ? "Pick up. Carry. Place." : isGrasp ? "Reach. Grasp. Release." : isDual ? "Two arms. Three camera views." : "One joint. A complete loop."}</h2>
               </div>
               <span className="tag">Recorded simulation · {selected?.outcome ?? "no run"}</span>
             </div>
@@ -243,17 +261,25 @@ function App() {
             </div>
             <div className="sim-footer">
               <span>
-                <b>200 Hz</b> physics
+                <b>{Number(selected?.metrics?.physics_hz ?? (isDinner ? 1000 : 200))} Hz</b> physics
               </span>
               <span>
                 <b>20 Hz</b> control
               </span>
-              <span>{isDual ? "Dual SO-101 · no learned policy" : "Generic pendulum · no learned policy"}</span>
+              <span>{isLearned ? "ACT · training-scene diagnostic" : isDual ? "Dual SO-101 · scripted control" : "Generic pendulum · no learned policy"}</span>
             </div>
+            {isDinner && selected && (
+              <p className="scope-note">
+                Full teacher workflow physical checks: <strong>{dinnerScore?.full_workflow_success === true ? "passed" : "failed"}</strong>.
+                {" "}One authored scene, contact-based drawer use, tableware placement and hand-off.
+                Scripted joint targets; learned dinner setup and reliability evaluation remain unfinished.
+                {" "}<a href={`/api/runs/${selected.run_id}/files/score.json`}>Inspect the independent score →</a>
+              </p>
+            )}
             {isGrasp && selected && (
               <p className="scope-note">
-                Contact test: <strong>{selected.metrics?.grasp_success === true ? "passed" : "failed"}</strong>.
-                {" "}Scripted teacher with simulator truth; full dinner task remains untested.
+                {isUtensils ? "Utensil retrieval" : isPlate ? "Plate placement" : isCup ? "Cup placement" : isDrawer ? "Drawer" : isHandoff ? "Hand-off" : isPlacement ? "Placement" : "Grasp"} test: <strong>{selected.metrics?.[isUtensils ? "utensils_success" : isPlate ? "plate_success" : isCup ? "cup_success" : isDrawer ? "drawer_success" : isHandoff ? "handoff_success" : "grasp_success"] === true ? "passed" : "failed"}</strong>.
+                {" "}{isLearned ? "Learned left-arm actions from images and joints; right arm held by supervisor. This is a training-scene test." : "Scripted teacher with simulator truth; this run tests an individual skill."}
                 {" "}<a href={`/api/runs/${selected.run_id}/files/scoring-truth.jsonl`}>Inspect contact evidence →</a>
               </p>
             )}
@@ -266,21 +292,22 @@ function App() {
               Change one thing.
             </h2>
             <p>
-              Watch the left arm lift a block, hold it, and release it using physical contacts.
+              Watch both arms open the drawer, place tableware and hand over an object using physical contacts.
             </p>
-            <code>.venv/bin/bimanual grasp</code>
-            <a className="text-link" href="/read/docs/CONTACT_GRASP.md">
-              Open contact-grasp walkthrough <span>→</span>
+            <code>.venv/bin/bimanual dinner-teacher</code>
+            <a className="text-link" href="/read/docs/DINNER_SCENE.md">
+              Open dinner-teacher walkthrough <span>→</span>
             </a>
             <div className="scope-note">
               <strong>What this establishes</strong>
               <p>
-                This is one bounded contact skill. Drawer use, hand-offs, learned
-                control, task reasoning, and Intel deployment remain to be built and tested.
+                The scripted teacher has completed a dinner-table workflow in one authored scene.
+                Reliable learned control, live task reasoning and Intel deployment remain unfinished.
               </p>
             </div>
           </div>
         </section>
+        <OperatorPanel />
         <section id="learn">
           <div className="section-heading">
             <div>
@@ -349,9 +376,48 @@ function App() {
                             ? "Dual-arm foundation"
                           : run.kind === "contact_grasp_teacher"
                             ? "Contact grasp teacher"
+                          : run.kind === "contact_placement_teacher"
+                            ? "Contact placement teacher"
+                          : run.kind === "contact_handoff_teacher"
+                            ? "Contact hand-off teacher"
+                          : run.kind === "contact_drawer_teacher"
+                            ? "Contact drawer teacher"
+                          : run.kind === "contact_cup_teacher"
+                            ? "Contact cup teacher"
+                          : run.kind === "contact_plate_teacher"
+                            ? "Contact plate teacher"
+                          : run.kind === "contact_utensils_teacher"
+                            ? "Contact utensils teacher"
+                          : run.kind === "dinner_teacher"
+                            ? "Complete dinner teacher"
+                          : run.kind === "act_runtime_probe"
+                            ? "ACT runtime probe"
+                          : run.kind === "act_training"
+                            ? "ACT training"
+                          : run.kind === "act_policy_rollout"
+                            ? "ACT learned rollout"
+                          : run.kind === "training_cohort_skill_attempt"
+                            ? "ACT skill training attempt"
+                          : run.kind === "learned_skill_teacher_prepared_physical_evaluation"
+                            ? "Learned skill physical check"
+                          : run.kind === "learned_skill_teacher_prepared_physical_evaluation_process"
+                            ? "Guarded learned skill check"
+                          : run.kind === "six_skill_teacher_prepared_physical_suite_report"
+                            ? "Six-skill physical suite"
+                          : run.kind === "dinner_workflow_process"
+                            ? "Guarded dinner workflow"
+                          : run.kind === "local_workflow_release_case"
+                            ? "Frozen local release case"
+                          : run.kind === "local_workflow_release_suite"
+                            ? "Local release suite"
                           : run.kind === "preparation_runtime"
                             ? "Runtime probe"
-                            : "Unreadable run"}
+                            : run.kind ? run.kind.replaceAll("_", " ") : "Unreadable run"}
+                        {run.summary && (
+                          <small title="Individual training updates are available in the complete trace.">
+                            {" · "}{run.summary.recorded_training_steps.toLocaleString()} recorded updates
+                          </small>
+                        )}
                       </td>
                       <td>
                         <span
@@ -379,8 +445,13 @@ function App() {
             </table>
           </div>
           <p className="table-note">
-            These development runs cover runtime checks and an isolated contact skill.
-            They are not full dinner-task evaluations or judging scores.{" "}
+            {loadingRuns ? "Checking this page’s evidence… " : "Showing up to 20 runs per page. "}
+            <button disabled={loadingRuns || runs.length < 20 || !!error}
+              onClick={() => { setBefore(runs[runs.length - 1].run_id); setSelectedId(null); }}>Older runs</button>{" "}
+            <button disabled={loadingRuns || before === null}
+              onClick={() => { setBefore(null); setSelectedId(null); }}>Newest runs</button>{" "}
+            These development runs include a scripted dinner baseline and bounded learned-skill checks.
+            They are not release reliability evaluations or judging scores.{" "}
             <a href="/read/docs/EVIDENCE.md">Evidence protocol ↗</a>
           </p>
         </section>

@@ -8,14 +8,21 @@ MuJoCo stepping/rendering, deterministic lab replay, usable portal/lessons,
 passing checks, and a current handoff record. B1/B2 may remain open without
 pretending the whole product is complete.
 
-## M1 — Physical foundation (authorized; in progress)
+## M1 — Physical foundation (locally complete; Intel checks await B2)
 
 The event-window authorization is recorded in [decision 0003](decisions/0003-event-window-implementation.md).
 Dual-arm loading, mapping, bounded controls and camera rendering are implemented;
-see the [foundation walkthrough](DUAL_ARM_FOUNDATION.md). A left-arm contact
-grasp/hold/release with bounded IK is also implemented; see the [contact walkthrough](CONTACT_GRASP.md).
-The steps below still
-require task-level evidence before M1 is complete.
+see the [foundation walkthrough](DUAL_ARM_FOUNDATION.md). Either arm can grasp and place a practice block with bounded IK; see the
+[contact walkthrough](CONTACT_GRASP.md). A contact-only practice-bar transfer is
+implemented with independent ownership checks; see [hand-off](HANDOFF.md).
+A passive [drawer](DRAWER.md) now opens through contact and remains open after
+release with its utensil proxies retained. A hollow [cup](CUP.md) and [plate](PLATE.md) now pass nominal placement.
+The [utensil teacher](UTENSILS.md) opens the drawer and places both utensils in one
+continuous run. A first [continuous teacher episode](DINNER_SCENE.md) now passes in an authored
+scene. The supported command reproduces all physical checks with three-camera capture
+from clean checkpoint `bc0b5c0`, run `20260911T013229-b7184e9ba66a`. The local exit
+checks below are satisfied for one authored teacher scene; generalization and
+learned execution remain M2–M4 work.
 
 1. Import the pinned SO-101 assets with license; namespace joints, actuators and cameras.
 2. Build the reachable table/drawer/utensil scene and verify valid reset configurations.
@@ -24,7 +31,11 @@ require task-level evidence before M1 is complete.
 
 Exit: joint/action/camera mapping tests, stable scene stepping, drawer/placement/
 hand-off evidence from the teacher, explicit failure cases, no artificial attachment.
-Run Intel rendering and a tiny OpenVINO conversion probe as soon as B2 resolves.
+Per the user's September 11 direction, defer Intel access and setup until the
+local training work is complete, not merely the first skill checkpoint. Then
+arrange a zero-cost eligible host and run Intel rendering and an OpenVINO
+conversion probe. The rejected request had no explanation; do not wait on an
+assumed pending allocation or investigate the rejection during local training.
 
 ## M2 — Learned workflow (M1 required)
 
@@ -51,7 +62,8 @@ threshold; do not reclassify it for the deadline.
 ## M4 — Production hardening (after hackathon)
 
 Evaluate nominal and perturbation suites, expand fault injection, test process
-interruption and checkpoint rollback, document support/runbooks, and validate the
+interruption and the implemented verified checkpoint rollback path with real
+candidates, document support/runbooks, and validate the
 declared operating envelope. Run at least 100 nominal and 100 perturbed episodes
 for the accepted internal targets. Examine confidence intervals and failure classes.
 

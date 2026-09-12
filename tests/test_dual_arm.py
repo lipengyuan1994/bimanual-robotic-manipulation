@@ -150,3 +150,43 @@ def test_camera_freshness_and_self_contained_scene(env, tmp_path):
     assert store.verify(result.run_id).metrics["max_contacts_per_physics_step"] == 0
     rows = [json.loads(line) for line in (bundle / "observations.jsonl").read_text().splitlines()]
     assert len(rows) == 21 and rows[-1]["action_target_rad"] is None
+
+
+def test_explicit_fine_physics_preserves_control_rate_and_audits_every_step():
+    import xml.etree.ElementTree as ET
+
+    from bimanual.dual_arm import scene_xml
+
+    root = ET.fromstring(scene_xml())
+    root.find("option").set("timestep", ".001")
+    xml = ET.tostring(root, encoding="unicode")
+    with pytest.raises(ValueError, match="does not match"):
+        DualArm(xml=xml)
+    fine = DualArm(xml=xml, physics_hz=1000)
+    ordinary = DualArm()
+    try:
+        times = []
+        fine.after_physics_step = lambda: times.append(float(fine.data.time))
+        fine.step(fine.home, episode_id=fine.episode_id, sequence=0)
+        ordinary.step(ordinary.home, episode_id=ordinary.episode_id, sequence=0)
+        assert len(times) == 50
+        np.testing.assert_allclose(np.diff(times), 0.001, rtol=0, atol=1e-12)
+        assert fine.data.time == pytest.approx(0.05)
+        assert ordinary.data.time == pytest.approx(0.05)
+        assert fine.mapping()["physics_hz"] == 1000
+        assert ordinary.mapping()["physics_hz"] == 200
+        assert fine.mapping()["control_hz"] == ordinary.mapping()["control_hz"] == 20
+        fine.model.opt.timestep = 0.002
+        before = fine.data.time
+        with pytest.raises(RuntimeError, match="timestep changed"):
+            fine.step(fine.home, episode_id=fine.episode_id, sequence=1)
+        assert fine.data.time == before and not fine.active
+    finally:
+        fine.close()
+        ordinary.close()
+
+
+@pytest.mark.parametrize("value", [True, 1000.0, "1000", 0, 201])
+def test_undeclared_physics_profile_rejected(value):
+    with pytest.raises(ValueError, match="physics profiles"):
+        DualArm(physics_hz=value)

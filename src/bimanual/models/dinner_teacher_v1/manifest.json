@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "profile": "dinner_horizontal_release_v18",
+  "source_run": "20260911T011032-a9fda4aee41f",
+  "source_manifest_sha256": "409c37d4f97c15c16d09c497a792470b8c17704d2c2217cdacc262ec9c10481d",
+  "source_actions_sha256": "0899b3918af0ee6f751d248ccbd82bdd623b8cf8f67eb8a92cfab85f7aae90bc",
+  "source_driver_sha256": "09d812c090111a58969cdcc6dce003a36794d606c6241836ff51440cfd99470d",
+  "action_count": 4819,
+  "files": {
+    "scene.xml": "3aa969c78966a920508553c4800bc46aa8a0cac190a2aa487fc7948c2266ed92",
+    "layout.json": "8ea452fe1e6f0794b1f6104939578915061f1721735c3f335158daf2018b978a",
+    "plan.json.gz": "9fb9baa727c607bd7fd94db4309f99b0e386073dc9e70d0708db024ee5dc58f1"
+  },
+  "mode": "Frozen IK-generated joint targets, re-executed through guarded contact physics. Fixed scene only; no learned policy."
+}

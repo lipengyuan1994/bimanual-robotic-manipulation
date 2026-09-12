@@ -1,0 +1,75 @@
+# Remaining dinner-skill training cohort
+
+The frozen cohort protocol is
+[`experiments/six-skill-training-protocol-v1.json`](experiments/six-skill-training-protocol-v1.json).
+It covers, in order: bar placement/return, cup placement, plate placement, drawer
+opening, spoon retrieval, and fork retrieval. Each uses the verified nominal-v2
+skill view, small ACT, horizon10, batch4, seed0,20,000 native-MPS updates, terminal
+learning-rate decay, and the final checkpoint only.
+
+The protocol binds the completed hand-off training and all three evaluations that
+were frozen before it: the630-frame recorded-input run and physical prefix2/prefix5.
+Both physical runs failed and remain recorded as failures. They authorize no
+quality claim; the remaining skill datasets are independent bounded intervals.
+
+Reverify the protocol before starting or resuming any skill:
+
+```sh
+.venv/bin/bimanual training-cohort-check \
+  docs/experiments/six-skill-training-protocol-v1.json
+```
+
+Run exactly one skill from the native training environment:
+
+```sh
+PYTORCH_ENABLE_MPS_FALLBACK=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+  .artifacts/training-venv/bin/bimanual training-cohort-run \
+  docs/experiments/six-skill-training-protocol-v1.json \
+  --skill bar_place_and_return
+```
+
+The runner holds one coordinator lease and the shared model-job lease across
+allocation, training, checkpoint verification, and wrapper sealing. Each attempt
+uses a child evidence store. A completed verified attempt is reused on resume. A
+sealed failure is never retried automatically. If the coordinator dies after the
+child seals, the next invocation reconciles that exact child; an incomplete child
+is preserved and sealed failed only after the shared lease proves no model job is
+still active. Ambiguous attempts stop without selecting one.
+
+A narrow exception exists for the exact zero-update error `Requested MPS
+unavailable; no fallback`. The explicit adjudication command requires a sealed
+failed wrapper and child, zero update rows, no checkpoint, the exact MPS error, and
+a successful live native-ARM64 MPS probe. It seals the failed identities and permits
+one replacement; it never deletes the failure or makes a training/quality claim:
+
+```sh
+PYTORCH_ENABLE_MPS_FALLBACK=0 \
+  .artifacts/training-venv/bin/bimanual training-cohort-adjudicate-preflight \
+  docs/experiments/six-skill-training-protocol-v1.json \
+  --attempt FAILED_COHORT_ATTEMPT
+```
+
+Run this only from a process with actual Metal access. A failure containing any
+training update, a checkpoint, another error, a failed live probe, a changed source
+seal, or a second replacement is rejected.
+
+After the first skill has been inspected, resume the complete ordered sequence
+without manually starting each model job:
+
+```sh
+PYTORCH_ENABLE_MPS_FALLBACK=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+  .artifacts/training-venv/bin/bimanual training-cohort-run-all \
+  docs/experiments/six-skill-training-protocol-v1.json \
+  --wait-for-active-seconds 7200
+```
+
+The sequence invokes the same one-skill runner serially. It reverifies and reuses
+completed attempts, stops on the first sealed failure, and never retries a failed
+attempt. Each model job still owns the shared lease independently. The sequence
+report sets physical success to unknown; training completion cannot promote a skill.
+The optional bounded wait handles an already-running cohort owner without polling
+model state or bypassing the lease; unrelated runtime errors still stop immediately.
+
+Training completion requires all20,000 ordered updates, the checkpoint schedule,
+all processor/sampler/loss/schedule reload flags, and a reconstructed skill binding.
+It does not establish physical manipulation, generalization, or release readiness.

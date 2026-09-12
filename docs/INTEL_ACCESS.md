@@ -1,9 +1,15 @@
 # Zero-cost Intel access
 
-Checked September 10, 2026. The user completed registration and sign-in with an
+Checked September 11, 2026. The user completed registration and sign-in with an
 eligible university account. A free-access request has been submitted and is
-**Pending Review**. No machine has been allocated or tested, no payment was made,
+**Rejected**. No machine has been allocated or tested, no payment was made,
 and no separate organizer message was sent.
+
+The user confirmed that the rejection has no explanation. Intel setup is deferred
+until local training for the planned skills is complete, not merely the first
+skill checkpoint, then will be handled as a separate step. No
+replacement application, support message or dismissal has been submitted.
+Local development continues; actual Intel execution remains unverified.
 
 ## Current request
 
@@ -13,11 +19,11 @@ Verified in the signed-in [Instances page](https://cloud.intel.com/preview/compu
 |---|---|
 | Instance name | `bimanual-sim-intel` |
 | Hardware | `BM-PTL`, Intel Core Ultra Series 3, Panther Lake |
-| State | Pending Review |
+| State | Rejected |
 | Use case | AI PC USA |
 | Requested duration | 1 week |
 | Reservation start shown | 09/10/2026 |
-| Reservation end shown | 09/17/2026 6:21 pm; UI did not identify the timezone |
+| Reservation end shown | 09/18/2026 12:05 pm; UI did not identify the timezone |
 | Operating system | Windows 11, fixed in the request form |
 | Access | No SSH key uploaded; browser Connect is documented as available without a key after approval |
 
@@ -30,10 +36,10 @@ hyphens, periods and commas. The longer draft below was not submitted.
 No secondary owner or Intel co-development access was added. No new agreement
 acceptance was presented during the instance request.
 
-The signed-in portal says email review notification is expected within **3 days**,
-superseding the shorter public-guide estimate for planning. Approval is not
-guaranteed. Wait for the user's approval email or a Ready state before attempting
-host access; inspect the actual expiry because pending review already shows dates.
+Before rejection, the signed-in portal advertised email review notification within
+**3 days**, superseding the shorter public-guide estimate. That request is now
+rejected, not pending. Revisit a zero-cost allocation or borrowed eligible host
+after local training; verify explicit access and actual expiry before connecting.
 
 Both BM-LNL and BM-PTL were visible in this account's catalog. BM-LNL lists 32 GB
 RAM; BM-PTL lists 32–64 GB. Both request forms offered only Windows 11 with the
@@ -105,3 +111,12 @@ Review the event-linked [Intel setup guide](https://docs.openedgeplatform.intel.
 before target installation. It is Intel/Linux guidance, not a script to run on
 our Mac. Do not promise that its Python 3.11 environment is compatible with our
 locked Python 3.12 project without testing in a separate environment.
+
+## User decision: defer Intel setup
+
+September11: the user confirmed the rejection email contains no explanation.
+They requested that Intel setup wait until local training is complete, then be
+handled as a separate setup step. Do not pursue support, reapply, procure hardware
+or investigate access further during local training. Keep the zero-spend constraint;
+no purchase or paid-compute authorization is implied. Actual Intel execution still
+remains necessary for the Intel/hackathon release gate.

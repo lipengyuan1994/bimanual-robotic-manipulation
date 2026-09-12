@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "profile": "dinner_visual_training_protocol_v1",
+  "recipe": "v2",
+  "generator_profile": "dinner_visual_variants_v1",
+  "physical_layout_count": 1,
+  "scope": "visual_conditions_only",
+  "validated_recordings": false,
+  "previously_used_development_seeds": [
+    0,
+    7
+  ],
+  "training_seeds": [
+    7,
+    8,
+    9,
+    10
+  ],
+  "validation_seeds": [
+    1001,
+    1002
+  ],
+  "test_seeds": [
+    2001,
+    2002,
+    2003,
+    2004,
+    2005,
+    2006,
+    2007,
+    2008,
+    2009,
+    2010
+  ],
+  "base_scene_sha256": "3aa969c78966a920508553c4800bc46aa8a0cac190a2aa487fc7948c2266ed92",
+  "plan_sha256": "0c93816e3791ac577cc3284fc8b9932ee0e34a2f067eca805ad12f72117b9231",
+  "teacher_assets_manifest_sha256": "3b74213aecb6f33746c80d850408db06b3c466a05abfeae16d3f696c2c708aa9",
+  "generator_sha256": "7384ca5f19df9e2dd7361ecd19f778ea5f92e198df4d083f970d94d855bceffe",
+  "manifest_sha256": "8c3755c717cbb1a213e3523353df4d2d8ba1e155af756be8685e2657a6f9ec7c"
+}

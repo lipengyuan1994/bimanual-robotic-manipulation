@@ -12,13 +12,18 @@ class ReachError(ValueError):
     """The requested position/direction was not solved within the joint limits."""
 
 
-def solve_downward(env: DualArm, target: np.ndarray, initial: np.ndarray) -> np.ndarray:
+def solve_downward(
+    env: DualArm, target: np.ndarray, initial: np.ndarray, *, arm: str = "left"
+) -> np.ndarray:
     """Position plus tool-axis DLS IK, using a separate kinematics-only MjData.
 
     Five arm joints cannot realize arbitrary six-dimensional poses. Constrain the
     pinch site's X axis downward and let rotation about that axis remain free.
     The live simulation's positions, velocities and object state are never edited.
     """
+    if arm not in {"left", "right"}:
+        raise ReachError("Unknown arm")
+    channels = slice(0, 5) if arm == "left" else slice(6, 11)
     target = np.asarray(target, dtype=float)
     initial = np.asarray(initial, dtype=float)
     if target.shape != (3,) or not np.isfinite(target).all():
@@ -30,7 +35,7 @@ def solve_downward(env: DualArm, target: np.ndarray, initial: np.ndarray) -> np.
     data = mujoco.MjData(env.model)
     data.qpos[:] = env.data.qpos
     data.qpos[env.qadr] = initial
-    site = env.model.site("left/pinch").id
+    site = env.model.site(f"{arm}/pinch").id
     jp = np.zeros((3, env.model.nv))
     jr = np.zeros_like(jp)
     for _ in range(250):
@@ -42,11 +47,13 @@ def solve_downward(env: DualArm, target: np.ndarray, initial: np.ndarray) -> np.
             return data.qpos[env.qadr].copy()
         mujoco.mj_jacSite(env.model, data, jp, jr, site)
         # Derivative of a unit direction is omega cross direction.
-        jacobian = np.vstack([jp, 0.1 * np.cross(jr.T, axis).T])[:, env.vadr[:5]]
+        jacobian = np.vstack([jp, 0.1 * np.cross(jr.T, axis).T])[:, env.vadr[channels]]
         error = np.r_[position_error, 0.1 * axis_error]
         delta = jacobian.T @ np.linalg.solve(jacobian @ jacobian.T + 1e-5 * np.eye(6), error)
-        data.qpos[env.qadr[:5]] = np.clip(
-            data.qpos[env.qadr[:5]] + np.clip(delta, -0.1, 0.1), env.lower[:5], env.upper[:5]
+        data.qpos[env.qadr[channels]] = np.clip(
+            data.qpos[env.qadr[channels]] + np.clip(delta, -0.1, 0.1),
+            env.lower[channels],
+            env.upper[channels],
         )
     raise ReachError("Downward grasp target unreachable within IK tolerances and joint limits")
 
@@ -67,3 +74,49 @@ def check_joint_path(env: DualArm, start: np.ndarray, end: np.ndarray, allowed) 
             pair = tuple(env.model.geom(int(g)).name for g in contact.geom)
             if not allowed(pair):
                 raise ReachError(f"Planned trajectory intersects forbidden geometry: {pair}")
+
+
+def check_carried_path(
+    env: DualArm, start: np.ndarray, end: np.ndarray, allowed, *, body_name: str, site_name: str
+) -> None:
+    """Predict a held body's relative transform in scratch data only.
+
+    A frozen world-space object creates false obstacles when a carrying arm moves
+    away. This predictor assumes the *measured* body-to-tool transform persists.
+    It is not a weld, contact solver or guarantee: live slip and collisions must
+    still be checked at every physics step. Never use it to move a live object.
+    """
+    start, end = np.asarray(start, float), np.asarray(end, float)
+    for vector in (start, end):
+        if vector.shape != (12,) or not np.isfinite(vector).all():
+            raise ReachError("Expected twelve finite joint targets")
+        if np.any(vector < env.lower) or np.any(vector > env.upper):
+            raise ReachError("Joint targets exceed limits")
+    body = env.model.body(body_name)
+    if body.jntnum != 1:
+        raise ReachError("Carried object must have one free joint")
+    joint = int(body.jntadr[0])
+    if env.model.jnt_type[joint] != mujoco.mjtJoint.mjJNT_FREE:
+        raise ReachError("Carried object must have one free joint")
+    address = int(env.model.jnt_qposadr[joint])
+    site = env.model.site(site_name).id
+    data = mujoco.MjData(env.model)
+    data.qpos[:] = env.data.qpos
+    mujoco.mj_forward(env.model, data)
+    rotation = data.site_xmat[site].reshape(3, 3).copy()
+    relative_position = rotation.T @ (data.xpos[body.id] - data.site_xpos[site])
+    relative_rotation = rotation.T @ data.xmat[body.id].reshape(3, 3)
+    count = max(1, int(np.ceil(np.max(np.abs(end - start)) / 0.02)))
+    for alpha in np.linspace(0, 1, count + 1):
+        data.qpos[env.qadr] = start + alpha * (end - start)
+        mujoco.mj_forward(env.model, data)
+        rotation = data.site_xmat[site].reshape(3, 3)
+        data.qpos[address : address + 3] = data.site_xpos[site] + rotation @ relative_position
+        quaternion = np.empty(4)
+        mujoco.mju_mat2Quat(quaternion, (rotation @ relative_rotation).ravel())
+        data.qpos[address + 3 : address + 7] = quaternion
+        mujoco.mj_forward(env.model, data)
+        for contact in data.contact:
+            pair = tuple(env.model.geom(int(g)).name for g in contact.geom)
+            if not allowed(pair):
+                raise ReachError(f"Carried-object trajectory intersects forbidden geometry: {pair}")

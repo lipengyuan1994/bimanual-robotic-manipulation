@@ -11,15 +11,34 @@ Read [STATUS](STATUS.md) first when resuming work.
 | Component and truth boundaries | [Architecture](ARCHITECTURE.md) |
 | Native install and commands | [Setup](SETUP.md) |
 | Reproducibility and release evidence | [Evidence](EVIDENCE.md) |
+| Assemble final event artifacts | [Submission package](SUBMISSION.md) |
+| Activate or roll back a verified cohort | [Local workflow deployment](WORKFLOW_DEPLOYMENT.md) |
 | Future Intel deployment | [Deployment](DEPLOYMENT.md) |
 | Free Intel hardware access | [Access routes and request drafts](INTEL_ACCESS.md) |
 | First dual-arm implementation | [Foundation walkthrough](DUAL_ARM_FOUNDATION.md) |
 | First local contact manipulation | [Grasp walkthrough](CONTACT_GRASP.md), [attempt register](experiments/2026-09-10-contact-grasp.md) |
+| Object transport and recording | [Placement results](experiments/2026-09-10-placement.md), [versioned interfaces](INTERFACES.md) |
+| Physical transfer between arms | [Hand-off walkthrough](HANDOFF.md), [feasibility attempts](experiments/2026-09-10-handoff-feasibility.md) |
+| Contact-driven drawer opening | [Drawer walkthrough](DRAWER.md), [attempt register](experiments/2026-09-10-drawer-feasibility.md) |
+| Hollow cup placement | [Cup walkthrough and evidence](CUP.md) |
+| Plate placement on the table | [Plate walkthrough](PLATE.md), [all tableware attempts](experiments/2026-09-10-tableware-feasibility.md) |
+| Drawer-to-table utensil retrieval | [Utensil walkthrough](UTENSILS.md), [all retrieval attempts](experiments/2026-09-10-utensil-feasibility.md) |
+| Combine all dinner skills | [Shared-scene integration](DINNER_SCENE.md) |
+| Score physical dinner outcomes | [Independent outcome evaluator](DINNER_OUTCOMES.md) |
+| Training datasets | [LeRobot export](DATASETS.md) |
+| Training-only corrective approach work | [Feedback teacher](FEEDBACK_TEACHER.md) |
+| Native ACT execution | [Training runtime probe](TRAINING.md) |
+| Learned actions in the simulator | [Policy rollout and failure evidence](POLICY_ROLLOUT.md) |
+| High-resolution reset camera evidence | [Planner sensor profiles](PLANNER_SENSORS.md) |
+| Local visual skill proposals | [Qwen planner and recorded-camera probes](PLANNER.md) |
+| Frozen visual decision evaluation | [Qwen planner decision-suite protocol](PLANNER.md#frozen-decision-suite) |
+| Live pause and fresh revalidation | [Live planner integration design](PLANNER_LIVE_INTEGRATION.md) |
+| Step ownership, retries and cancellation | [Task supervisor](SUPERVISOR.md) |
 | Problems and exact next checks | [Troubleshooting](TROUBLESHOOTING.md) |
 | Optional indexed project context | [OpenViking retrieval and indexing](OPENVIKING.md) |
 | Eligibility and external access | [Organizer questions](ORGANIZER_QUESTIONS.md) |
 | Scope and event-window authorization | [Historical preparation decision](decisions/0001-preparation-boundary.md), [Decision 0003](decisions/0003-event-window-implementation.md) |
-| Runtime/model choices | [Decision 0002](decisions/0002-runtime-and-policy-design.md) |
+| Runtime/model choices | [Decision 0002](decisions/0002-runtime-and-policy-design.md), [explicit physics profiles](decisions/0004-explicit-physics-profiles.md) |
 | Repeatable experiment notes | [Experiment template](experiments/TEMPLATE.md) |
 | Current validation results | [Preparation validation](experiments/2026-09-05-preparation.md) |
 | Evidence sources | [Source register](sources/README.md) |
@@ -29,3 +48,33 @@ Read [STATUS](STATUS.md) first when resuming work.
 After a milestone, update status, evidence links, and the next command in the same
 change. Record a new decision when a material assumption changes. Do not depend on
 chat history to resume implementation.
+
+Bounded learned dinner work: [skill training and dataset views](SKILL_TRAINING.md).
+
+Sequential local training: [remaining six-skill cohort](TRAINING_COHORT.md).
+
+Per-checkpoint physics: [teacher-prepared learned-skill evaluation](SKILL_PHYSICAL_EVALUATION.md).
+
+Corrective teacher sources: [one-attempt corrective collection](SKILL_CORRECTIVE_COLLECTION.md).
+
+Corrective replay validation: [frozen source views](experiments/six-skill-corrective-views-v1.json).
+
+Failed hand-off diagnosis: [receiver-grip continuity analysis](HANDOFF_FAILURE_ANALYSIS.md).
+Corrective follow-up: [frozen receiver-continuity collection](HANDOFF_CONTINUITY.md).
+
+Appearance variation: [frozen visual splits and source verification](VISUAL_TRAINING.md).
+
+Six-family release variation: [frozen dinner-scene perturbations](SCENE_VARIANTS.md).
+
+Measured skill termination: [learned executor and physical monitor](SKILL_EXECUTION.md).
+
+Learned skill transitions: [successor readiness](SUCCESSOR_READINESS.md).
+
+Complete learned workflow: [pinned checkpoint cohort](WORKFLOW_MANIFEST.md) and
+[serialized planning/execution runner](WORKFLOW_RUNNER.md), with a
+[local execution command](WORKFLOW_EXECUTION.md) and
+[sealed per-step evidence](WORKFLOW_STEP_REPORT.md).
+
+Operational selection: [verified activation and rollback](WORKFLOW_DEPLOYMENT.md).
+
+Local release freeze: [candidate and sixteen-scene input protocol](WORKFLOW_RELEASE.md).

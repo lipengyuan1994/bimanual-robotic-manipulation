@@ -17,3 +17,5 @@ web/dist/
 !.env.example
 .DS_Store
 *.tsbuildinfo
+.playwright-cli/
+output/playwright/

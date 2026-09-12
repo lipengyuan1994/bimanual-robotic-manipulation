@@ -1,6 +1,6 @@
 # Architecture and implementation boundaries
 
-## Current preparation system
+## Current local implementation
 
 `bimanual lab` runs a generic single-hinge pendulum, writes actual observations and
 actions to CSV, and seals its scene/config/replay. `doctor` tests the environment.
@@ -10,16 +10,39 @@ manifests are the authoritative run records.
 
 The [dual-arm foundation](DUAL_ARM_FOUNDATION.md) now implements the simulator,
 synchronous joint-target validation, and three-camera observations. `bimanual sim`
-records its free-space demonstration; task planning and learned execution below
-remain unimplemented.
+records its free-space demonstration. Physical skills and the guarded ACT executor
+are implemented separately; a complete learned dinner workflow remains unfinished.
 
 `bimanual grasp` adds a privileged IK teacher and contact-only block experiment.
 Scratch-state IK never edits the live object's state. Per-step collision guards
 and force/pose scoring run at 200 Hz; truth is stored separately from the joint
-observation/action trace. This first teacher records replay, not a training dataset.
+observation/action trace. Either arm can place the block in a distinct zone.
+Optional raw recording synchronizes all three camera images with confirmed 20 Hz
+action transitions and stores explicit terminal/failure records.
 See [the contact experiment contract](CONTACT_GRASP.md).
 
+`bimanual handoff` coordinates a donor, shared grasp and receiving arm with
+explicit ownership checks. The practice bar remains a freely moving contact
+object. It is not yet a dinner utensil or an integrated table-setting workflow.
+
+`dataset-export` verifies sealed recordings and writes actual LeRobot v3 image
+datasets, retaining the original source evidence. `training-probe` runs ACT on
+synthetic inputs to test local CPU/MPS operations. The real-data trainer consumes
+the exported format and saves model, preprocessing and lineage artifacts; physical
+policy quality requires a separate rollout. See [interfaces](INTERFACES.md),
+[datasets](DATASETS.md) and [training](TRAINING.md).
+
 ## Target manipulation system (partially implemented)
+
+The [supervisor core](SUPERVISOR.md) now validates a serial plan against explicitly
+registered capabilities, tracks attempts and deadlines, controls arm/shared-space
+ownership, and clears actions on cancellation or task changes. The integrated workflow
+wires it to seven bounded dinner-skill executors and seals every planner decision,
+attempt, action and terminal outcome. The [local Qwen adapter](PLANNER.md) proposes
+typed skills from images and joints through a guarded dispatch lifecycle. The
+[ACT rollout](POLICY_ROLLOUT.md) executes actual model predictions through a guarded
+action queue. Full learned dinner success remains unproven while the checkpoint
+cohort is still training.
 
 ```mermaid
 flowchart TD
@@ -39,6 +62,15 @@ Qwen handles language and visual task state. The supervisor controls execution
 semantics. This distinction must remain visible in technical claims.
 
 ## Interface specification for M1/M2
+
+Implemented data and action contracts live in `src/bimanual/contracts.py`.
+The table retains the complete target. The integrated run seals immutable supervisor
+snapshots and a typed per-step report with retries, reasons, physical classifications,
+action counts and planner/policy/execution timing. An independent evaluator replays
+the complete retained physics trace, verifies learned-checkpoint and zero-intervention
+lineage, and keeps task success separate from process completion. The actual ACT
+action queue checks source identity, expiry and the complete forecast before accepting
+a prefix.
 
 | Interface | Required contract |
 |---|---|

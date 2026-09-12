@@ -3,10 +3,10 @@
 <title>04 · Demonstrations and ACT</title><link rel="stylesheet" href="../assets/learning/lesson.css"><script defer src="../assets/learning/lesson.js"></script></head>
 <body><main class="lesson">
 <nav><a href="../README.md">Project home</a> / <a href="../docs/LEARNING.md">Learning path</a> / Lesson 04</nav>
-<p class="eyebrow">Lesson 04 · 15 minutes · Preparation concept</p>
+<p class="eyebrow">Lesson 04 · 20 minutes · Connected to local training</p>
 <h1>A policy learns from<br>aligned examples.</h1>
 <p class="intro">Your next win: tell the difference between one pretty trajectory and a training demonstration that can teach a policy.</p>
-<div class="callout">ACT training is planned after the teacher and two-arm scene exist. This lesson teaches the data contract first; it does not claim that an ACT policy has been trained.</div>
+<div class="callout">Local ACT fitting and checkpoint inference now run. A corrective hand-off checkpoint matched recorded targets closely, yet both frozen physical attempts dropped the bar. This lesson explains why training evidence and physical success are different.</div>
 <h2>One time step, one aligned record</h2>
 <div class="loop"><span>Camera images<br><small>declared order</small></span><b>+</b><span>Joint observation<br><small>documented units</small></span><b>→</b><span>Action target<br><small>same time base</small></span><b>→</b><span>Outcome<br><small>kept or failed</small></span></div>
 <p>A demonstration is useful only if the images, joint observations, actions, timestamps, and instruction agree about the same moment. The scripted teacher may use simulator truth to generate safe examples, but the deployed policy must receive only its declared images and robot observations. That separation prevents hidden ground-truth leakage.</p>
@@ -22,8 +22,25 @@
 <label><input type="radio" name="chunk" value="1">A short action sequence.</label>
 <label><input type="radio" name="chunk" value="2">A final success score.</label>
 </fieldset><button type="submit">Check my answer</button><p class="feedback" aria-live="polite"></p></form>
+<h2>Falling loss does not finish the table</h2>
+<p>Training adjusts the model to reduce an error on recorded examples. During a physical run, an imperfect action changes the next image and robot state. The model may then encounter a situation absent from those examples. The <a href="https://arxiv.org/abs/2304.13705">ACT paper</a> identifies this accumulation of policy errors as a challenge.</p>
+<p>Our next checks ask different questions: compare predictions on all 630 recorded hand-off inputs, then execute the learned skill under contact and stability checks. The recorded inputs come from training, so their results cannot establish generalization. Keep the <a href="../reference/training-evidence.html">training-evidence reference</a> beside a run report.</p>
+<form class="quiz" data-answer="0" data-explanation="Lower training loss supports a claim about the fitting objective. It does not establish physical task completion or performance on unseen scenes. Those require separate evaluations."><fieldset><legend>A report says only that training loss fell. Which conclusion is supported?</legend>
+<label><input type="radio" name="loss-evidence" value="0">Only the fitting error decreased.</label>
+<label><input type="radio" name="loss-evidence" value="1">The whole dinner task succeeded.</label>
+<label><input type="radio" name="loss-evidence" value="2">The policy passed unseen scenes.</label>
+</fieldset><button type="submit">Check my answer</button><p class="feedback" aria-live="polite"></p></form>
+<p>Explain in your own words why a model can match recorded actions yet drop an object when it runs. Ask the agent for feedback; mastery is recorded only after you demonstrate it.</p>
+<h2>A real failure at one critical joint</h2>
+<p>Our corrective checkpoint produced valid forecasts on all 630 recorded hand-off inputs, with a first-action mean absolute error of about 0.00116 rad. In the live simulation, the five-action-prefix run still failed after completing the shared two-arm hold. At the failure, the policy commanded the receiving right gripper to 0.1323 rad while the nearest nominal release target kept it closed at -0.1 rad. That 0.2323 rad error released the bar.</p>
+<p>The average recorded-input error did not reveal the closed-loop failure. Once a small error changed contact, the next image and robot state differed from the demonstration. The next correction therefore targets receiver close, shared hold, and donor release. Read the sealed <a href="../docs/HANDOFF_FAILURE_ANALYSIS.md">continuity analysis</a> for the exact evidence.</p>
+<form class="quiz" data-answer="2" data-explanation="The receiving gripper must remain closed while the donor releases. A small average over all frames can hide a large error at that critical instant."><fieldset><legend>Why did this checkpoint drop the bar despite a small average recorded-input error?</legend>
+<label><input type="radio" name="critical-error" value="0">The simulator teleported the bar.</label>
+<label><input type="radio" name="critical-error" value="1">The camera order was unknown.</label>
+<label><input type="radio" name="critical-error" value="2">A large receiver-gripper error occurred at the release transition.</label>
+</fieldset><button type="submit">Check my answer</button><p class="feedback" aria-live="polite"></p></form>
 <h2>Practice a split decision</h2>
 <p>Suppose demonstrations use scene seeds 1–80. Choose a validation range and a frozen test range without looking at their outcomes. Explain why changing the test set after selecting a checkpoint would distort the evidence. Share your answer with the agent.</p>
-<p>Primary reading: the <a href="https://huggingface.co/docs/lerobot/act">LeRobot ACT documentation</a>. Return to the project’s <a href="../docs/ARCHITECTURE.md">architecture</a> when the first dataset contract is implemented.</p>
+<p>Primary reading: the <a href="https://huggingface.co/docs/lerobot/act">LeRobot ACT documentation</a>. Return to the project’s <a href="../docs/ARCHITECTURE.md">architecture</a> to see how the implemented data and control boundaries fit together.</p>
 <footer><a href="0003-contacts-grasps-handoffs.html">← Previous lesson</a> · <a href="../reference/glossary.html">Vocabulary reference</a> · <a href="0005-supervision-and-recovery.html">Next: supervision and recovery →</a></footer>
 </main></body></html>

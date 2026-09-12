@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "profile": "measured_release_v2",
+  "source_run": "20260911T112302-2cba6a2aa0ac",
+  "source_manifest_sha256": "3bad3ebcbd8730ca26643c7ec757b42fa864eb8589db777de1ad661fd2955b9d",
+  "source_actions_sha256": "44e2b85b2d7373c1b7b6ca6ad504fb035696cd3fe230adf0777f9c1b68125972",
+  "source_driver_sha256": "5964d450cf46dd0dde5057557046041f280f1d42f04c38c86d7d8deca8dab670",
+  "independent_evaluation_run": "20260911T112722-fd2f1119487f",
+  "independent_evaluation_sha256": "4327d7058f6e0e94f04e6b96e44bcf664ef78e16802534181e7c2a52afc45a86",
+  "action_count": 5049,
+  "files": {
+    "scene.xml": "3aa969c78966a920508553c4800bc46aa8a0cac190a2aa487fc7948c2266ed92",
+    "layout.json": "8ea452fe1e6f0794b1f6104939578915061f1721735c3f335158daf2018b978a",
+    "plan.json.gz": "0c93816e3791ac577cc3284fc8b9932ee0e34a2f067eca805ad12f72117b9231"
+  },
+  "mode": "Same authored scene and original targets outside repaired plate sequence; physical contact teacher only.",
+  "phase_annotation": "Final40 post-return hold controls labeled plate/settled, matching the fixed2000-sample stage audit; preceding20 remain plate/retreat. Targets and guards unchanged.",
+  "path_guard": "Measured start and no arm/object contacts retained for the post-release return; measured start retained for release prefix; other controls use commanded start as in source."
+}
