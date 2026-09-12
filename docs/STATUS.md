@@ -753,3 +753,17 @@ frame index in the training sampling plan. Focused corrective-data and skill-tra
 tests pass (10 passed, 1 expected full-dataset skip). Creating the one-time sampling
 declaration requires the still-pending full archive audit, and no model job has been
 started from this profile.
+
+The full archive audit has now passed: it verified every retained raw source artifact
+and decoded image/state/action row against the local LeRobot export. The one-time
+local declaration `.artifacts/experiments/bar-transport-placement-sampling-v1.json`
+is sealed `9afccdef465101eb0d29dd2d3e740e24104c0aebf0b56c1740bd87bbee788f40` and
+binds the archive seal, corrective view, failure localization, and `[770,1070)`
+emphasis interval. Its runtime binding and the complete 2,123-frame sampling-plan
+preflight both passed: nominal bar frames have total probability 0.5, and each of
+the three corrective sources contributes equal 1/12 mass to its transport and
+remainder regions. The next training job is authorized by these local gates but has
+not started: the restricted command runner cannot see MPS, and the normal desktop
+execution surface is currently unavailable while the Mac is locked. This is an
+execution-environment blocker only; no CPU substitute is being claimed as the MPS
+candidate.
