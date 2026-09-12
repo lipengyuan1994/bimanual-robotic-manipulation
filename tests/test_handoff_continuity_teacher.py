@@ -5,13 +5,27 @@ from pathlib import Path
 
 import pytest
 
+from bimanual import handoff_continuity_teacher as teacher_module
 from bimanual.evidence import EvidenceStore
+from bimanual.handoff_continuity_protocol import HandoffContinuityProtocol
 from bimanual.handoff_continuity_teacher import _continuity_score, run_handoff_continuity_case
 from bimanual.worker_lease import WorkerLease
 
 PROTOCOL = (
     Path(__file__).parents[1] / "docs/experiments/handoff-continuity-collection-protocol-v1.json"
 )
+
+
+@pytest.fixture
+def static_protocol(monkeypatch):
+    """Keep coordinator tests independent from ignored field evidence."""
+    protocol = HandoffContinuityProtocol.model_validate_json(PROTOCOL.read_bytes())
+    monkeypatch.setattr(
+        teacher_module,
+        "load_handoff_continuity_protocol",
+        lambda _path: protocol,
+    )
+    return protocol
 
 
 def _write_trace(tmp_path, *, partial=False, forbidden=False, drop_grip=False):
@@ -81,7 +95,7 @@ def test_contact_loss_or_forbidden_contact_prevents_success(tmp_path):
     assert score["forbidden_contact_samples"] == 50
 
 
-def test_unknown_case_allocates_no_evidence(tmp_path):
+def test_unknown_case_allocates_no_evidence(tmp_path, static_protocol):
     store = EvidenceStore(tmp_path / "evidence")
     with pytest.raises(ValueError, match="not in"):
         run_handoff_continuity_case(
@@ -90,7 +104,7 @@ def test_unknown_case_allocates_no_evidence(tmp_path):
     assert not (store.root / "runs").exists()
 
 
-def test_busy_model_job_consumes_no_continuity_case(tmp_path):
+def test_busy_model_job_consumes_no_continuity_case(tmp_path, static_protocol):
     store = EvidenceStore(tmp_path / "evidence")
     store.root.mkdir(parents=True)
     with WorkerLease.acquire(store.root / ".model-job.lock"):

@@ -79,6 +79,7 @@ def allow_mps(monkeypatch):
     )
     monkeypatch.setitem(sys.modules, "torch", fake)
     monkeypatch.setattr(module.platform, "machine", lambda: "arm64")
+    monkeypatch.setattr(module.importlib.metadata, "version", lambda name: f"test-{name}")
 
 
 def test_zero_update_failure_is_preserved_and_authorizes_one_replacement(
@@ -93,6 +94,7 @@ def test_zero_update_failure_is_preserved_and_authorizes_one_replacement(
     assert result.metrics["failed_child_run_id"] == child.run_id
     assert result.metrics["replacement_attempts_authorized"] == 1
     assert result.metrics["training_success"] is None
+    assert result.metrics["live_native_mps_probe"]["torch"] == "test-torch"
     assert module.adjudicate_training_cohort_preflight(protocol_path, wrapper.run_id) == result
     protocol = module.load_training_cohort_protocol(protocol_path)
     assert module.adjudicated_attempt_ids(

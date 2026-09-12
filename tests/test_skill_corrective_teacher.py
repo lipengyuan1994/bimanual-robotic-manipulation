@@ -4,8 +4,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from bimanual import skill_corrective_teacher as teacher_module
 from bimanual.evidence import EvidenceStore
-from bimanual.skill_corrective_protocol import load_skill_corrective_collection_protocol
+from bimanual.skill_corrective_protocol import SkillCorrectiveCollectionProtocol
 from bimanual.skill_corrective_teacher import (
     KIND,
     MAX_ACQUISITION_DELTA_RAD,
@@ -22,9 +23,20 @@ PROTOCOL = (
 )
 
 
-def test_frozen_cases_are_complete_and_approach_assignment_is_deterministic():
-    protocol = load_skill_corrective_collection_protocol(PROTOCOL)
-    rows = _case_rows(protocol)
+@pytest.fixture
+def static_protocol(monkeypatch):
+    """Exercise coordinator behavior without relying on ignored field evidence."""
+    protocol = SkillCorrectiveCollectionProtocol.model_validate_json(PROTOCOL.read_bytes())
+    monkeypatch.setattr(
+        teacher_module,
+        "load_skill_corrective_collection_protocol",
+        lambda _path: protocol,
+    )
+    return protocol
+
+
+def test_frozen_cases_are_complete_and_approach_assignment_is_deterministic(static_protocol):
+    rows = _case_rows(static_protocol)
     assert len(rows) == 20
     assert len({row["case_id"] for row in rows}) == 20
     assert all(row["teacher_assisted"] and not row["learned_execution"] for row in rows)
@@ -39,7 +51,7 @@ def test_frozen_cases_are_complete_and_approach_assignment_is_deterministic():
     ]
 
 
-def test_request_binds_exact_case_and_protocol():
+def test_request_binds_exact_case_and_protocol(static_protocol):
     request = build_skill_corrective_request(PROTOCOL, "bar_contact_avoidance-51000")
     assert request["case"]["skill_id"] == "bar_place_and_return"
     assert request["case"]["training_eligible"] is False
@@ -56,7 +68,7 @@ def test_acquisition_is_one_bounded_probe_and_exact_measured_state_recovery():
     assert (probe[:6] == measured[:6]).all()
 
 
-def test_existing_incomplete_reservation_is_never_retried(tmp_path):
+def test_existing_incomplete_reservation_is_never_retried(tmp_path, static_protocol):
     request = build_skill_corrective_request(PROTOCOL, "bar_contact_avoidance-51000")
     store = EvidenceStore(tmp_path / "evidence")
     directory = store.directory(
@@ -70,7 +82,7 @@ def test_existing_incomplete_reservation_is_never_retried(tmp_path):
         )
 
 
-def test_existing_different_request_is_rejected(tmp_path):
+def test_existing_different_request_is_rejected(tmp_path, static_protocol):
     request = build_skill_corrective_request(PROTOCOL, "bar_contact_avoidance-51000")
     store = EvidenceStore(tmp_path / "evidence")
     directory = store.directory(
@@ -88,7 +100,7 @@ def test_kind_is_not_handoff_continuity_kind():
     assert KIND == "six_skill_corrective_teacher_recording"
 
 
-def test_cancelled_case_is_sealed_and_then_consumed(tmp_path):
+def test_cancelled_case_is_sealed_and_then_consumed(tmp_path, static_protocol):
     store = EvidenceStore(tmp_path / "evidence")
     result = run_skill_corrective_case(
         PROTOCOL,
