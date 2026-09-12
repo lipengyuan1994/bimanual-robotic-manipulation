@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 11, 2026. Latest implementation checkpoint: `2d3f75d` on
+Updated September 11, 2026. Latest implementation checkpoint: `af32e79` on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
