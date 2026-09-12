@@ -110,7 +110,7 @@ def test_cancelled_case_is_sealed_and_then_consumed(tmp_path, static_protocol):
         cancelled=lambda: True,
     )
     assert result.kind == KIND
-    assert result.outcome == "failed"
+    assert result.outcome == "interrupted"
     assert result.metrics["error"].startswith("InterruptedError:")
     assert result.metrics["prefix_actions"] == 0
     assert result.metrics["training_eligible"] is False

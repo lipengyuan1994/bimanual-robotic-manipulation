@@ -280,6 +280,8 @@ def run_skill_corrective_case(
                 trace.close()
 
         try:
+            if cancelled():
+                raise InterruptedError("Corrective collection cancelled")
             assets = (protocol_path.parent / protocol.asset_root).resolve(strict=True)
             _, plan, layout = load_plan(assets)
             plan_rows = plan["steps"]
