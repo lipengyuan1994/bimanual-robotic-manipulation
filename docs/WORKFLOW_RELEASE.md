@@ -30,8 +30,10 @@ After all sixteen reserved cases have sealed, `workflow-release-suite PROTOCOL`
 re-verifies every wrapper and its nested process, execution copy and independent
 evaluation. Missing, interrupted and duplicate cases stop aggregation. The report
 retains the complete ordered result table, observed success rate and Wilson 95%
-interval. `local_prequalification_passed` is true only at 16/16; `release_success`
-stays null and `intel_validated` stays false.
+interval. It reports the six one-factor diagnostics and ten combined frozen test
+seeds separately, including the observed 10-seed target result.
+`local_prequalification_passed` is true only at 16/16; `release_success` stays null
+and `intel_validated` stays false.
 
 After the serial training cohort and component checks finish, create it with:
 

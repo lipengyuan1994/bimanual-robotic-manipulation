@@ -101,6 +101,9 @@ def test_aggregates_all_cases_in_frozen_order_and_reuses_report(tmp_path, monkey
     assert first.outcome == "completed"
     assert first.metrics["successful_cases"] == 16
     assert first.metrics["local_prequalification_passed"] is True
+    assert first.metrics["one_factor_diagnostics"]["successful_cases"] == 6
+    assert first.metrics["combined_test_seeds"]["successful_cases"] == 10
+    assert first.metrics["hackathon_10_seed_target_met"] is True
     assert first.metrics["release_success"] is None
     assert first.metrics["intel_validated"] is False
     assert [row["case_id"] for row in first.metrics["cases"]] == [
@@ -171,5 +174,8 @@ def test_failed_case_is_retained_without_local_pass_claim(tmp_path, monkeypatch)
     assert result.outcome == "failed"
     assert result.metrics["successful_cases"] == 15
     assert result.metrics["failed_cases"] == 1
+    assert result.metrics["one_factor_diagnostics"]["successful_cases"] == 6
+    assert result.metrics["combined_test_seeds"]["successful_cases"] == 9
+    assert result.metrics["hackathon_10_seed_target_met"] is False
     assert result.metrics["local_prequalification_passed"] is False
     assert result.claims == []

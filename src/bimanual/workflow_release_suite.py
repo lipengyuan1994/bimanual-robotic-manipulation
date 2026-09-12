@@ -141,12 +141,31 @@ def _rows(store: EvidenceStore, protocol) -> list[dict]:
 
 def _metrics(rows: list[dict]) -> dict:
     successes = sum(row["independent_task_success"] for row in rows)
+    diagnostics = [row for row in rows if row["family"] != "combined"]
+    combined = [row for row in rows if row["family"] == "combined"]
+
+    def group(group_rows: list[dict]) -> dict:
+        passed = sum(row["independent_task_success"] for row in group_rows)
+        return {
+            "case_count": len(group_rows),
+            "successful_cases": passed,
+            "failed_cases": len(group_rows) - passed,
+            "success_rate": passed / len(group_rows),
+            "success_rate_wilson95": _wilson(passed, len(group_rows)),
+            "all_passed": passed == len(group_rows),
+        }
+
+    if len(diagnostics) != 6 or len(combined) != 10:
+        raise ValueError("Release result table must contain six diagnostics and ten test seeds")
     return {
         "case_count": len(rows),
         "successful_cases": successes,
         "failed_cases": len(rows) - successes,
         "success_rate": successes / len(rows),
         "success_rate_wilson95": _wilson(successes, len(rows)),
+        "one_factor_diagnostics": group(diagnostics),
+        "combined_test_seeds": group(combined),
+        "hackathon_10_seed_target_met": all(row["independent_task_success"] for row in combined),
         "local_prequalification_passed": successes == len(rows),
         "intel_validated": False,
         "release_success": None,

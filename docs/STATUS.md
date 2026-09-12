@@ -155,8 +155,10 @@ and independently scores a verified copy. It reports execution completion, clean
 process transport and physical task success separately. The aggregate reporter
 requires exactly one verified result for all sixteen cases in frozen order, rejects
 missing/interrupted/duplicate cases, and retains the full result table, observed
-rate and Wilson95 interval. Local prequalification requires16/16; final release
-success remains null and Intel validation remains false. Four runner and five
+rate and Wilson95 interval. It also reports the six diagnostic scenes and ten
+combined frozen test seeds separately, including the observed 10-seed target.
+Local prequalification requires16/16; final release success remains null and Intel
+validation remains false. Four runner and five
 aggregate fixtures pass, including nested process/child/evaluation re-verification
 and rechecking source wrappers when an existing report is reopened. The aggregate
 cannot hide a later duplicate or source change. The combined release, scene-suite
@@ -215,7 +217,7 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `6acc567dfb58ec76392a811eef868a8eb8a48d57f6b507695438cf34551d8a00`.
+seal `e683179a43b1561c3ba12dcc503b1eaa237fef64d84cbc93d4433b08006f267e`.
 It binds the training cohort and 106 package/runtime and authored-scene/SO-101 asset
 files,
 final-update20,000 selection,
