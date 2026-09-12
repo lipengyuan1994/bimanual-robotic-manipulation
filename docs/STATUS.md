@@ -233,7 +233,19 @@ policy. Focused export/validator/collector tests pass 52 cases; the full reposit
 gate passes 1,383 tests with 18 documented skips, 9 render deselections and 503
 documentation links. The next executable step is to collect additional distinct
 frozen cases, validate and export them before local retraining. Intel setup remains
-deferred until that local correction work completes.
+deferred until that local correction work completes. A distinct cup approach/contact
+source, `approach_contact-51005`, completed as
+`six-skill-corrective-f584ea3492e36e66f34b3494`, manifest
+`a73ae73eef1412dd8792739fb32204bb1c5305ec10dbc876ef069057b3d13129`: its
+1,580-action prefix, two measured-state actions and 499-action replay recorded
+2,082 synchronized observations and independently reproduced the physical cup
+placement. Frozen [`experiments/six-skill-corrective-views-v3.json`](experiments/six-skill-corrective-views-v3.json),
+seal `014181cc9070c252d2fd19bcd35780d74ed915216ea49435ca71181a17af8475`, binds
+all three validated replays (1,561 transitions). Its native offline export at
+`.artifacts/datasets/six-skill-corrective-mixed-v1` independently verifies decoded
+RGB, joint observations, actions, timestamps and indices; export manifest seal
+`f82442df10726b8204079f3dc884ffc5cd074ddc4d53afb8b877483ed5acedff`. This
+remains teacher data only; retraining and learned success are still unproven.
 
 The continuity collector now runs below a bounded guardian and native spawned
 worker. It reserves the shared model lease before allocating output, retains
