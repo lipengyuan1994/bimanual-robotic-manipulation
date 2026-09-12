@@ -25,7 +25,7 @@
       "id": "M2",
       "title": "Learned workflow",
       "state": "in_progress",
-      "detail": "All six component ACT checkpoints completed 20,000 native-MPS updates. The frozen actual-MPS component suite then failed 0/6: bar introduced a forbidden left-arm contact; cup, plate, and fork never reached target contact; drawer contacted but opened only 10.74 mm; spoon contacted but moved only 4.63 mm. A sealed read-only diagnosis now defines three corrective-data families. No learned component, autonomous dinner workflow, or perturbation suite has succeeded."
+      "detail": "All six component ACT checkpoints completed 20,000 native-MPS updates. The frozen actual-MPS component suite then failed 0/6: bar introduced a forbidden left-arm contact; cup, plate, and fork never reached target contact; drawer contacted but opened only 10.74 mm; spoon contacted but moved only 4.63 mm. A sealed read-only diagnosis now defines four corrective-data families: bar contact avoidance, approach/contact, spoon grasp/lift, and drawer pull. No learned component, autonomous dinner workflow, or perturbation suite has succeeded."
     },
     {
       "id": "M3",
