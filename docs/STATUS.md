@@ -119,12 +119,17 @@ This proves training completion only. The same native process allocated active
 Wrapper seal `c5a3c58acd086cef0e5a9be104b9b2c9a275a2781a087e0f495c3960e4651a0a`;
 child seal `b624fa31d4ba163259d1a8fd7ac67186a7393ac52e81090e894d61960fbd500c`;
 checkpoint `49a2cdd82d1a457b132049155a17d7222de5fc29400e2c42f20f43120389bd83`.
-This is training completion only; plate manipulation remains untested. The same
-coordinator allocated active `drawer_open` wrapper
-`20260912T014959-e04ee487ae95`, child `20260912T014959-e973f584306d`, and will
-continue serially through spoon and fork after each completed checkpoint, stopping
-on any failure. The child had completed at least 6,651 finite updates when this
-checkpoint was written. Log
+This is training completion only; plate manipulation remains untested. The
+`drawer_open` wrapper `20260912T014959-e04ee487ae95` and child
+`20260912T014959-e973f584306d` then completed and independently reverified all
+20,000 native-MPS updates. Wrapper seal
+`228b6fde6480af5a952e2555ea0e0a158edffe89f6c47a3c57e56885b2bb2651`; child
+seal `b1dd438ad076cce0ace7a1a1a1936798bcbbe2ab25043781ae1f662e1337add0`;
+checkpoint `4c111e572e74cee759f1838377601d7cea393ab938c716ff0d2199dd7942edc9`.
+Drawer manipulation remains untested. The same coordinator allocated active
+`spoon_retrieve_place` wrapper `20260912T033121-93082ac2bf9a`, child
+`20260912T033121-70afbc38d04c`, and will continue serially through fork after
+each completed checkpoint, stopping on any failure. Log
 `.artifacts/cohort-remaining-sequence-replacement.log`. Poll session 1714; do not
 start another model, inference or render job.
 
