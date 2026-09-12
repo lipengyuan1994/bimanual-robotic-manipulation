@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "profile": "six_skill_corrective_views_v1",
+  "split": "train",
+  "task_scope": "bounded_component_replay_only",
+  "independent_scene_count": null,
+  "sources": [
+    {
+      "schema_version": 1,
+      "run_id": "six-skill-corrective-9d2fae6f6ad5f8027a2a4991",
+      "source_manifest_sha256": "8f48660c9de78be9c4f7db49ff914c55934a4d518ccaee51c77b31abb009b07c",
+      "case_id": "bar_contact_avoidance-51002",
+      "family_id": "bar_contact_avoidance",
+      "skill_id": "bar_place_and_return",
+      "seed": 51002,
+      "episode_id": "72074c7f60394caf84a8d610586210ad",
+      "episode": {
+        "schema_version": 1,
+        "path": "demonstration/episode.json",
+        "sha256": "0366a62fc58b5d12f6dbf5d30ebcab7857ab62fc82de196c23730279942dc5fb"
+      },
+      "source_sha256": "4f2dbd27c69be304dc42187760a7bf9fbf9397565f46d85892c0aaaae116befe",
+      "start": 632,
+      "end": 1163,
+      "terminal_parent_frame": 1163
+    },
+    {
+      "schema_version": 1,
+      "run_id": "six-skill-corrective-f9ba76ad0df9d6d1bc355e5d",
+      "source_manifest_sha256": "8363c12c3a53310e2c1da816f201e174fa6faf148e8057ec88c83d85d61f2408",
+      "case_id": "bar_contact_avoidance-51003",
+      "family_id": "bar_contact_avoidance",
+      "skill_id": "bar_place_and_return",
+      "seed": 51003,
+      "episode_id": "7e39e89456cf4557a9cec2af2965f063",
+      "episode": {
+        "schema_version": 1,
+        "path": "demonstration/episode.json",
+        "sha256": "b55db3e51f471d507806ae082cc4f90dfa33e08131dccfe2b6f7e3998b60f312"
+      },
+      "source_sha256": "a882d7b384904daa7ea25ee4eee36ba92c38ba37e1fbb0a93f552e0525e94a81",
+      "start": 632,
+      "end": 1163,
+      "terminal_parent_frame": 1163
+    },
+    {
+      "schema_version": 1,
+      "run_id": "six-skill-corrective-f584ea3492e36e66f34b3494",
+      "source_manifest_sha256": "a73ae73eef1412dd8792739fb32204bb1c5305ec10dbc876ef069057b3d13129",
+      "case_id": "approach_contact-51005",
+      "family_id": "approach_contact",
+      "skill_id": "cup_pick_place",
+      "seed": 51005,
+      "episode_id": "6e13d2f6198646f4b6ab0b9c50a6a3c6",
+      "episode": {
+        "schema_version": 1,
+        "path": "demonstration/episode.json",
+        "sha256": "77a64708b1459e2aec4e69ddff70d9c2b15ff9ac05fe1d443c37560ffd6f87ee"
+      },
+      "source_sha256": "d55a0720bd1776b0b65d8a336b1a2aa5c34b0cf1fa036a9211a80d823a11cd7a",
+      "start": 1582,
+      "end": 2081,
+      "terminal_parent_frame": 2081
+    },
+    {
+      "schema_version": 1,
+      "run_id": "six-skill-corrective-f897acf5ff2f7761f9bbfa62",
+      "source_manifest_sha256": "801b187dbd802ef4ff010866d05517d45366e5ffa235776a8cb4643be13b1684",
+      "case_id": "approach_contact-51006",
+      "family_id": "approach_contact",
+      "skill_id": "plate_pick_place",
+      "seed": 51006,
+      "episode_id": "f093a1ec61f84100b029957c215f1101",
+      "episode": {
+        "schema_version": 1,
+        "path": "demonstration/episode.json",
+        "sha256": "d8d7f180ebc3e4e5666c4fbbed71ed1ecd51b6ce91303480a6f36f38d35ce726"
+      },
+      "source_sha256": "c04583f881f05ef4bc90aa49b277452735e8c37ae1988401f299453676881609",
+      "start": 2101,
+      "end": 2870,
+      "terminal_parent_frame": 2870
+    },
+    {
+      "schema_version": 1,
+      "run_id": "six-skill-corrective-2ef5d7aeac2f58e89858a6d9",
+      "source_manifest_sha256": "ff319459a340235682095a51f70c071f46e2f40fd29ab3e6f41cf0d8b74263b9",
+      "case_id": "approach_contact-51007",
+      "family_id": "approach_contact",
+      "skill_id": "fork_retrieve_place",
+      "seed": 51007,
+      "episode_id": "37fb54a266f64b60a2f58826ab7682a7",
+      "episode": {
+        "schema_version": 1,
+        "path": "demonstration/episode.json",
+        "sha256": "932449357a361c09875c6165e9e4340d068d699a41cd4ade16e4ef36e1286cb9"
+      },
+      "source_sha256": "7b52801f9c106f29d3308cc04b8be254bdf0d1785c11153a5e22e10cd84240d2",
+      "start": 4347,
+      "end": 4997,
+      "terminal_parent_frame": 4997
+    }
+  ],
+  "manifest_sha256": "416f41289c4676cda8c19fa2b180dfe00b1120efc5b28362019362775d797e8a"
+}
