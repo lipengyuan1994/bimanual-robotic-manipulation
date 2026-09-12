@@ -726,4 +726,6 @@ engineering step is to implement and freeze a transport-to-placement sampling
 protocol over the sealed source data, then train a fresh unpromoted checkpoint;
 it must not duplicate the existing uniform corrective replay, weaken the guard, or
 reuse the already-consumed physical-evaluation declaration.
+ADR 0004 freezes the intended source interval and equal-mass sampling rule before
+the runtime implementation.
 See [the experiment record](experiments/2026-09-12-corrective-bar-policy-v2.md).
