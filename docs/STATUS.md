@@ -218,10 +218,17 @@ reproduced its physical bar-placement result. The read-only validator rechecks t
 trace, every action/camera alignment, and source lineage; it froze view
 [`experiments/six-skill-corrective-views-v1.json`](experiments/six-skill-corrective-views-v1.json),
 seal `b6c7cddc8177744e07bb3e70adf948eb7aa7e58c521b6099110a42aa7b7074a4`, which
-selects only replay actions 632–1162. The source and view remain teacher-only and
-training-ineligible pending a separate export boundary. Focused validator/collector
-tests pass 41 cases. The next executable step is to implement that export boundary,
-then collect additional distinct frozen cases with the verified collector. Intel
+selects only replay actions 632–1162. A separate native, offline LeRobot v0.6.1
+export completed at `.artifacts/datasets/six-skill-corrective-bar-v2`: it retains
+the raw sealed source, contains exactly 531 replay transitions, and independently
+reverified decoded RGB, joint observations, actions, timestamps and indices. Export
+manifest seal `b7e74a2b5c58d24d9f45ebd5ef27214770782dda025bdb2b9971ad89adc383d1`.
+An earlier destination remains preserved as a failed artifact after the restricted
+process could not lock the user-level Hugging Face cache; the successful run uses
+an explicitly project-local offline cache. This export is teacher data only and has
+not trained or promoted any policy. Focused export/validator/collector tests pass
+52 cases. The next executable step is to collect additional distinct frozen cases
+with the verified collector, validate and export them before local retraining. Intel
 setup remains deferred until that local correction work completes.
 
 The continuity collector now runs below a bounded guardian and native spawned

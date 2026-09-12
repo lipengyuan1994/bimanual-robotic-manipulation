@@ -40,3 +40,16 @@ The validator creates an immutable view that selects only verified replay action
   six-skill-corrective-9d2fae6f6ad5f8027a2a4991
 .venv/bin/bimanual skill-corrective-views-check /private/tmp/bar-view.json
 ```
+
+Use the native training environment for the offline export and decoded-data check:
+
+```bash
+HF_HUB_OFFLINE=1 HF_HOME=.artifacts/hf-offline \
+  .artifacts/training-venv/bin/bimanual skill-corrective-export \
+  --views docs/experiments/six-skill-corrective-views-v1.json \
+  --destination .artifacts/datasets/six-skill-corrective-bar-v2 \
+  --repo-id local/six-skill-corrective-bar-v2
+HF_HUB_OFFLINE=1 HF_HOME=.artifacts/hf-offline \
+  .artifacts/training-venv/bin/bimanual skill-corrective-export-check \
+  .artifacts/datasets/six-skill-corrective-bar-v2
+```

@@ -266,6 +266,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Reverify a six-skill corrective source view",
     )
     corrective_views_check.add_argument("view", type=Path)
+    skill_corrective_export = commands.add_parser(
+        "skill-corrective-export",
+        help="Export validated six-skill replay views to local LeRobot",
+    )
+    skill_corrective_export.add_argument("--views", type=Path, required=True)
+    skill_corrective_export.add_argument("--destination", type=Path, required=True)
+    skill_corrective_export.add_argument("--repo-id", required=True)
+    skill_corrective_export_check = commands.add_parser(
+        "skill-corrective-export-check",
+        help="Verify a six-skill corrective export against sealed sources",
+    )
+    skill_corrective_export_check.add_argument("dataset", type=Path)
     cohort_adjudicate = commands.add_parser(
         "training-cohort-adjudicate-preflight",
         help="Classify one zero-update MPS environment failure before a replacement",
@@ -925,6 +937,21 @@ def main(argv: list[str] | None = None) -> int:
             from bimanual.skill_corrective_views import load_skill_corrective_views
 
             emit(load_skill_corrective_views(args.view, store).model_dump(mode="json"))
+        elif args.command == "skill-corrective-export":
+            from bimanual.skill_corrective_export import export_skill_corrective_dataset
+
+            result = invoke_with_diagnostics(
+                export_skill_corrective_dataset,
+                args.views,
+                store,
+                args.destination,
+                args.repo_id,
+            )
+            emit({"destination": str(result), "manifest": str(result / "export_manifest.json")})
+        elif args.command == "skill-corrective-export-check":
+            from bimanual.skill_corrective_export import verify_skill_corrective_dataset
+
+            emit(invoke_with_diagnostics(verify_skill_corrective_dataset, args.dataset))
         elif args.command == "handoff-failure-analyze":
             from bimanual.handoff_failure_analysis import (
                 HandoffFailureAnalysisConfig,
