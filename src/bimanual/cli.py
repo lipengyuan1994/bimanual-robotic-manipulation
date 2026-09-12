@@ -169,6 +169,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     cohort_create.add_argument("--dataset", type=Path, required=True)
     cohort_create.add_argument("--skill-views", type=Path, required=True)
+    cohort_create.add_argument(
+        "--corrective-dataset",
+        type=Path,
+        help=(
+            "Optional verified all-skill corrective archive; each training run selects matching "
+            "sources"
+        ),
+    )
     cohort_create.add_argument("--destination", type=Path, required=True)
     for role in (
         "experiment-protocol",
@@ -809,6 +817,7 @@ def main(argv: list[str] | None = None) -> int:
                 },
                 store=store,
                 destination=args.destination,
+                corrective_dataset_root=args.corrective_dataset,
             )
             emit(result.model_dump(mode="json"))
         elif args.command == "training-cohort-check":

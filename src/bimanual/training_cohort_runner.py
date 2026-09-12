@@ -118,6 +118,11 @@ def run_training_cohort_skill(protocol_path, skill_id):
         | {
             "dataset_path": (protocol_path.parent / raw["dataset_path"]).resolve(),
             "skill_views_path": (protocol_path.parent / raw["skill_views_path"]).resolve(),
+            "corrective_dataset_path": (
+                None
+                if raw.get("corrective_dataset_path") is None
+                else (protocol_path.parent / raw["corrective_dataset_path"]).resolve()
+            ),
         }
     )
     store = EvidenceStore(protocol_path.parent / protocol.evidence_root)

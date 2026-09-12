@@ -26,10 +26,11 @@ KINDS = (
 )
 
 
-def _configs(dataset, views):
+def _configs(dataset, views, corrective_dataset=None):
     return tuple(
         ACTTrainingConfig(
             dataset_path=dataset,
+            corrective_dataset_path=corrective_dataset,
             skill_views_path=views,
             skill_id=skill,
             device="mps",
@@ -62,7 +63,9 @@ class CohortPrerequisite(Contract):
 
 
 class TrainingCohortProtocol(Contract):
-    profile: Literal["six_skill_act_training_protocol_v1"] = "six_skill_act_training_protocol_v1"
+    profile: Literal[
+        "six_skill_act_training_protocol_v1", "six_skill_corrective_act_training_protocol_v1"
+    ] = "six_skill_act_training_protocol_v1"
     dataset_root: str
     skill_views_path: str
     evidence_root: str
@@ -70,6 +73,9 @@ class TrainingCohortProtocol(Contract):
     dataset_manifest_sha256: Digest
     views_file_sha256: Digest
     views_manifest_sha256: Digest
+    corrective_dataset_root: str | None = None
+    corrective_dataset_file_sha256: Digest | None = None
+    corrective_dataset_manifest_sha256: Digest | None = None
     configs: tuple[dict, ...]
     prerequisites: tuple[CohortPrerequisite, ...]
     checkpoint_selection: Literal["final_update_20000_only"] = "final_update_20000_only"
@@ -86,7 +92,24 @@ class TrainingCohortProtocol(Contract):
             for value in (self.dataset_root, self.skill_views_path, self.evidence_root)
         ):
             raise ValueError("Cohort source locations must be relative")
-        if tuple(self.configs) != _configs(self.dataset_root, self.skill_views_path):
+        corrective = self.corrective_dataset_root
+        if self.profile == "six_skill_act_training_protocol_v1" and any(
+            value is not None
+            for value in (
+                corrective,
+                self.corrective_dataset_file_sha256,
+                self.corrective_dataset_manifest_sha256,
+            )
+        ):
+            raise ValueError("Nominal cohort cannot declare a corrective archive")
+        if self.profile == "six_skill_corrective_act_training_protocol_v1" and (
+            not corrective
+            or Path(corrective).is_absolute()
+            or self.corrective_dataset_file_sha256 is None
+            or self.corrective_dataset_manifest_sha256 is None
+        ):
+            raise ValueError("Corrective cohort requires a sealed relative archive binding")
+        if tuple(self.configs) != _configs(self.dataset_root, self.skill_views_path, corrective):
             raise ValueError("Cohort must freeze exact six ordered ACT configurations")
         if (
             tuple(p.role for p in self.prerequisites) != ROLES
@@ -94,6 +117,13 @@ class TrainingCohortProtocol(Contract):
         ):
             raise ValueError("Cohort requires five distinct ordered handoff prerequisites")
         body = self.model_dump(mode="json", exclude={"manifest_sha256"})
+        if self.profile == "six_skill_act_training_protocol_v1":
+            for name in (
+                "corrective_dataset_root",
+                "corrective_dataset_file_sha256",
+                "corrective_dataset_manifest_sha256",
+            ):
+                body.pop(name)
         if hashlib.sha256(canonical(body)).hexdigest() != self.manifest_sha256:
             raise ValueError("Cohort protocol body seal mismatch")
         return self
@@ -201,7 +231,13 @@ def _prerequisites(store, run_ids):
 
 
 def create_training_cohort_protocol(
-    dataset_root, skill_views_path, prerequisites, *, store, destination
+    dataset_root,
+    skill_views_path,
+    prerequisites,
+    *,
+    store,
+    destination,
+    corrective_dataset_root=None,
 ):
     """Freeze inputs; callers must separately arrange exclusion and execution."""
     destination = Path(destination).absolute()
@@ -218,9 +254,22 @@ def create_training_cohort_protocol(
     data_path, views_path = (
         os.path.relpath(p, destination.parent) for p in (dataset_root, skill_views_path)
     )
+    corrective_path = None
+    corrective_file_sha = None
+    corrective_manifest_sha = None
+    profile = "six_skill_act_training_protocol_v1"
+    if corrective_dataset_root is not None:
+        from bimanual.corrective_profiles import verify_supported_corrective_dataset
+
+        corrective_root = Path(corrective_dataset_root).resolve(strict=True)
+        corrective_manifest = verify_supported_corrective_dataset(corrective_root)
+        corrective_path = os.path.relpath(corrective_root, destination.parent)
+        corrective_file_sha = digest_file(corrective_root / "export_manifest.json")
+        corrective_manifest_sha = corrective_manifest["manifest_sha256"]
+        profile = "six_skill_corrective_act_training_protocol_v1"
     body = dict(
         schema_version=1,
-        profile="six_skill_act_training_protocol_v1",
+        profile=profile,
         dataset_root=data_path,
         skill_views_path=views_path,
         evidence_root=os.path.relpath(store.root, destination.parent),
@@ -228,18 +277,24 @@ def create_training_cohort_protocol(
         dataset_manifest_sha256=dataset["manifest_sha256"],
         views_file_sha256=digest_file(skill_views_path),
         views_manifest_sha256=views.manifest_sha256,
-        configs=_configs(data_path, views_path),
+        configs=_configs(data_path, views_path, corrective_path),
         prerequisites=[p.model_dump(mode="json") for p in _prerequisites(store, prerequisites)],
         checkpoint_selection="final_update_20000_only",
         scope="training_runtime_only_no_physical_quality_claim",
         execution_authorized_by_this_artifact=False,
     )
+    if corrective_path is not None:
+        body.update(
+            corrective_dataset_root=corrective_path,
+            corrective_dataset_file_sha256=corrective_file_sha,
+            corrective_dataset_manifest_sha256=corrective_manifest_sha,
+        )
     result = TrainingCohortProtocol.model_validate(
         body | {"manifest_sha256": hashlib.sha256(canonical(body)).hexdigest()}
     )
     destination.parent.mkdir(parents=True, exist_ok=True)
     with destination.open("x") as stream:
-        stream.write(result.model_dump_json(indent=2))
+        stream.write(result.model_dump_json(indent=2, exclude_none=True))
     return load_training_cohort_protocol(destination)
 
 
@@ -264,6 +319,17 @@ def load_training_cohort_protocol(path):
         or views.export_manifest_sha256 != result.dataset_manifest_sha256
     ):
         raise ValueError("Cohort nominal v2 source identity mismatch")
+    if result.profile == "six_skill_corrective_act_training_protocol_v1":
+        from bimanual.corrective_profiles import verify_supported_corrective_dataset
+
+        corrective_root = (path.parent / result.corrective_dataset_root).resolve()
+        corrective = verify_supported_corrective_dataset(corrective_root)
+        if (
+            digest_file(corrective_root / "export_manifest.json")
+            != result.corrective_dataset_file_sha256
+            or corrective["manifest_sha256"] != result.corrective_dataset_manifest_sha256
+        ):
+            raise ValueError("Cohort corrective archive identity mismatch")
     store = EvidenceStore(path.parent / result.evidence_root)
     if (
         _prerequisites(store, {p.role: p.run_id for p in result.prerequisites})

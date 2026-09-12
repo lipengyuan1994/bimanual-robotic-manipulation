@@ -17,5 +17,9 @@ verification.
 
 The archive is teacher evidence and is not a model-quality result. The training
 path derives each policy's corrective subset from the sealed view and rejects
-empty or substituted skill selections. Corrective retraining and physical
-evaluation remain outstanding.
+empty or substituted skill selections. The follow-on retraining cohort is frozen at
+`docs/experiments/six-skill-corrective-training-protocol-v1.json`, seal
+`63ff439f807ddf13d49aef1ebdd2d1dd4da05f0ef9f0a85ea94fb8b3856051e5`. It verifies
+this archive again before a model job starts and selects only matching source
+episodes for the requested skill. Corrective retraining and physical evaluation
+remain outstanding.

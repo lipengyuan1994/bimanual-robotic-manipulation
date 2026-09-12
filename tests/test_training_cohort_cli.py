@@ -12,8 +12,10 @@ def test_training_cohort_cli_dispatch(tmp_path, monkeypatch, capsys, command):
     calls = []
     result = SimpleNamespace(model_dump=lambda **kwargs: {"scope": "training_runtime_only"})
 
-    def create(dataset, views, prerequisites, *, store, destination):
-        calls.append((dataset, views, prerequisites, store.root, destination))
+    def create(dataset, views, prerequisites, *, store, destination, corrective_dataset_root=None):
+        calls.append(
+            (dataset, views, prerequisites, store.root, destination, corrective_dataset_root)
+        )
         return result
 
     def check(path):
@@ -46,6 +48,8 @@ def test_training_cohort_cli_dispatch(tmp_path, monkeypatch, capsys, command):
         args = [str(protocol)]
     assert main(["--artifacts", str(tmp_path / "evidence"), command, *args]) == 0
     assert calls
+    if command.endswith("create"):
+        assert calls[0][-1] is None
     assert "training_runtime_only" in capsys.readouterr().out
 
 
