@@ -14,13 +14,17 @@ from bimanual.evidence import EvidenceStore, canonical, digest_file
 
 CASE_SEEDS = tuple(range(52000, 52005))
 TRANSPORT_TO_PLACEMENT = (770, 1070)
+V2_CASE_SEEDS = tuple(range(53000, 53005))
+V2_SOURCE_INTERVAL = (770, 1163)
 
 
 class BarOverlapCorrectionProtocol(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     schema_version: Literal[1] = 1
-    profile: Literal["bar_overlap_transport_placement_protocol_v1"]
+    profile: Literal[
+        "bar_overlap_transport_placement_protocol_v1", "bar_overlap_transport_placement_protocol_v2"
+    ]
     evidence_root: str
     diagnosis_run_id: str
     diagnosis_manifest_sha256: str
@@ -41,7 +45,12 @@ class BarOverlapCorrectionProtocol(BaseModel):
     def exact(self):
         if any(Path(value).is_absolute() for value in (self.evidence_root, self.asset_root)):
             raise ValueError("Protocol paths must be relative")
-        if self.source_interval != TRANSPORT_TO_PLACEMENT or self.case_seeds != CASE_SEEDS:
+        expected = (
+            (TRANSPORT_TO_PLACEMENT, CASE_SEEDS)
+            if self.profile.endswith("v1")
+            else (V2_SOURCE_INTERVAL, V2_CASE_SEEDS)
+        )
+        if (self.source_interval, self.case_seeds) != expected:
             raise ValueError("Bar overlap allocation changed")
         body = self.model_dump(mode="json", exclude={"manifest_sha256"})
         if hashlib.sha256(canonical(body)).hexdigest() != self.manifest_sha256:
@@ -68,7 +77,11 @@ def _verified_diagnosis(store: EvidenceStore, run_id: str):
 
 
 def create_bar_overlap_correction_protocol(
-    *, evidence_root: Path, diagnosis_run_id: str, destination: Path
+    *,
+    evidence_root: Path,
+    diagnosis_run_id: str,
+    destination: Path,
+    profile="bar_overlap_transport_placement_protocol_v1",
 ):
     destination = Path(destination).resolve()
     if destination.exists() or destination.is_symlink():
@@ -76,9 +89,14 @@ def create_bar_overlap_correction_protocol(
     evidence_root = Path(evidence_root).resolve(strict=True)
     diagnosis, evaluation = _verified_diagnosis(EvidenceStore(evidence_root), diagnosis_run_id)
     assets = ASSETS.with_name("dinner_teacher_v2").resolve(strict=True)
+    interval, seeds = (
+        (TRANSPORT_TO_PLACEMENT, CASE_SEEDS)
+        if profile.endswith("v1")
+        else (V2_SOURCE_INTERVAL, V2_CASE_SEEDS)
+    )
     body = {
         "schema_version": 1,
-        "profile": "bar_overlap_transport_placement_protocol_v1",
+        "profile": profile,
         "evidence_root": os.path.relpath(evidence_root, destination.parent),
         "diagnosis_run_id": diagnosis.run_id,
         "diagnosis_manifest_sha256": diagnosis.manifest_sha256,
@@ -87,8 +105,8 @@ def create_bar_overlap_correction_protocol(
         "asset_root": os.path.relpath(assets, destination.parent),
         "asset_manifest_sha256": digest_file(assets / "manifest.json"),
         "plan_sha256": digest_file(assets / "plan.json.gz"),
-        "source_interval": TRANSPORT_TO_PLACEMENT,
-        "case_seeds": CASE_SEEDS,
+        "source_interval": interval,
+        "case_seeds": seeds,
         "overlap_limit_m": 0.0025,
         "allocation_rule": "one_teacher_attempt_per_frozen_case_no_automatic_retry",
         "learned_execution": False,
