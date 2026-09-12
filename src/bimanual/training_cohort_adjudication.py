@@ -16,6 +16,7 @@ from bimanual.worker_lease import WorkerLease
 KIND = "training_cohort_preflight_adjudication"
 ATTEMPT_KIND = "training_cohort_skill_attempt"
 ERROR = "RuntimeError: Requested MPS unavailable; no fallback"
+ARCHIVE_INTERRUPT = "KeyboardInterrupt: "
 
 
 def _config(protocol_path: Path, protocol, skill_id: str) -> ACTTrainingConfig:
@@ -25,6 +26,11 @@ def _config(protocol_path: Path, protocol, skill_id: str) -> ACTTrainingConfig:
         | {
             "dataset_path": (protocol_path.parent / raw["dataset_path"]).resolve(),
             "skill_views_path": (protocol_path.parent / raw["skill_views_path"]).resolve(),
+            "corrective_dataset_path": (
+                None
+                if raw.get("corrective_dataset_path") is None
+                else (protocol_path.parent / raw["corrective_dataset_path"]).resolve()
+            ),
         }
     )
 
@@ -46,8 +52,10 @@ def _validate_failure(
     ):
         raise ValueError("Attempt is not the exact failed cohort request")
     attempt = store.directory(wrapper.run_id)
-    if json.loads((attempt / "runner-error.json").read_text()) != {"error": ERROR}:
-        raise ValueError("Wrapper does not record the supported MPS preflight failure")
+    runner_error = json.loads((attempt / "runner-error.json").read_text())
+    error = runner_error.get("error") if isinstance(runner_error, dict) else None
+    if error not in {ERROR, ARCHIVE_INTERRUPT}:
+        raise ValueError("Wrapper does not record a supported zero-update preflight failure")
     child_store = EvidenceStore(attempt / "training-evidence")
     children = list((child_store.root / "runs").glob("*/manifest.json"))
     if len(children) != 1:
@@ -62,7 +70,11 @@ def _validate_failure(
         or child.metrics.get("actual_device") is not None
         or child.metrics.get("training_completed") is not False
         or child.metrics.get("steps") != []
-        or ERROR not in error_text
+        or (
+            ERROR not in error_text
+            if error == ERROR
+            else "verify_supported_corrective_dataset" not in error_text
+        )
         or any(path.name == "checkpoint" for path in children[0].parent.iterdir())
     ):
         raise ValueError("Training child advanced beyond the supported zero-update failure")
@@ -160,8 +172,16 @@ def adjudicate_training_cohort_preflight(protocol_path: Path, attempt_id: str) -
         }
         directory = store.new_run()
         (directory / "mps-probe.json").write_bytes(canonical(probe))
+        recorded_error = json.loads(
+            (store.directory(wrapper.run_id) / "runner-error.json").read_text()
+        ).get("error")
+        failure_class = (
+            "restricted_process_mps_preflight_unavailable"
+            if recorded_error == ERROR
+            else "interrupted_raw_archive_preflight"
+        )
         metrics = {
-            "failure_class": "restricted_process_mps_preflight_unavailable",
+            "failure_class": failure_class,
             "failed_child_run_id": child.run_id,
             "failed_child_manifest_sha256": child.manifest_sha256,
             "failed_updates": 0,
@@ -182,7 +202,7 @@ def adjudicate_training_cohort_preflight(protocol_path: Path, attempt_id: str) -
                 "skill_id": skill_id,
                 "failed_attempt_run_id": wrapper.run_id,
                 "failed_attempt_manifest_sha256": wrapper.manifest_sha256,
-                "reason": "Explicit replacement of zero-update environment preflight only",
+                "reason": "Explicit replacement of supported zero-update preflight only",
             },
             metrics=metrics,
             source=provenance(Path(__file__).resolve().parents[2]),
