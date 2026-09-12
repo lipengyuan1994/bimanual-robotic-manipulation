@@ -118,9 +118,10 @@ def test_corrective_v2_profile_is_created_only_with_a_corrective_archive(inputs,
         "bimanual.corrective_profiles.verify_supported_corrective_dataset",
         lambda root: {"manifest_sha256": "c" * 64},
     )
+    binding_calls = []
     monkeypatch.setattr(
         "bimanual.corrective_profiles.verify_supported_corrective_dataset_binding",
-        lambda root: {"manifest_sha256": "c" * 64},
+        lambda root: binding_calls.append(root) or {"manifest_sha256": "c" * 64},
     )
     result = module.create_training_cohort_protocol(
         dataset,
@@ -133,6 +134,7 @@ def test_corrective_v2_profile_is_created_only_with_a_corrective_archive(inputs,
     )
     assert result.profile == "six_skill_corrective_act_training_protocol_v2"
     assert result.corrective_dataset_root == "corrective"
+    assert binding_calls == [corrective.resolve()]
 
 
 def test_corrective_profile_requires_archive(inputs):
