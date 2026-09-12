@@ -24,13 +24,13 @@ is active.
 
 The six-skill suite was frozen before any of those checkpoints completed at
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `cdb3d48e51da00146a19573d3496425bbb3445fe0c789461cb7250719e7c5bf0`.
+seal `410caabdf7d01fa41ce4957531fbf70922135bbffe665f8039a2e23bf66e6876`.
 It selects final-update20,000 checkpoints, MPS, a two-action execution prefix,
 the authored nominal-v2 scene, exact teacher preparation, per-skill action budgets
 equal to twice the nominal duration, and a1,200-second wall limit. It requires one
 attempt for every completed cohort checkpoint; observed outcomes cannot change the
 suite.
-The current seal covers 112 package/runtime and authored-scene/SO-101 files,
+The current seal covers 115 package/runtime and authored-scene/SO-101 files,
 including the deployment selection path used before guarded execution. No component
 case had run when this unused protocol was regenerated.
 
@@ -61,6 +61,22 @@ After all six declared evaluations have run, seal their complete result table:
 .artifacts/training-venv/bin/bimanual skill-physical-suite-report \
   docs/experiments/six-skill-physical-evaluation-protocol-v1.json
 ```
+
+The resumable coordinator performs that sequence without choosing checkpoints by
+hand. It first verifies every exact cohort wrapper and child, including the explicit
+adjudication of any excluded failed attempt, before it starts a model. It then reuses
+or runs each one-time case in frozen order and seals the suite after all six finish:
+
+```sh
+PYTORCH_ENABLE_MPS_FALLBACK=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+  .artifacts/training-venv/bin/bimanual skill-physical-protocol-run-all \
+  docs/experiments/six-skill-physical-evaluation-protocol-v1.json
+```
+
+A normal component failure remains in the result table and does not hide later
+skills. A timeout, cancellation, guardian failure or unsealed attempt stops the
+sequence for adjudication. The coordinator cannot claim dinner-task, autonomous or
+release success.
 
 The report requires exactly one verified result and its clean process wrapper for
 every skill, rebinds each result to its sealed cohort wrapper and training child,

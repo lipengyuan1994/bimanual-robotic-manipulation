@@ -5,7 +5,7 @@ from threading import Event, Thread
 import pytest
 
 from bimanual.evidence import EvidenceStore
-from bimanual.operator_jobs import OperatorJobs
+from bimanual.operator_jobs import OperatorJob, OperatorJobs
 from bimanual.workflow_execution import WorkflowExecutionConfig
 from bimanual.workflow_process import WorkflowProcessConfig
 
@@ -248,3 +248,80 @@ def test_terminal_outcomes_keep_verified_run_and_explanation(tmp_path, outcome, 
         assert "time limit" in job.error
     elif state in {"failed", "needs_clarification"}:
         assert job.error == "Where should the cup go?"
+
+
+@pytest.mark.parametrize("state", ["active", "stopping"])
+def test_restart_marks_unfinished_job_recovery_required_without_launch(tmp_path, state):
+    evidence = tmp_path / "evidence"
+    original = OperatorJobs(
+        config(), store=EvidenceStore(evidence), project_root=tmp_path, _runner=None
+    )
+    original._publish(OperatorJob("a" * 32, state, "Set the table"))
+    calls = []
+
+    def runner(cfg, *, store, **kwargs):
+        calls.append(cfg.execution.instruction)
+        return seal(store)
+
+    recovered = OperatorJobs(
+        config(),
+        store=EvidenceStore(evidence),
+        project_root=tmp_path,
+        _runner=runner,
+    )
+
+    job = recovered.snapshot()
+    assert calls == []
+    assert job.job_id == "a" * 32
+    assert job.instruction == "Set the table"
+    assert job.state == "recovery_required"
+    assert job.run_id is None and job.independent_task_success is None
+    assert "restarted" in job.error
+    replacement = recovered.start("Deliberate replacement")
+    recovered.close()
+    assert replacement.job_id != job.job_id
+    assert calls == ["Deliberate replacement"]
+
+
+def test_verified_terminal_job_survives_restart(tmp_path):
+    evidence = tmp_path / "evidence"
+    first = manager(tmp_path, lambda cfg, *, store, **kw: seal(store))
+    first.start("Dinner")
+    first.close()
+    expected = first.snapshot()
+    calls = []
+
+    restored = OperatorJobs(
+        config(),
+        store=EvidenceStore(evidence),
+        project_root=tmp_path,
+        _runner=lambda *args, **kwargs: calls.append(True),
+    )
+    assert restored.snapshot() == expected
+    assert calls == []
+    restored.close()
+
+
+@pytest.mark.parametrize("fault", ["malformed", "oversized", "symlink"])
+def test_invalid_persistent_state_fails_closed_without_launch(tmp_path, fault):
+    journal = tmp_path / "evidence" / "operator-jobs"
+    journal.mkdir(parents=True)
+    pointer = journal / "current.json"
+    if fault == "malformed":
+        pointer.write_text("not json")
+    elif fault == "oversized":
+        pointer.write_bytes(b"{" + b"x" * 2048)
+    else:
+        target = tmp_path / "outside.json"
+        target.write_text("{}")
+        pointer.symlink_to(target)
+    calls = []
+    jobs = manager(tmp_path, lambda *args, **kwargs: calls.append(True))
+
+    job = jobs.snapshot()
+    assert job.state == "recovery_required"
+    assert job.independent_task_success is None
+    with pytest.raises(RuntimeError, match="journal requires recovery"):
+        jobs.start("Replacement")
+    assert calls == []
+    jobs.close()

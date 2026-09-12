@@ -2,7 +2,14 @@ import { useEffect, useRef, useState } from "react";
 
 type Job = {
   job_id: string;
-  state: "active" | "stopping" | "finished" | "failed" | "cancelled" | "needs_clarification";
+  state:
+    | "active"
+    | "stopping"
+    | "finished"
+    | "failed"
+    | "cancelled"
+    | "needs_clarification"
+    | "recovery_required";
   instruction: string;
   run_id: string | null;
   error: string | null;

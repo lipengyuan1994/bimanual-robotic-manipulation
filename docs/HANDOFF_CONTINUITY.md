@@ -30,6 +30,12 @@ The collector does not set object poses, attach the bar or apply external forces
 Independent scoring requires ordered donor/shared/receiver holds, continuous airborne
 grip, zero forbidden contacts, no partial actions and bounded overlap. A failed or
 interrupted case consumes its reservation and cannot be replaced automatically.
+The command reserves the shared model lease before it allocates process evidence,
+runs the collector below a native spawned worker and guardian, and only exposes a
+child result after both processes are reaped and its sealed identity is reverified.
+Cancellation, timeout and parent loss stop the process within bounded grace; a
+termination-resistant worker is killed while its unsealed reservation remains for
+adjudication.
 
 The protocol verifies locally now. Physical collection waits until the active serial
 training sequence releases the shared simulation/model lease:

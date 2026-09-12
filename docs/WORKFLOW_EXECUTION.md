@@ -158,6 +158,12 @@ runs at a time. Stop remains `stopping` until worker termination is confirmed;
 server shutdown requests cancellation and waits for the bounded process cleanup.
 A network error does not mean the worker stopped; refresh status before retrying.
 
+The server records each operator state in an immutable, hash-linked local journal
+before launch and again at terminal completion. On restart, a previously active or
+stopping job is shown as `recovery_required`; the server does not resume it. Inspect
+the sealed workflow evidence before deliberately starting a replacement. Invalid or
+orphaned journal state blocks new work instead of guessing whether a worker finished.
+
 `finished` describes process completion, not independently verified dinner-table
 success. Inspect sealed evidence separately. The interface shows process status, reported step progress and last-capture camera
 previews. Actual learned-run display validation remains pending. No validated full

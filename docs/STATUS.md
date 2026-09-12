@@ -11,7 +11,7 @@ Updated September 11, 2026. Latest implementation checkpoint: `184fb4c` on
 | M0 complete | Native runtime, portal, seven lessons, README/CI synchronization |
 | M1 locally complete | Continuous contact-based teacher passes one physical layout |
 | M2 in progress | ACT and planner integration exists; learned hand-off and full dinner success remain unproven |
-| M3 incomplete | Frozen release suite, Intel/OpenVINO execution and submission package remain |
+| M3 incomplete | Frozen release suite, Intel/OpenVINO execution and final submission package remain |
 | M4 incomplete | Reliability suites, real-candidate rollback trials and support gates remain |
 
 Implementation is authorized by [decision 0003](decisions/0003-event-window-implementation.md).
@@ -31,7 +31,7 @@ This proves training completion only; learned manipulation success remains unkno
 The failed checkpoint now has a separate continuity-correction data boundary rather
 than widening its historical approach-only dataset. Frozen protocol
 [`experiments/handoff-continuity-collection-protocol-v1.json`](experiments/handoff-continuity-collection-protocol-v1.json),
-seal `fe0b14056ea9a69605975b83c37971903398d09ab0cb23651d726ca7e3622562`,
+seal `a8eaa8100b75c2a0bdc4275a4a47fa3b5bd324df17701f98ca92368febc555be`,
 binds the verified unpromoted diagnosis, exact nominal-v2 assets and nine receiver
 start cases at a 0.015-radian envelope. The contact-only collector retains prefix,
 acquisition, correction and validation evidence, but marks only receiver convergence
@@ -123,9 +123,20 @@ This is training completion only; plate manipulation remains untested. The same
 coordinator allocated active `drawer_open` wrapper
 `20260912T014959-e04ee487ae95`, child `20260912T014959-e973f584306d`, and will
 continue serially through spoon and fork after each completed checkpoint, stopping
-on any failure. Log
+on any failure. The child had completed at least 6,651 finite updates when this
+checkpoint was written. Log
 `.artifacts/cohort-remaining-sequence-replacement.log`. Poll session 1714; do not
 start another model, inference or render job.
+
+The continuity collector now runs below a bounded guardian and native spawned
+worker. It reserves the shared model lease before allocating output, retains
+consumed interrupted reservations, reaps a hung worker after cancellation, timeout
+or parent loss, and verifies the child recording before exposing it. CPU lifecycle
+fixtures cover clean success, physical failure, wrong child identity, lease
+contention, a termination-resistant worker, parent death and evidence-source
+confinement. No continuity case has run. The frozen protocol was regenerated before
+its first case with seal
+`a8eaa8100b75c2a0bdc4275a4a47fa3b5bd324df17701f98ca92368febc555be`.
 
 A frozen visual-planner decision-suite boundary is now implemented. A write-once
 protocol binds the exact Qwen model manifest/revision, sealed source runs and
@@ -259,8 +270,8 @@ protocol path now uses the guarded process boundary described below.
 
 The six-skill component suite is frozen before any remaining checkpoint completes:
 [`experiments/six-skill-physical-evaluation-protocol-v1.json`](experiments/six-skill-physical-evaluation-protocol-v1.json),
-seal `cdb3d48e51da00146a19573d3496425bbb3445fe0c789461cb7250719e7c5bf0`.
-It binds the training cohort and 112 package/runtime and authored-scene/SO-101 asset
+seal `410caabdf7d01fa41ce4957531fbf70922135bbffe665f8039a2e23bf66e6876`.
+It binds the training cohort and 115 package/runtime and authored-scene/SO-101 asset
 files,
 final-update20,000 selection,
 MPS, execution prefix2, exact teacher preparation, fixed nominal-v2 scene,
@@ -269,6 +280,33 @@ completed matching cohort wrapper/child, evaluates once, preserves failures and
 refuses ambiguous duplicates. The focused protocol/evaluator/CLI group passes19
 tests. No model or physical success is implied. This protocol replaced the earlier
 unused seal before any cohort component evaluation ran.
+
+`skill-physical-protocol-run-all` verifies all six exact completed cohort attempts
+before starting the first physical evaluation, excludes only explicitly adjudicated
+training failures, resumes existing clean results in frozen skill order, continues
+after ordinary component failures, and stops when a process interruption requires
+adjudication. It seals the suite only after all six cases exist and preserves the
+teacher-prepared scope. Five CPU orchestration fixtures pass; no physical case has
+run.
+
+Operator jobs now persist as sealed immutable records with an atomic current
+pointer. After a server restart, a previously active or stopping job becomes
+`recovery_required` and is never relaunched automatically; verified terminal
+results remain inspectable. Malformed, oversized, symlinked, orphaned or
+outcome-mismatched records fail closed. The portal recognizes the recovery state.
+
+A local submission packager now validates a clean exact Git revision, the frozen
+release protocol and matching sealed release-suite evidence, a credential-free
+HTTPS application URL, MP4 video, PDF slides and exact 16:9 cover before creating
+any output. It copies and hashes the declared assets and evidence, preserves failed
+or incomplete quality outcomes, and labels a completed bundle
+`package_complete_not_submitted`. This is packaging capability only; the required
+release evidence and final media do not exist yet.
+
+The complete non-render repository gate after this checkpoint passes 1,352 tests,
+with 18 documented optional skips, 9 render deselections, two dependency
+deprecation warnings and 493 verified documentation links in 657.92 seconds. The
+native Node 24 portal production build also passes.
 
 The frozen runner now places each component evaluation below a separate non-daemon
 guardian and spawned worker. Bounded cancellation, timeout and original-parent-loss
@@ -302,7 +340,7 @@ action beyond its explicit budget, leaving the executor as the single stopping
 authority and preventing premature v2 plate termination. The unused protocol was
 regenerated before any outcome with all then-current transitive evaluator/control/scoring
 sources pinned. Later guardian, step-report, local-release and deployment hardening
-produced the current 112-source-and-asset seal before any component evaluation.
+produced the current 115-source-and-asset seal before any component evaluation.
 The combined executor/outcome/protocol/evaluator group passes61
 tests; the corrected protocol re-verifies.
 

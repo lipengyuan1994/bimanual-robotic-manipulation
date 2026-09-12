@@ -65,6 +65,7 @@ def _runtime_sources() -> dict[str, str]:
     root = Path(__file__).resolve().parent
     names = (
         "handoff_continuity_protocol.py",
+        "handoff_continuity_process.py",
         "handoff_continuity_teacher.py",
         "dinner_teacher.py",
         "teacher.py",

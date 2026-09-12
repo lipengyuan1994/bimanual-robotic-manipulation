@@ -68,6 +68,26 @@ def _existing(store: EvidenceStore, request: dict) -> Manifest | None:
     return result
 
 
+def build_handoff_continuity_request(protocol_path: Path, case_id: str) -> dict:
+    """Build the exact immutable request used by the identity-addressed reservation."""
+    protocol_path = Path(protocol_path).resolve(strict=True)
+    protocol = load_handoff_continuity_protocol(protocol_path)
+    selected = [case for case in protocol.cases if case.case_id == case_id]
+    if len(selected) != 1:
+        raise ValueError("Case id is not in the frozen continuity protocol")
+    case = selected[0]
+    return {
+        "protocol_path": str(protocol_path),
+        "protocol_file_sha256": digest_file(protocol_path),
+        "protocol_manifest_sha256": protocol.manifest_sha256,
+        "case_id": case.case_id,
+        "case": case.model_dump(mode="json"),
+        "phase_boundaries": protocol.phase_boundaries,
+        "correction_scope": protocol.correction_scope,
+        "training_only": True,
+    }
+
+
 def _continuity_score(physics_path: Path, actions_path: Path) -> dict:
     actions = [json.loads(line) for line in actions_path.read_text().splitlines()]
     rows = [json.loads(line) for line in physics_path.read_text().splitlines()]
@@ -147,39 +167,44 @@ def run_handoff_continuity_case(
     store: EvidenceStore,
     project_root: Path,
     cancelled: Callable[[], bool] = lambda: False,
+    model_job_lease_path: Path | None = None,
+    model_job_lease: WorkerLease | None = None,
 ) -> Manifest:
     """Collect one frozen case once; failed/interrupted cases remain consumed."""
     protocol_path = Path(protocol_path).resolve(strict=True)
     project_root = Path(project_root).resolve()
     protocol_file_sha256 = digest_file(protocol_path)
     protocol = load_handoff_continuity_protocol(protocol_path)
-    selected = [case for case in protocol.cases if case.case_id == case_id]
-    if len(selected) != 1:
-        raise ValueError("Case id is not in the frozen continuity protocol")
-    case: HandoffContinuityCase = selected[0]
-    request = {
-        "protocol_path": str(protocol_path),
-        "protocol_file_sha256": protocol_file_sha256,
-        "protocol_manifest_sha256": protocol.manifest_sha256,
-        "case_id": case.case_id,
-        "case": case.model_dump(mode="json"),
-        "phase_boundaries": protocol.phase_boundaries,
-        "correction_scope": protocol.correction_scope,
-        "training_only": True,
-    }
+    request = build_handoff_continuity_request(protocol_path, case_id)
+    case = HandoffContinuityCase.model_validate(request["case"])
     store.root.mkdir(parents=True, exist_ok=True)
     with WorkerLease.acquire(store.root / ".handoff-continuity-coordinator.lock"):
         prior = _existing(store, request)
         if prior is not None:
             return prior
-        model_lease = WorkerLease.acquire(store.root / MODEL_JOB_LEASE)
+        if model_job_lease is not None and model_job_lease_path is None:
+            raise ValueError("An existing model-job lease requires its expected path")
+        lease_path = (
+            Path(model_job_lease_path).resolve()
+            if model_job_lease_path is not None
+            else (store.root / MODEL_JOB_LEASE).resolve()
+        )
+        owns_model_lease = model_job_lease is None
+        model_lease = model_job_lease or WorkerLease.acquire(lease_path)
+        try:
+            model_lease.assert_path(lease_path)
+        except BaseException:
+            if owns_model_lease:
+                model_lease.close()
+            raise
         directory = store.directory(_reservation_name(protocol.manifest_sha256, case.case_id))
         try:
             directory.parent.mkdir(parents=True, exist_ok=True)
             directory.mkdir(exist_ok=False)
             _write_durable(directory / REQUEST, request)
         except BaseException:
-            model_lease.close()
+            if owns_model_lease:
+                model_lease.close()
             raise
         source = provenance(project_root)
         metrics = {
@@ -400,7 +425,8 @@ def run_handoff_continuity_case(
             if cleanup_errors:
                 metrics["cleanup_errors"] = cleanup_errors
                 outcome = "failed"
-            model_lease.close()
+            if owns_model_lease:
+                model_lease.close()
         if (directory / "physics.jsonl").is_file() and (directory / "actions.jsonl").is_file():
             try:
                 score = _continuity_score(directory / "physics.jsonl", directory / "actions.jsonl")

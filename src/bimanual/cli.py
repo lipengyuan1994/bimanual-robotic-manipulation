@@ -223,6 +223,11 @@ def main(argv: list[str] | None = None) -> int:
     physical_protocol_run.add_argument("protocol", type=Path)
     physical_protocol_run.add_argument("--skill", required=True)
     physical_protocol_run.add_argument("--training-attempt", required=True)
+    physical_protocol_sequence = commands.add_parser(
+        "skill-physical-protocol-run-all",
+        help="Resume all six frozen component evaluations after cohort training completes",
+    )
+    physical_protocol_sequence.add_argument("protocol", type=Path)
     physical_suite_report = commands.add_parser(
         "skill-physical-suite-report",
         help="Seal the complete frozen six-skill component result without workflow claims",
@@ -328,6 +333,25 @@ def main(argv: list[str] | None = None) -> int:
         "workflow-release-suite", help="Aggregate all sixteen frozen local release outcomes"
     )
     workflow_release_suite.add_argument("protocol", type=Path)
+    submission_check = commands.add_parser(
+        "submission-check", help="Inspect local submission requirements without creating files"
+    )
+    submission_create = commands.add_parser(
+        "submission-create", help="Create a verified local submission package"
+    )
+    submission_verify = commands.add_parser(
+        "submission-verify", help="Reverify an existing local submission package"
+    )
+    for submission, required in ((submission_check, False), (submission_create, True)):
+        submission.add_argument("--revision", required=required)
+        submission.add_argument("--release-protocol", type=Path, required=required)
+        submission.add_argument("--release-suite", type=Path, required=required)
+        submission.add_argument("--interactive-url", required=required)
+        submission.add_argument("--video", type=Path, required=required)
+        submission.add_argument("--slides", type=Path, required=required)
+        submission.add_argument("--cover", type=Path, required=required)
+    submission_create.add_argument("--destination", type=Path, required=True)
+    submission_verify.add_argument("package", type=Path)
 
     cup = commands.add_parser("cup", help="Physically carry and release a hollow cup upright")
     cup.add_argument("--no-render", action="store_true")
@@ -621,10 +645,18 @@ def main(argv: list[str] | None = None) -> int:
             result = load_handoff_continuity_protocol(args.protocol)
             emit(result.model_dump(mode="json"))
         elif args.command == "handoff-continuity-run":
-            from bimanual.handoff_continuity_teacher import run_handoff_continuity_case
+            from bimanual.handoff_continuity_process import (
+                HandoffContinuityProcessConfig,
+                run_handoff_continuity_process,
+            )
 
-            result = run_handoff_continuity_case(
-                args.protocol, args.case_id, store=store, project_root=root
+            result = run_handoff_continuity_process(
+                HandoffContinuityProcessConfig(
+                    protocol_path=args.protocol,
+                    case_id=args.case_id,
+                ),
+                store=store,
+                project_root=root,
             )
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1
@@ -801,6 +833,12 @@ def main(argv: list[str] | None = None) -> int:
             )
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1
+        elif args.command == "skill-physical-protocol-run-all":
+            from bimanual.skill_physical_sequence import run_skill_physical_sequence
+
+            result = invoke_with_diagnostics(run_skill_physical_sequence, args.protocol)
+            emit(result)
+            return 0 if result["evaluations_complete"] else 1
         elif args.command == "skill-physical-suite-report":
             from bimanual.skill_physical_suite import run_skill_physical_suite_report
 
@@ -957,6 +995,34 @@ def main(argv: list[str] | None = None) -> int:
             )
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.metrics["local_prequalification_passed"] is True else 1
+        elif args.command in {"submission-check", "submission-create"}:
+            from bimanual.submission_package import (
+                SubmissionInputs,
+                create_submission_package,
+                inspect_submission_requirements,
+            )
+
+            inputs = SubmissionInputs(
+                project_root=root,
+                repository_revision=args.revision,
+                release_protocol=args.release_protocol,
+                release_suite=args.release_suite,
+                interactive_url=args.interactive_url,
+                video=args.video,
+                slides=args.slides,
+                cover=args.cover,
+            )
+            if args.command == "submission-check":
+                report = inspect_submission_requirements(inputs)
+                emit(report.model_dump(mode="json"))
+                return 0 if report.complete else 1
+            result = create_submission_package(inputs, args.destination)
+            emit(result.model_dump(mode="json"))
+        elif args.command == "submission-verify":
+            from bimanual.submission_package import verify_submission_package
+
+            result = verify_submission_package(args.package, project_root=root)
+            emit(result.model_dump(mode="json"))
         elif args.command == "cup":
             from bimanual.cup import CupConfig, run_cup
 

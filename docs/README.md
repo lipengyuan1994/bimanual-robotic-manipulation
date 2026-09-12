@@ -11,6 +11,7 @@ Read [STATUS](STATUS.md) first when resuming work.
 | Component and truth boundaries | [Architecture](ARCHITECTURE.md) |
 | Native install and commands | [Setup](SETUP.md) |
 | Reproducibility and release evidence | [Evidence](EVIDENCE.md) |
+| Assemble final event artifacts | [Submission package](SUBMISSION.md) |
 | Activate or roll back a verified cohort | [Local workflow deployment](WORKFLOW_DEPLOYMENT.md) |
 | Future Intel deployment | [Deployment](DEPLOYMENT.md) |
 | Free Intel hardware access | [Access routes and request drafts](INTEL_ACCESS.md) |

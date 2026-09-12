@@ -62,14 +62,14 @@ def test_handoff_continuity_protocol_cli_dispatch(tmp_path, monkeypatch, capsys)
 
 
 def test_handoff_continuity_run_cli_preserves_failure(tmp_path, monkeypatch, capsys):
-    from bimanual import handoff_continuity_teacher as module
+    from bimanual import handoff_continuity_process as module
 
     calls = []
     result = SimpleNamespace(outcome="failed", model_dump=lambda **kwargs: {"outcome": "failed"})
     monkeypatch.setattr(
         module,
-        "run_handoff_continuity_case",
-        lambda protocol, case_id, **kwargs: calls.append((protocol, case_id)) or result,
+        "run_handoff_continuity_process",
+        lambda config, **kwargs: calls.append((config.protocol_path, config.case_id)) or result,
     )
     protocol = tmp_path / "protocol.json"
     assert (
