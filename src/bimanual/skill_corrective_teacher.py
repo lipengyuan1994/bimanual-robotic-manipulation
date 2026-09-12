@@ -82,10 +82,16 @@ def _case_rows(protocol) -> tuple[dict, ...]:
     return tuple(rows)
 
 
-def build_skill_corrective_request(protocol_path: Path, case_id: str) -> dict:
+def build_skill_corrective_request(
+    protocol_path: Path,
+    case_id: str,
+    *,
+    load_protocol=None,
+    recording_profile="six_skill_corrective_teacher_v1",
+) -> dict:
     """Return the immutable request for one exactly-once frozen corrective case."""
     protocol_path = Path(protocol_path).resolve(strict=True)
-    protocol = load_skill_corrective_collection_protocol(protocol_path)
+    protocol = (load_protocol or load_skill_corrective_collection_protocol)(protocol_path)
     matches = [case for case in _case_rows(protocol) if case["case_id"] == case_id]
     if len(matches) != 1:
         raise ValueError("Case id is not in the frozen six-skill corrective protocol")
@@ -96,7 +102,7 @@ def build_skill_corrective_request(protocol_path: Path, case_id: str) -> dict:
         "case": matches[0],
         "case_id": case_id,
         "allocation_rule": protocol.allocation_rule,
-        "recording_profile": "six_skill_corrective_teacher_v1",
+        "recording_profile": recording_profile,
         "training_only": True,
     }
 
@@ -168,13 +174,19 @@ def run_skill_corrective_case(
     store: EvidenceStore,
     project_root: Path,
     cancelled: Callable[[], bool] = lambda: False,
+    load_protocol=None,
+    recording_profile="six_skill_corrective_teacher_v1",
+    recording_kind=KIND,
 ) -> Manifest:
     """Run one case once and preserve failures, prefixes and recordings for review."""
     protocol_path = Path(protocol_path).resolve(strict=True)
     project_root = Path(project_root).resolve()
     protocol_file_sha256 = digest_file(protocol_path)
-    protocol = load_skill_corrective_collection_protocol(protocol_path)
-    request = build_skill_corrective_request(protocol_path, case_id)
+    loader = load_protocol or load_skill_corrective_collection_protocol
+    protocol = loader(protocol_path)
+    request = build_skill_corrective_request(
+        protocol_path, case_id, load_protocol=loader, recording_profile=recording_profile
+    )
     case = request["case"]
     start, end = _INTERVALS[case["skill_id"]]
     store.root.mkdir(parents=True, exist_ok=True)
@@ -411,8 +423,7 @@ def run_skill_corrective_case(
                 metrics["cleanup_errors"] = cleanup
                 outcome = "failed"
         if digest_file(protocol_path) != protocol_file_sha256 or (
-            load_skill_corrective_collection_protocol(protocol_path).manifest_sha256
-            != protocol.manifest_sha256
+            loader(protocol_path).manifest_sha256 != protocol.manifest_sha256
         ):
             raise ValueError("Frozen corrective protocol changed during collection")
         claim = (
@@ -421,7 +432,7 @@ def run_skill_corrective_case(
         )
         return store.seal(
             directory,
-            kind=KIND,
+            kind=recording_kind,
             outcome=outcome,
             config=request,
             metrics=metrics,
