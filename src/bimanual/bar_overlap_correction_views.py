@@ -64,11 +64,17 @@ def verify_bar_overlap_source(store: EvidenceStore, run_id: str) -> dict:
         )
     ):
         raise ValueError("Source replay interval or label boundary changed")
+    episode = json.loads((root / "demonstration/episode.json").read_bytes())
     return {
         "run_id": run_id,
         "manifest_sha256": manifest.manifest_sha256,
         "replay_actions": len(replay),
         "source_interval": protocol.source_interval,
+        "episode_id": episode["episode_id"],
+        "episode_sha256": manifest.files["demonstration/episode.json"],
+        "start": prefix,
+        "end": prefix + len(replay),
+        "seed": config["case"]["seed"],
     }
 
 
