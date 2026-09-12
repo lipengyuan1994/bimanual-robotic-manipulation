@@ -53,3 +53,17 @@ HF_HUB_OFFLINE=1 HF_HOME=.artifacts/hf-offline \
   .artifacts/training-venv/bin/bimanual skill-corrective-export-check \
   .artifacts/datasets/six-skill-corrective-bar-v2
 ```
+
+## Per-skill corrective training boundary
+
+The complete corrective archive may retain several skills so that raw evidence is
+preserved once. It is not a multi-task policy label. Before ACT training, the
+training runtime reloads the sealed corrective view and selects only source
+intervals whose `skill_id` equals the selected nominal skill view. It reindexes
+only that subset for sampling, keeps its original source indices in the sampling
+record, and rejects an empty or substituted selection. For example, a cup
+checkpoint cannot silently train on a drawer or utensil replay merely because all
+three are stored in the same immutable archive.
+
+This is a data-lineage guard. It does not make the scripted teacher data a learned
+success claim; the resulting checkpoint still requires frozen physical evaluation.

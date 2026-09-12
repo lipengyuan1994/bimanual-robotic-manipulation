@@ -2,12 +2,17 @@ from types import SimpleNamespace
 
 import pytest
 
-from bimanual.corrective_dataset import CorrectiveDataset, NumericRows, compose_sampling_plan
+from bimanual.corrective_dataset import (
+    CorrectiveDataset,
+    NumericRows,
+    compose_sampling_plan,
+    select_corrective_episodes,
+)
 from bimanual.training import ACTTrainingConfig
 
 
-def test_corrections_require_verified_handoff():
-    for kwargs in ({}, {"skill_id": "plate_place", "skill_views_path": "views.json"}):
+def test_corrections_require_verified_selected_skill():
+    for kwargs in ({}, {"skill_id": "plate_pick_place"}):
         with pytest.raises(ValueError):
             ACTTrainingConfig(
                 dataset_path="nominal", corrective_dataset_path="corrections", **kwargs
@@ -19,6 +24,12 @@ def test_corrections_require_verified_handoff():
         skill_views_path="views.json",
     )
     assert config.corrective_dataset_path.name == "corrections"
+    assert ACTTrainingConfig(
+        dataset_path="nominal",
+        corrective_dataset_path="corrections",
+        skill_id="plate_pick_place",
+        skill_views_path="views.json",
+    ).skill_id == "plate_pick_place"
 
 
 def test_plan_keeps_full_nominal_and_original_correction_indices(tmp_path):
@@ -76,6 +87,92 @@ def test_continuity_profile_gets_distinct_training_region(tmp_path):
     result = compose_sampling_plan(plan, tmp_path, manifest)
     assert result["frames"][-1]["region"] == "corrective_receiver_continuity"
     assert result["episodes"][-1]["regions"][0]["name"] == ("corrective_receiver_continuity")
+
+
+def test_skill_archive_selects_only_the_named_skill(monkeypatch, tmp_path):
+    import bimanual.skill_corrective_views as module
+
+    def source(run_id, skill_id, episode_id, start, end):
+        return SimpleNamespace(
+            run_id=run_id,
+            skill_id=skill_id,
+            episode_id=episode_id,
+            start=start,
+            end=end,
+            source_manifest_sha256="a" * 64,
+            episode=SimpleNamespace(sha256="b" * 64),
+        )
+
+    sources = (
+        source("cup-run", "cup_pick_place", "cup-episode", 10, 12),
+        source("plate-run", "plate_pick_place", "plate-episode", 20, 23),
+    )
+    monkeypatch.setattr(
+        module,
+        "load_skill_corrective_views",
+        lambda *args: SimpleNamespace(sources=sources),
+    )
+    root = tmp_path / "archive"
+    (root / "raw_sources").mkdir(parents=True)
+    manifest = {
+        "profile": "six_skill_corrective_lerobot_v1",
+        "episodes": [
+            {
+                "run_id": "cup-run",
+                "episode_id": "cup-episode",
+                "parent_start": 10,
+                "parent_end": 12,
+                "source_manifest_sha256": "a" * 64,
+                "episode_sha256": "b" * 64,
+                "dataset_start": 0,
+                "dataset_end": 2,
+            },
+            {
+                "run_id": "plate-run",
+                "episode_id": "plate-episode",
+                "parent_start": 20,
+                "parent_end": 23,
+                "source_manifest_sha256": "a" * 64,
+                "episode_sha256": "b" * 64,
+                "dataset_start": 2,
+                "dataset_end": 5,
+            },
+        ],
+    }
+    selected = select_corrective_episodes(root, manifest, "plate_pick_place")
+    assert selected == (
+        {
+            **manifest["episodes"][1],
+            "source_dataset_start": 2,
+            "source_dataset_end": 5,
+            "dataset_start": 0,
+            "dataset_end": 3,
+        },
+    )
+    with pytest.raises(ValueError, match="no replay"):
+        select_corrective_episodes(root, manifest, "drawer_open")
+
+
+def test_skill_archive_plan_rejects_another_skills_interval(monkeypatch, tmp_path):
+    import bimanual.corrective_dataset as module
+
+    (tmp_path / "export_manifest.json").write_text("{}")
+    plan = {
+        "profile": "uniform",
+        "skill_view": {"skill_id": "plate_pick_place"},
+        "frames": [],
+        "episodes": [],
+    }
+    manifest = {"profile": "six_skill_corrective_lerobot_v1", "episodes": []}
+    expected = ({"dataset_start": 0, "dataset_end": 1},)
+    monkeypatch.setattr(module, "select_corrective_episodes", lambda *args: expected)
+    with pytest.raises(ValueError, match="does not match"):
+        compose_sampling_plan(
+            plan,
+            tmp_path,
+            manifest,
+            episodes=({"dataset_start": 0, "dataset_end": 2},),
+        )
 
 
 class Rows(list):

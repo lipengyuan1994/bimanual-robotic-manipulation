@@ -65,12 +65,12 @@ class ACTTrainingConfig(BaseModel):
                 "Nonuniform profiles require a sampling protocol run; uniform forbids it"
             )
         if self.corrective_dataset_path is not None and (
-            self.skill_id != "handoff_transfer"
+            self.skill_id is None
             or self.skill_views_path is None
             or self.sampling_profile != "uniform"
         ):
             raise ValueError(
-                "Corrective training requires verified handoff_transfer views and uniform sampling"
+                "Corrective training requires a verified selected skill view and uniform sampling"
             )
         return self
 
@@ -505,7 +505,10 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
         corrective_manifest = None
         corrective_root = None
         if config.corrective_dataset_path is not None:
-            from bimanual.corrective_dataset import compose_sampling_plan
+            from bimanual.corrective_dataset import (
+                compose_sampling_plan,
+                select_corrective_episodes,
+            )
             from bimanual.corrective_profiles import verify_supported_corrective_dataset
 
             corrective_root = config.corrective_dataset_path
@@ -528,8 +531,11 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
                 != metrics["corrective_views_sha256"]
             ):
                 raise ValueError("Corrective views changed during setup")
+            corrective_episodes = select_corrective_episodes(
+                corrective_root, corrective_manifest, config.skill_id
+            )
             sampling_plan = compose_sampling_plan(
-                sampling_plan, corrective_root, corrective_manifest
+                sampling_plan, corrective_root, corrective_manifest, episodes=corrective_episodes
             )
             (directory / "corrective_dataset_manifest.json").write_bytes(
                 (corrective_root / "export_manifest.json").read_bytes()
@@ -589,7 +595,13 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
             corrective = LeRobotDataset(
                 repo_id=corrective_manifest["repo_id"], root=corrective_root, delta_timestamps=None
             )
-            dataset = CorrectiveDataset(dataset, corrective, corrective_manifest, config.chunk_size)
+            dataset = CorrectiveDataset(
+                dataset,
+                corrective,
+                corrective_manifest,
+                config.chunk_size,
+                episodes=corrective_episodes,
+            )
         architecture = (
             dict(
                 dim_model=128,

@@ -255,7 +255,10 @@ def load_skill_checkpoint(
     corrective_manifest = None
     corrective_root = None
     if config.corrective_dataset_path is not None:
-        from bimanual.corrective_dataset import compose_sampling_plan
+        from bimanual.corrective_dataset import (
+            compose_sampling_plan,
+            select_corrective_episodes,
+        )
         from bimanual.corrective_profiles import verify_supported_corrective_dataset
 
         recorded = _read(root / "sampling-plan.json").get("corrective_dataset", {})
@@ -271,8 +274,15 @@ def load_skill_checkpoint(
             raise ValueError("Corrective view identity mismatch")
         if _read(root / "corrective_dataset_manifest.json") != corrective_manifest:
             raise ValueError("Corrective dataset identity mismatch")
+        corrective_episodes = select_corrective_episodes(
+            corrective_root, corrective_manifest, config.skill_id
+        )
         plan = compose_sampling_plan(
-            plan, corrective_root, corrective_manifest, recorded_root=recorded["root"]
+            plan,
+            corrective_root,
+            corrective_manifest,
+            recorded_root=recorded["root"],
+            episodes=corrective_episodes,
         )
     if (
         _read(root / "sampling-plan.json") != plan
@@ -327,6 +337,7 @@ def load_skill_checkpoint(
             corrections,
             corrective_manifest,
             config.chunk_size,
+            episodes=corrective_episodes,
         )
         expected = {}
         for key in ("observation.state", "action"):

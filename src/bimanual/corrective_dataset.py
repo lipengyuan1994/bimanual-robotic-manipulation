@@ -8,6 +8,59 @@ from pathlib import Path
 from bimanual.dataset_export import CAMERA_FEATURES
 from bimanual.evidence import digest_file
 
+SKILL_CORRECTIVE_PROFILE = "six_skill_corrective_lerobot_v1"
+
+
+def select_corrective_episodes(root: Path, manifest: dict, skill_id: str) -> tuple[dict, ...]:
+    """Return one skill's replay intervals, preserving their source indices.
+
+    The all-skill corrective export is an immutable archival dataset.  A policy
+    must never consume another skill's actions merely because those rows share
+    that archive, so selection is derived from the sealed source view rather
+    than from task text or a caller-provided index.
+    """
+    if manifest.get("profile") != SKILL_CORRECTIVE_PROFILE:
+        return tuple(manifest["episodes"])
+    from bimanual.evidence import EvidenceStore
+    from bimanual.skill_corrective_views import load_skill_corrective_views
+
+    root = Path(root).resolve(strict=True)
+    views = load_skill_corrective_views(
+        root / "skill_corrective_views.json", EvidenceStore(root / "raw_sources")
+    )
+    episodes = manifest.get("episodes")
+    if not isinstance(episodes, list) or len(episodes) != len(views.sources):
+        raise ValueError("Corrective source/view episode count mismatch")
+    selected, cursor = [], 0
+    for episode, source in zip(episodes, views.sources, strict=True):
+        required = {
+            "episode_id": source.episode_id,
+            "run_id": source.run_id,
+            "parent_start": source.start,
+            "parent_end": source.end,
+            "source_manifest_sha256": source.source_manifest_sha256,
+            "episode_sha256": source.episode.sha256,
+        }
+        if any(episode.get(key) != value for key, value in required.items()):
+            raise ValueError("Corrective source/view lineage mismatch")
+        start, end = episode.get("dataset_start"), episode.get("dataset_end")
+        if type(start) is not int or type(end) is not int or end <= start:
+            raise ValueError("Corrective source interval is invalid")
+        if source.skill_id == skill_id:
+            selected.append(
+                dict(
+                    episode,
+                    source_dataset_start=start,
+                    source_dataset_end=end,
+                    dataset_start=cursor,
+                    dataset_end=cursor + end - start,
+                )
+            )
+            cursor += end - start
+    if not selected:
+        raise ValueError("Corrective archive has no replay for selected skill")
+    return tuple(selected)
+
 
 class NumericRows:
     """Small column-only union; never materializes camera data for statistics."""
@@ -27,7 +80,7 @@ class NumericRows:
 class CorrectiveDataset:
     """Union of a complete nominal skill and independently padded correction sources."""
 
-    def __init__(self, nominal, corrective, manifest, chunk_size):
+    def __init__(self, nominal, corrective, manifest, chunk_size, *, episodes=None):
         if getattr(corrective, "delta_timestamps", None) is not None:
             raise ValueError("Corrective dataset must have no delta timestamps")
         if not 1 <= chunk_size <= 100:
@@ -35,21 +88,40 @@ class CorrectiveDataset:
         if len(corrective) != manifest["frames"]:
             raise ValueError("Corrective dataset length mismatch")
         self.nominal, self.corrective = nominal, corrective
-        self.episodes = manifest["episodes"]
+        self.episodes = tuple(manifest["episodes"] if episodes is None else episodes)
         self.chunk_size = chunk_size
         self.meta = nominal.meta
-        self.hf_dataset = NumericRows((nominal.hf_dataset, corrective.hf_dataset))
-        self.actions = corrective.hf_dataset.select_columns(["action"])
+        self.source_indices = []
         cursor = 0
         for source in self.episodes:
             if source["dataset_start"] != cursor or source["dataset_end"] <= cursor:
                 raise ValueError("Corrective intervals must partition their dataset")
+            source_start = source.get("source_dataset_start", source["dataset_start"])
+            source_end = source.get("source_dataset_end", source["dataset_end"])
+            if (
+                type(source_start) is not int
+                or type(source_end) is not int
+                or source_end - source_start != source["dataset_end"] - source["dataset_start"]
+                or not 0 <= source_start < source_end <= len(corrective)
+            ):
+                raise ValueError("Corrective source index mapping is invalid")
+            self.source_indices.extend(range(source_start, source_end))
             cursor = source["dataset_end"]
-        if cursor != len(corrective):
-            raise ValueError("Corrective intervals do not cover the dataset")
+        if not self.source_indices:
+            raise ValueError("Corrective selection is empty")
+        # The complete, unfiltered archive needs no dataset-library-specific
+        # selection method.  This also keeps the small contract fixtures
+        # independent from Hugging Face Dataset internals.
+        selected_rows = (
+            corrective.hf_dataset
+            if self.source_indices == list(range(len(corrective)))
+            else corrective.hf_dataset.select(self.source_indices)
+        )
+        self.hf_dataset = NumericRows((nominal.hf_dataset, selected_rows))
+        self.actions = selected_rows.select_columns(["action"])
 
     def __len__(self):
-        return len(self.nominal) + len(self.corrective)
+        return len(self.nominal) + len(self.source_indices)
 
     def __getitem__(self, index):
         import torch
@@ -60,7 +132,7 @@ class CorrectiveDataset:
             return self.nominal[index]
         local = index - len(self.nominal)
         source = next(s for s in self.episodes if s["dataset_start"] <= local < s["dataset_end"])
-        current = self.corrective[local]
+        current = self.corrective[self.source_indices[local]]
         result = {key: current[key] for key in ("observation.state", *CAMERA_FEATURES.values())}
         state = result["observation.state"]
         if (
@@ -93,19 +165,20 @@ class CorrectiveDataset:
 
 
 def compose_sampling_plan(
-    plan: dict, root: Path, manifest: dict, *, recorded_root: str | None = None
+    plan: dict, root: Path, manifest: dict, *, recorded_root: str | None = None, episodes=None
 ) -> dict:
     """Bind every uniformly sampled row to its immutable source and original index."""
-    if (
-        plan["profile"] != "uniform"
-        or plan.get("skill_view", {}).get("skill_id") != "handoff_transfer"
-    ):
-        raise ValueError("Corrections require the complete verified handoff skill")
+    selected_skill = plan.get("skill_view", {}).get("skill_id")
+    if plan["profile"] != "uniform" or not isinstance(selected_skill, str):
+        raise ValueError("Corrections require a selected uniform skill view")
+    if manifest.get("profile") != SKILL_CORRECTIVE_PROFILE and selected_skill != "handoff_transfer":
+        raise ValueError("This corrective profile requires the complete verified handoff skill")
     if recorded_root is not None and not Path(recorded_root).is_absolute():
         raise ValueError("Recorded corrective identity must be an absolute path")
     regions = {
         "feedback_approach_corrective_lerobot_v1": "corrective_approach",
         "handoff_receiver_continuity_lerobot_v1": "corrective_receiver_continuity",
+        SKILL_CORRECTIVE_PROFILE: "corrective_skill_replay",
     }
     try:
         corrective_region = regions[manifest["profile"]]
@@ -120,7 +193,12 @@ def compose_sampling_plan(
     }
     for frame in result["frames"]:
         frame["dataset_source"] = "nominal"
-    for source in manifest["episodes"]:
+    selected_episodes = tuple(manifest["episodes"] if episodes is None else episodes)
+    if manifest.get("profile") == SKILL_CORRECTIVE_PROFILE:
+        expected_episodes = select_corrective_episodes(root, manifest, selected_skill)
+        if selected_episodes != expected_episodes:
+            raise ValueError("Corrective selection does not match the selected skill")
+    for source in selected_episodes:
         for index in range(source["dataset_start"], source["dataset_end"]):
             result["frames"].append(
                 dict(
@@ -158,6 +236,6 @@ def compose_sampling_plan(
                 )
             ],
         )
-        for s in manifest["episodes"]
+        for s in selected_episodes
     )
     return result
