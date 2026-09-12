@@ -177,6 +177,7 @@ def run_skill_corrective_case(
     load_protocol=None,
     recording_profile="six_skill_corrective_teacher_v1",
     recording_kind=KIND,
+    intervals=None,
 ) -> Manifest:
     """Run one case once and preserve failures, prefixes and recordings for review."""
     protocol_path = Path(protocol_path).resolve(strict=True)
@@ -188,7 +189,8 @@ def run_skill_corrective_case(
         protocol_path, case_id, load_protocol=loader, recording_profile=recording_profile
     )
     case = request["case"]
-    start, end = _INTERVALS[case["skill_id"]]
+    intervals = _INTERVALS if intervals is None else intervals
+    start, end = intervals[case["skill_id"]]
     store.root.mkdir(parents=True, exist_ok=True)
     with WorkerLease.acquire(store.root / ".six-skill-corrective-coordinator.lock"):
         prior = _existing(store, request)

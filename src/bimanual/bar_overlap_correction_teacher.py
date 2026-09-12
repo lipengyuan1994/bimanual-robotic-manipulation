@@ -28,6 +28,7 @@ def run_bar_overlap_correction_case(
     protocol_path: Path, case_id: str, *, store, project_root: Path, cancelled=lambda: False
 ):
     """Record one fresh, contact-only bar case; never load a learned policy."""
+    protocol = load_bar_overlap_correction_protocol(protocol_path)
     return run_skill_corrective_case(
         protocol_path,
         case_id,
@@ -37,4 +38,5 @@ def run_bar_overlap_correction_case(
         load_protocol=_adapter,
         recording_profile="bar_overlap_corrective_teacher_v1",
         recording_kind="bar_overlap_corrective_teacher_recording",
+        intervals={"bar_place_and_return": protocol.source_interval},
     )
