@@ -317,3 +317,38 @@ def test_chunks_pad_at_each_corrective_source_boundary():
     assert sample["action_is_pad"].tolist() == [False, True, True]
     assert "oracle" not in sample
     assert union[2]["action"][:, 0].tolist() == [2, 3, 3]
+
+
+def test_placement_progress_plan_allows_a_full_corrective_replay():
+    plan = {
+        "profile": "uniform",
+        "skill_view": {"skill_id": "bar_place_and_return"},
+        "frames": [
+            {"dataset_source": "nominal", "episode_id": "nominal", "source_frame_index": 1},
+            {
+                "dataset_source": "corrective",
+                "episode_id": "placement",
+                "source_frame_index": 772,
+                "parent_dataset_index": 0,
+            },
+            {
+                "dataset_source": "corrective",
+                "episode_id": "placement",
+                "source_frame_index": 1162,
+                "parent_dataset_index": 1,
+            },
+        ],
+        "episodes": [
+            {"source": "nominal", "episode_id": "nominal"},
+            {"source": "corrective", "episode_id": "placement"},
+        ],
+    }
+    result = emphasize_bar_transport_placement(
+        plan,
+        emphasis_start=770,
+        emphasis_end=1163,
+        sampling_profile="bar_placement_progress_sampling_v3",
+    )
+    assert result["profile"] == "bar_placement_progress_sampling_v3"
+    assert {frame["region"] for frame in result["frames"][1:]} == {"placement_release_retreat"}
+    assert result["bar_placement_progress"]["emphasis_source_interval"] == [770, 1163]
