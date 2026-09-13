@@ -13,13 +13,32 @@ from bimanual.contracts import Contract, Digest
 from bimanual.evidence import canonical
 
 PROFILE = "bar_transport_placement_sampling_v1"
+ENTRY_PROFILE = "bar_entry_contact_sampling_v2"
 FAILURE_LOCALIZATION_MANIFEST_SHA256 = (
     "f4798d6b4412851ee747c7584d37652329f170a5f5c6588f5a2e91d2e8216633"
 )
+ENTRY_CONTACT_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
+    "f894dc670340ef881958dddeb460e32b9b2f25dff5f8b641a601bc36a3999905"
+)
+
+
+def _profile_spec(profile: str) -> tuple[str, tuple[int, int], str]:
+    specs = {
+        PROFILE: (FAILURE_LOCALIZATION_MANIFEST_SHA256, (770, 1070), "transport"),
+        ENTRY_PROFILE: (
+            ENTRY_CONTACT_FAILURE_ANALYSIS_MANIFEST_SHA256,
+            (630, 770),
+            "entry_contact",
+        ),
+    }
+    try:
+        return specs[profile]
+    except KeyError as error:
+        raise ValueError("Unsupported bar sampling declaration profile") from error
 
 
 class BarTransportPlacementSampling(Contract):
-    profile: Literal[PROFILE] = PROFILE
+    profile: Literal[PROFILE, ENTRY_PROFILE] = PROFILE
     corrective_export_root: str
     corrective_export_manifest_sha256: Digest
     corrective_views_sha256: Digest
@@ -30,11 +49,11 @@ class BarTransportPlacementSampling(Contract):
 
     @model_validator(mode="after")
     def exact_profile(self):
+        expected_failure, expected_interval, _ = _profile_spec(self.profile)
         if (
-            self.profile != PROFILE
-            or Path(self.corrective_export_root).is_absolute()
-            or self.failure_localization_manifest_sha256 != FAILURE_LOCALIZATION_MANIFEST_SHA256
-            or self.emphasis_source_interval != (770, 1070)
+            Path(self.corrective_export_root).is_absolute()
+            or self.failure_localization_manifest_sha256 != expected_failure
+            or self.emphasis_source_interval != expected_interval
             or self.nominal_probability != 0.5
         ):
             raise ValueError("Unsupported bar transport sampling declaration")
@@ -45,7 +64,11 @@ class BarTransportPlacementSampling(Contract):
 
 
 def create_bar_transport_placement_sampling(
-    destination: Path, *, corrective_export_root: Path, failure_localization_manifest_sha256: str
+    destination: Path,
+    *,
+    corrective_export_root: Path,
+    failure_localization_manifest_sha256: str,
+    profile: str = PROFILE,
 ) -> BarTransportPlacementSampling:
     """Write a one-time declaration after independently auditing the archive."""
     destination = Path(destination).absolute()
@@ -54,17 +77,18 @@ def create_bar_transport_placement_sampling(
     from bimanual.bar_overlap_correction_export import verify_bar_overlap_dataset
 
     root = Path(corrective_export_root).resolve(strict=True)
-    if failure_localization_manifest_sha256 != FAILURE_LOCALIZATION_MANIFEST_SHA256:
-        raise ValueError("Bar transport sampling requires the sealed bar failure localization")
+    expected_failure, emphasis_interval, _ = _profile_spec(profile)
+    if failure_localization_manifest_sha256 != expected_failure:
+        raise ValueError("Bar sampling requires the profile's sealed failure analysis")
     manifest = verify_bar_overlap_dataset(root)
     body = dict(
         schema_version=1,
-        profile=PROFILE,
+        profile=profile,
         corrective_export_root=os.path.relpath(root, destination.parent.resolve()),
         corrective_export_manifest_sha256=manifest["manifest_sha256"],
         corrective_views_sha256=manifest["views_sha256"],
         failure_localization_manifest_sha256=failure_localization_manifest_sha256,
-        emphasis_source_interval=(770, 1070),
+        emphasis_source_interval=emphasis_interval,
         nominal_probability=0.5,
     )
     result = BarTransportPlacementSampling.model_validate(

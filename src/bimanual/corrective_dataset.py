@@ -267,7 +267,11 @@ def compose_sampling_plan(
 
 
 def emphasize_bar_transport_placement(
-    plan: dict, *, emphasis_start: int, emphasis_end: int
+    plan: dict,
+    *,
+    emphasis_start: int,
+    emphasis_end: int,
+    sampling_profile: str = "bar_transport_placement_v1",
 ) -> dict:
     """Give each bar corrective replay equal mass to transport and its remainder.
 
@@ -341,22 +345,38 @@ def emphasize_bar_transport_placement(
                     )
                 )
             episode["regions"] = regions
+    if sampling_profile == "bar_transport_placement_v1":
+        metadata_key, emphasis_name = "bar_transport_placement", "transport_to_placement"
+    elif sampling_profile == "bar_entry_contact_sampling_v2":
+        metadata_key, emphasis_name = "bar_entry_contact", "policy_entry"
+    else:
+        raise ValueError("Unsupported bar sampling profile")
+    for frame in corrective:
+        if frame["region"] == "transport_to_placement":
+            frame["region"] = emphasis_name
+    for episode in result["episodes"]:
+        if episode.get("source") == "corrective":
+            for region in episode["regions"]:
+                if region["name"] == "transport_to_placement":
+                    region["name"] = emphasis_name
     result.update(
-        profile="bar_transport_placement_v1",
+        profile=sampling_profile,
         algorithm="torch.multinomial_float64",
-        bar_transport_placement=dict(
-            emphasis_source_interval=[emphasis_start, emphasis_end],
-            nominal_probability=0.5,
-            corrective_group_probability=group_mass,
-            groups=[
-                dict(
-                    episode_id=episode_id,
-                    region=region,
-                    frame_count=len(frames),
-                    probability=group_mass,
-                )
-                for (episode_id, region), frames in sorted(groups.items())
-            ],
-        ),
+        **{
+            metadata_key: dict(
+                emphasis_source_interval=[emphasis_start, emphasis_end],
+                nominal_probability=0.5,
+                corrective_group_probability=group_mass,
+                groups=[
+                    dict(
+                        episode_id=episode_id,
+                        region=emphasis_name if region == "transport_to_placement" else region,
+                        frame_count=len(frames),
+                        probability=group_mass,
+                    )
+                    for (episode_id, region), frames in sorted(groups.items())
+                ],
+            )
+        },
     )
     return result

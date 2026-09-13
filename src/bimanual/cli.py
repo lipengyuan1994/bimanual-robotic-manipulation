@@ -321,6 +321,11 @@ def main(argv: list[str] | None = None) -> int:
     bar_sampling_create.add_argument("--destination", type=Path, required=True)
     bar_sampling_create.add_argument("--corrective-export", type=Path, required=True)
     bar_sampling_create.add_argument("--failure-localization-seal", required=True)
+    bar_sampling_create.add_argument(
+        "--profile",
+        choices=("bar_transport_placement_sampling_v1", "bar_entry_contact_sampling_v2"),
+        default="bar_transport_placement_sampling_v1",
+    )
     bar_sampling_check = commands.add_parser(
         "bar-transport-sampling-check",
         help="Reverify a frozen bar transport sampling declaration",
@@ -1077,6 +1082,7 @@ def main(argv: list[str] | None = None) -> int:
                     args.destination,
                     corrective_export_root=args.corrective_export,
                     failure_localization_manifest_sha256=args.failure_localization_seal,
+                    profile=args.profile,
                 ).model_dump(mode="json")
             )
         elif args.command == "bar-transport-sampling-check":

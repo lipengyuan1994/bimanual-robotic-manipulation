@@ -6,6 +6,7 @@ from bimanual.corrective_dataset import (
     CorrectiveDataset,
     NumericRows,
     compose_sampling_plan,
+    emphasize_bar_transport_placement,
     select_corrective_episodes,
 )
 from bimanual.training import ACTTrainingConfig, corrective_views_filename
@@ -45,6 +46,62 @@ def test_corrections_require_verified_selected_skill():
         ).skill_id
         == "plate_pick_place"
     )
+
+
+def test_entry_contact_sampling_is_limited_to_the_selected_bar_skill():
+    config = ACTTrainingConfig(
+        dataset_path="nominal",
+        corrective_dataset_path="corrections",
+        skill_id="bar_place_and_return",
+        skill_views_path="views.json",
+        sampling_profile="bar_entry_contact_sampling_v2",
+        sampling_protocol_run="sampling.json",
+    )
+    assert config.sampling_profile == "bar_entry_contact_sampling_v2"
+    with pytest.raises(ValueError, match="restricted"):
+        ACTTrainingConfig(
+            dataset_path="nominal",
+            corrective_dataset_path="corrections",
+            skill_id="plate_pick_place",
+            skill_views_path="views.json",
+            sampling_profile="bar_entry_contact_sampling_v2",
+            sampling_protocol_run="sampling.json",
+        )
+
+
+def test_entry_contact_plan_names_the_policy_entry_region():
+    plan = {
+        "profile": "uniform",
+        "skill_view": {"skill_id": "bar_place_and_return"},
+        "frames": [
+            {"dataset_source": "nominal", "episode_id": "nominal", "source_frame_index": 1},
+            {
+                "dataset_source": "corrective",
+                "episode_id": "entry",
+                "source_frame_index": 630,
+                "parent_dataset_index": 0,
+            },
+            {
+                "dataset_source": "corrective",
+                "episode_id": "entry",
+                "source_frame_index": 800,
+                "parent_dataset_index": 1,
+            },
+        ],
+        "episodes": [
+            {"source": "nominal", "episode_id": "nominal"},
+            {"source": "corrective", "episode_id": "entry"},
+        ],
+    }
+    result = emphasize_bar_transport_placement(
+        plan,
+        emphasis_start=630,
+        emphasis_end=770,
+        sampling_profile="bar_entry_contact_sampling_v2",
+    )
+    assert result["profile"] == "bar_entry_contact_sampling_v2"
+    assert result["frames"][1]["region"] == "policy_entry"
+    assert result["bar_entry_contact"]["emphasis_source_interval"] == [630, 770]
 
 
 def test_plan_keeps_full_nominal_and_original_correction_indices(tmp_path):
