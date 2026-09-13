@@ -851,3 +851,25 @@ learned-policy handoff window through the successful teacher boundary. The proto
 contract and CLI creation path pass 34 focused tests. The next executable step is to
 freeze that one-time collection declaration, then collect every outcome without
 retrying a consumed case.
+
+The declaration was frozen at
+`.artifacts/experiments/bar-left-contact-entry-v3.json`, seal
+`612739afc7255514bf08d63715d6b20ec4040379cac4969c86ef5db1b6aa37ac`. All five
+allocated MuJoCo teacher cases completed and independently verify: `54000` run
+`six-skill-corrective-324cea56084f5f6b82b1aab8` (seal `278c5927…`), `54001` run
+`six-skill-corrective-655aaf634fe0de25847cfdce` (seal `61cac212…`), `54002` run
+`six-skill-corrective-2240f4bd03fe27bbe1eb3fe0` (seal `2c666d7b…`), `54003` run
+`six-skill-corrective-aba974389bcacfbf9cf86c1f` (seal `28ef9837…`), and `54004`
+run `six-skill-corrective-2cbcc08c318b4b9486a633a1` (seal `a2b4a407…`). Every
+source has a 630-action teacher prefix, two bounded acquisition actions, 531 replay
+actions, no state edits or artificial attachments, and an independent physical
+teacher success. Their sealed read-only view is
+`.artifacts/experiments/bar-left-contact-entry-v3-views.json`, seal
+`df9c56671ccb96c755d66e0e7298bfe1e54e2ac30cf18ccd8e05c2dc47832785`.
+
+The local LeRobot export `.artifacts/datasets/bar-left-contact-entry-v3` completed
+its full decoded row-parity audit: five episodes and 2,655 transitions, archive
+manifest `298187aafe9dac5c2bd73f4333c528bbe09c1d0db9574550923f22c8c53e1b87`.
+This is verified teacher data, not a learned-policy result. The next executable step
+is to add a separate source-bound sampling declaration that weights the `[630,770)`
+policy-entry region, then train and evaluate a fresh candidate once.
