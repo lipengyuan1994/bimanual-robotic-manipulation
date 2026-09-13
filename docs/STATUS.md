@@ -791,6 +791,8 @@ unpromoted until separately evaluated.
 The next evaluation path is implemented before the replacement checkpoint seals.
 `bar-transport-physical-protocol-create` will freeze a one-time, source-bound
 teacher-prepared physical evaluation only for the completed bar corrective run;
+`bar-transport-physical-protocol-check` reloads and rehashes a frozen declaration
+without allocating an evaluation; and
 `bar-transport-physical-protocol-run` rejects duplicate results before invoking
 the shared-lease evaluator. The declaration binds the completed MPS training seal,
 checkpoint, nominal dataset/view, sampling declaration, action budget, and the
