@@ -26,6 +26,15 @@ from bimanual.training_probe import _tensor_digest
 from bimanual.worker_lease import MODEL_JOB_LEASE, WorkerLease
 
 
+def corrective_views_filename(profile: str) -> str:
+    """Return the immutable source-view filename for a supported archive profile."""
+    names = {
+        "six_skill_corrective_lerobot_v1": "skill_corrective_views.json",
+        "bar_overlap_corrective_lerobot_v1": "bar_overlap_views.json",
+    }
+    return names.get(profile, "corrective_views.json")
+
+
 class ACTTrainingConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, allow_inf_nan=False)
     dataset_path: Path
@@ -548,11 +557,7 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
                     protocol_path, corrective_export_root=corrective_root
                 )
                 metrics["bar_transport_sampling"] = bar_sampling.model_dump(mode="json")
-            corrective_views_name = (
-                "skill_corrective_views.json"
-                if corrective_manifest.get("profile") == "six_skill_corrective_lerobot_v1"
-                else "corrective_views.json"
-            )
+            corrective_views_name = corrective_views_filename(corrective_manifest.get("profile"))
             (directory / "corrective_views.json").write_bytes(
                 (corrective_root / corrective_views_name).read_bytes()
             )
@@ -923,12 +928,7 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
                     != sampling_plan["corrective_dataset"]["export_manifest_sha256"]
                 )
                 or digest_file(
-                    corrective_root
-                    / (
-                        "skill_corrective_views.json"
-                        if corrective_manifest.get("profile") == "six_skill_corrective_lerobot_v1"
-                        else "corrective_views.json"
-                    )
+                    corrective_root / corrective_views_filename(corrective_manifest.get("profile"))
                 )
                 != metrics["corrective_views_sha256"]
             ):

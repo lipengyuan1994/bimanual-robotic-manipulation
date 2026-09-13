@@ -8,7 +8,19 @@ from bimanual.corrective_dataset import (
     compose_sampling_plan,
     select_corrective_episodes,
 )
-from bimanual.training import ACTTrainingConfig
+from bimanual.training import ACTTrainingConfig, corrective_views_filename
+
+
+@pytest.mark.parametrize(
+    ("profile", "filename"),
+    [
+        ("six_skill_corrective_lerobot_v1", "skill_corrective_views.json"),
+        ("bar_overlap_corrective_lerobot_v1", "bar_overlap_views.json"),
+        ("feedback_approach_corrective_lerobot_v1", "corrective_views.json"),
+    ],
+)
+def test_corrective_archive_view_filename_is_profile_bound(profile, filename):
+    assert corrective_views_filename(profile) == filename
 
 
 def test_corrections_require_verified_selected_skill():

@@ -768,6 +768,17 @@ execution surface is currently unavailable while the Mac is locked. This is an
 execution-environment blocker only; no CPU substitute is being claimed as the MPS
 candidate.
 
+The first native-MPS launch of this profile is preserved as failed run
+`20260913T000830-03371a7ca882`, seal
+`70ee5312d42dde9939678938a5e4179d62bb278b9446c5b89e40059e8f48b01a`.
+It reached no update and created no checkpoint because the generic corrective
+runtime chose `corrective_views.json` instead of the bar archive's sealed
+`bar_overlap_views.json`. The profile-to-view mapping is now explicit and is
+covered by focused regression tests (13 passed, 1 expected full-dataset skip).
+This repair does not change the frozen archive, sampling declaration, or contact
+guard. One fresh replacement training run is authorized; its result remains
+unpromoted until separately evaluated.
+
 The sampling declaration now rejects a substituted failure-localization seal; it is
 hard-bound to the immutable bar-placement diagnosis that established this corrective
 work. A focused contract check verifies both the accepted declared seal and rejection
