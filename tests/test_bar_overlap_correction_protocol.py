@@ -55,6 +55,58 @@ def test_entry_contact_profile_rejects_the_old_transport_window():
         )
 
 
+def test_placement_progress_profile_binds_fresh_cases_and_placement_tail():
+    protocol = module.BarOverlapCorrectionProtocol.model_validate(
+        _body(
+            "bar_placement_progress_protocol_v4",
+            source_interval=(770, 1163),
+            case_seeds=(55000, 55001, 55002, 55003, 55004),
+        )
+    )
+    assert protocol.source_interval == (770, 1163)
+    assert protocol.case_seeds[0] == 55000
+
+
+def test_placement_progress_profile_requires_the_exact_progress_failure():
+    component = {
+        "skill_id": "bar_place_and_return",
+        "physical_success": False,
+        "recorded_autonomous_skill_actions": 1900,
+        "rejected_action_log_actions": 0,
+        "maximum_target_displacement_m": 0.23985196860361424,
+        "forbidden_contact_events": [],
+        "failure_reason": (
+            "physical_milestone_incomplete: physical completion/readiness not reached "
+            "within action budget"
+        ),
+        "evaluation_run_id": "evaluation",
+        "evaluation_manifest_sha256": "b" * 64,
+    }
+    diagnosis = SimpleNamespace(
+        kind="single_skill_physical_failure_analysis",
+        outcome="completed",
+        manifest_sha256=module.PLACEMENT_PROGRESS_FAILURE_ANALYSIS_MANIFEST_SHA256,
+        metrics={"component": component},
+    )
+    evaluation = SimpleNamespace(manifest_sha256="b" * 64)
+
+    class Store:
+        def verify(self, run_id):
+            return diagnosis if run_id == "diagnosis" else evaluation
+
+    accepted, bound = module._verified_diagnosis(
+        Store(), "diagnosis", profile="bar_placement_progress_protocol_v4"
+    )
+    assert accepted is diagnosis
+    assert bound is evaluation
+
+    component["maximum_target_displacement_m"] = 0.1
+    with pytest.raises(ValueError, match="localized unpromoted"):
+        module._verified_diagnosis(
+            Store(), "diagnosis", profile="bar_placement_progress_protocol_v4"
+        )
+
+
 def test_entry_contact_profile_requires_the_exact_sealed_failure_signature():
     component = {
         "skill_id": "bar_place_and_return",

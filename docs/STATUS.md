@@ -909,3 +909,14 @@ not the earlier entry-contact rejection: object displacement reached 0.239851969
 with the peak at policy action 998 in `policy/place`; no successor-ready state was
 recorded. The next corrective cycle must target place-and-return progress while
 retaining the existing contact guard and one-attempt evaluation discipline.
+
+The dedicated `bar_placement_progress_protocol_v4` is now implemented and frozen
+at `.artifacts/experiments/bar-placement-progress-v4.json`, seal
+`b411ece5ab53e541b42e1467284a34db7672996813adeeffb803c41cb18885e7`. It binds
+only diagnosis `20260913T175254-ff6435ca575f`, its failed evaluation, seeds
+`55000`–`55004`, and the `[770,1163)` placement/release/retreat replay interval.
+The contract rejects any changed allocation or a diagnosis without the exact
+1,900-action, no-rejection, high-displacement, readiness-incomplete signature.
+Focused protocol and CLI tests pass. The next executable step is the five allocated
+contact-only teacher collections, one attempt per frozen case, followed by their
+read-only view and export audit.
