@@ -279,6 +279,14 @@ and carries no evidence claims. The real dinner protocol is deliberately not fro
 or run until high-resolution inputs can be captured after the active serial ACT
 training finishes. [Planner evaluation boundary](PLANNER.md#frozen-decision-suite).
 
+A read-only local-Qwen planner preflight is available as `planner-preflight`. It
+verifies the sealed local snapshot and every declared model file, records native
+architecture, PyTorch/Transformers versions, MPS availability and the exact
+fallback environment setting, and reports whether OpenVINO/Optimum are installed.
+It records model loading, inference and live dispatch as false and never acquires
+the model lease. This is operational readiness evidence only; it does not execute
+Qwen, establish visual decision quality, learned task success, or Intel validation.
+
 The missing six-family robustness input boundary is also implemented and frozen.
 The generator makes bounded, deterministic pre-load changes to object placement,
 mass, sliding friction, horizontal shape, lighting and background, while recording

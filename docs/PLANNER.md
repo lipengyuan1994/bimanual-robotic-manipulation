@@ -87,6 +87,33 @@ The initial reasoning environment passed a native audit of 168 compiled librarie
 that audit and an import are not model inference evidence. OpenVINO and Intel
 execution remain separate, unvalidated work.
 
+## Read-only runtime preflight
+
+Before an expensive local run, verify the exact local snapshot and the runtime
+without loading Qwen, deserializing model weights, acquiring the model lease or
+making a network request. File verification reads and hashes every declared model
+file:
+
+```sh
+.artifacts/reasoning-venv/bin/bimanual planner-preflight \
+  --model-root .artifacts/models/qwen3-vl-4b-instruct
+```
+
+The sealed record verifies the model manifest, identity, immutable revision and
+every declared file. It reports the native architecture, installed versions of
+PyTorch and Transformers, MPS built/available state, and the exact
+`PYTORCH_ENABLE_MPS_FALLBACK` environment setting. It also reports whether
+`openvino` and `optimum` are installed, which is useful preparation evidence for
+the later Intel conversion path. It explicitly records
+`model_load_attempted=false`, `inference_attempted=false`, and
+`live_dispatch_authorized=false`; a completed preflight is not model execution,
+planner quality, manipulation, Intel validation, or a permission to dispatch.
+
+If MPS is unavailable or fallback is enabled, retain the completed preflight and
+resolve that runtime condition before attempting an MPS planner run. CPU remains a
+supported diagnostic backend, but its measured latency does not meet the live
+freshness gate.
+
 ## Initial actual-model evidence
 
 The first MPS run, `20260910T223047-5e5897fcb203`, loaded the real pinned weights

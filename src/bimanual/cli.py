@@ -621,6 +621,11 @@ def main(argv: list[str] | None = None) -> int:
     planner.add_argument("--instruction", required=True)
     planner.add_argument("--device", choices=["cpu", "mps"], default="cpu")
     planner.add_argument("--max-tokens", type=int, default=384)
+    planner_preflight = commands.add_parser(
+        "planner-preflight",
+        help="Verify local Qwen files and runtime readiness without loading the model",
+    )
+    planner_preflight.add_argument("--model-root", type=Path, required=True)
     planner_suite_create = commands.add_parser(
         "planner-suite-create", help="Freeze source-bound visual-planner evaluation cases"
     )
@@ -1531,6 +1536,16 @@ def main(argv: list[str] | None = None) -> int:
                 device=args.device,
                 max_tokens=args.max_tokens,
                 sensor_bundle=args.sensor_bundle,
+                store=store,
+                project_root=root,
+            )
+            emit(result.model_dump(exclude={"provenance"}))
+            return 0 if result.outcome == "completed" else 1
+        elif args.command == "planner-preflight":
+            from bimanual.planner_preflight import run_planner_preflight
+
+            result = run_planner_preflight(
+                model_root=args.model_root,
                 store=store,
                 project_root=root,
             )
