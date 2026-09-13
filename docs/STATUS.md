@@ -985,5 +985,10 @@ frozen at `.artifacts/experiments/bar-placement-contact-sampling-v4.json`, manif
 only diagnosis `71c8319e6f…`, the audited v5 export and its view, and emphasizes
 source frames `[630,770)` under the distinct `placement_contact_entry` label. A
 direct offline reload completed with exit zero and reproduced the declaration seal.
-The next executable step is a fresh native-MPS training candidate using this exact
-declaration, then one new frozen MuJoCo evaluation after checkpoint verification.
+The fresh native-MPS candidate `20260913T203611-3c2b979b860c` is active with
+fallback disabled, `bar_place_and_return` selected from the nominal v2 skill view,
+and this exact declaration. Its run directory contains the copied nominal/corrective
+manifests, view, sampling plan, configuration, and live step log. It is unsealed:
+no checkpoint quality or manipulation result may be inferred until its terminal
+manifest is independently verified. The next executable step after that verification
+is one new frozen MuJoCo evaluation declaration for the candidate.
