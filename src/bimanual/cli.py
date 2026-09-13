@@ -296,6 +296,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     bar_overlap_run.add_argument("protocol", type=Path)
     bar_overlap_run.add_argument("case_id")
+    bar_overlap_views = commands.add_parser(
+        "bar-overlap-views-create",
+        help="Create a sealed read-only view over completed bar-overlap teacher sources",
+    )
+    bar_overlap_views.add_argument("destination", type=Path)
+    bar_overlap_views.add_argument("run_ids", nargs="+")
     bar_overlap_export = commands.add_parser(
         "bar-overlap-export",
         help="Export frozen bar-overlap replay views to local LeRobot",
@@ -1041,6 +1047,10 @@ def main(argv: list[str] | None = None) -> int:
             )
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1
+        elif args.command == "bar-overlap-views-create":
+            from bimanual.bar_overlap_correction_views import create_bar_overlap_views
+
+            emit(create_bar_overlap_views(store, args.run_ids, args.destination))
         elif args.command == "bar-overlap-export":
             from bimanual.bar_overlap_correction_export import export_bar_overlap_dataset
 

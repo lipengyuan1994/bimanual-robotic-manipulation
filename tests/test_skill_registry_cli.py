@@ -53,3 +53,19 @@ def test_bar_overlap_run_cli_preserves_a_completed_teacher_recording(monkeypatch
     assert seen["protocol"] == Path("protocol.json")
     assert seen["case_id"] == "bar_contact_avoidance-54000"
     assert json.loads(capsys.readouterr().out) == {"outcome": "completed"}
+
+
+def test_bar_overlap_views_cli_forwards_only_declared_source_ids(monkeypatch, capsys):
+    from bimanual import bar_overlap_correction_views
+
+    captured = {}
+
+    def create(store, run_ids, destination):
+        captured.update(store=store, run_ids=run_ids, destination=destination)
+        return {"profile": "bar_overlap_corrective_views_v1"}
+
+    monkeypatch.setattr(bar_overlap_correction_views, "create_bar_overlap_views", create)
+    assert main(["bar-overlap-views-create", "view.json", "run-a", "run-b"]) == 0
+    assert captured["run_ids"] == ["run-a", "run-b"]
+    assert captured["destination"] == Path("view.json")
+    assert json.loads(capsys.readouterr().out) == {"profile": "bar_overlap_corrective_views_v1"}
