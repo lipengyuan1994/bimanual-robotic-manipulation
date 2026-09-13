@@ -288,6 +288,7 @@ def main(argv: list[str] | None = None) -> int:
             "bar_overlap_transport_placement_protocol_v2",
             "bar_left_contact_entry_protocol_v3",
             "bar_placement_progress_protocol_v4",
+            "bar_placement_contact_entry_protocol_v5",
         ),
         required=True,
     )

@@ -25,11 +25,20 @@ V4_CASE_SEEDS = tuple(range(55000, 55005))
 # The v4 candidate retained contact but wandered during placement and did not
 # become successor-ready. Train the full placement, release, and retreat tail.
 V4_SOURCE_INTERVAL = (770, 1163)
+V5_CASE_SEEDS = tuple(range(56000, 56005))
+# A placement-progress corrective candidate reintroduced the earlier forbidden
+# left-arm contact on its first learned action.  Retain the complete policy-entry
+# through retreat window so this new, source-bound archive labels the trajectory
+# that can create that contact.
+V5_SOURCE_INTERVAL = (630, 1163)
 ENTRY_CONTACT_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
     "f894dc670340ef881958dddeb460e32b9b2f25dff5f8b641a601bc36a3999905"
 )
 PLACEMENT_PROGRESS_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
     "e2c60f2e4ac0d5a7ed0887107bf06e0bb15e82891c6f34968ddf84112a887139"
+)
+PLACEMENT_CONTACT_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
+    "71c8319e42fd9f6c47e82f5d1f69d5b350e9ee6c6f59742f787b601d82b193fb"
 )
 
 
@@ -42,6 +51,7 @@ class BarOverlapCorrectionProtocol(BaseModel):
         "bar_overlap_transport_placement_protocol_v2",
         "bar_left_contact_entry_protocol_v3",
         "bar_placement_progress_protocol_v4",
+        "bar_placement_contact_entry_protocol_v5",
     ]
     evidence_root: str
     diagnosis_run_id: str
@@ -81,6 +91,7 @@ def _allocation(profile: str) -> tuple[tuple[int, int], tuple[int, int, int, int
         "bar_overlap_transport_placement_protocol_v2": (V2_SOURCE_INTERVAL, V2_CASE_SEEDS),
         "bar_left_contact_entry_protocol_v3": (V3_SOURCE_INTERVAL, V3_CASE_SEEDS),
         "bar_placement_progress_protocol_v4": (V4_SOURCE_INTERVAL, V4_CASE_SEEDS),
+        "bar_placement_contact_entry_protocol_v5": (V5_SOURCE_INTERVAL, V5_CASE_SEEDS),
     }
     try:
         return allocations[profile]
@@ -119,6 +130,23 @@ def _verified_diagnosis(store: EvidenceStore, run_id: str, *, profile: str):
             and component.get("forbidden_contact_events") == []
             and component.get("maximum_target_displacement_m", 0.0) >= 0.2
             and "readiness not reached" in str(component.get("failure_reason", ""))
+        )
+    elif profile == "bar_placement_contact_entry_protocol_v5":
+        forbidden = component.get("forbidden_contact_events")
+        left_practice_contact = any(
+            any(
+                str(name).startswith("left/") and str(other) == "practice_object"
+                for name, other in event.get("bad", [])
+            )
+            for event in forbidden or []
+        )
+        valid = (
+            diagnosis.manifest_sha256 == PLACEMENT_CONTACT_FAILURE_ANALYSIS_MANIFEST_SHA256
+            and component.get("recorded_autonomous_skill_actions") == 1
+            and component.get("rejected_action_log_actions") == 1
+            and component.get("maximum_overlap_m", float("inf")) <= 0.0025
+            and component.get("maximum_overtravel_m") == 0.0
+            and left_practice_contact
         )
     else:
         valid = (

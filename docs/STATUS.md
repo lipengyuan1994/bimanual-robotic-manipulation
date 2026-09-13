@@ -965,3 +965,20 @@ and a maximum object displacement of `0.001337285` m. The next executable step i
 to inspect and correct the policy trajectory that causes the forbidden left-arm
 contact, without weakening the contact guard, then create a distinct corrective
 dataset, training candidate, and one-time evaluation declaration.
+
+The distinct corrective collection is now sealed as
+`.artifacts/experiments/bar-placement-contact-entry-v5.json`, manifest
+`5cf90b90ed088678647346135e90ee00033998c2594a847802c0c8992bbc4ac2`. It binds only
+the new diagnosis and evaluation, allocates fresh seeds `56000`–`56004`, and records
+the full `[630,1163)` teacher replay. All five one-time MuJoCo teacher collections
+completed with no object-state edits, artificial attachments, or external object
+forces; each independently passed contact-and-hold scoring. Their sealed read-only
+view is `.artifacts/experiments/bar-placement-contact-entry-v5-views.json`, manifest
+`4f689269c68eb77cbaca6561181abe171ec7eb7cef52c1de0bc3accb519391ba`.
+
+The local LeRobot export `.artifacts/datasets/bar-placement-contact-entry-v5` passed
+its full offline decoded row-parity audit: five episodes and 2,655 transitions,
+archive manifest `ccea7ee43a458998ba237705c483af510d8d3f53c1da3742546c81614f0222ee`.
+It is validated teacher data only. The next executable step is a fresh sampling
+declaration bound to diagnosis `71c8319e…`, then a new MPS training candidate and
+single frozen MuJoCo evaluation.
