@@ -23,10 +23,9 @@ checks as learned task success, generalization or Intel compliance.
 
 No model job is active. The current bar place-and-return candidate completed training
 but failed its one permitted frozen MuJoCo evaluation; see the most recent evidence
-record at the end of this file. The next executable step is to freeze a new,
-source-bound corrective data protocol for the observed placement-progress failure,
-collect every allocated teacher episode, and train a fresh candidate. Do not rerun
-the consumed evaluation declaration.
+record at the end of this file. The failure is preserved and the consumed evaluation
+declaration must not be rerun. Before another bar candidate is trained, diagnose the
+sealed near-limit servo overshoot and freeze a new source-bound corrective boundary.
 
 ## Historical run record
 
@@ -1014,3 +1013,30 @@ unused replacement declaration is now
 the unchanged nine-case allocation and binds the current teacher source set. After
 the bar cycle releases the lease, collection may use v2 only; it must not use the
 stale declaration or mix hand-off evidence with the bar archive.
+
+The contact-entry candidate `20260913T203611-3c2b979b860c` completed all 20,000
+updates on native MPS with fallback disabled. Its training manifest seal is
+`268cbd0756af1272fc03456506bdc6c57809499aecbfa180723b296d5325616d`; checkpoint
+reload verification selected `bar_place_and_return` and confirmed its policy digest
+`babbd63bac36af440fa16313e5cc409e28fdb11505a544e20a449ffef8a4e8cd`. Training
+completion is not a manipulation claim.
+
+Its one-time source-bound evaluation declaration
+`.artifacts/experiments/bar-placement-contact-mps-v5-evaluation.json` has seal
+`5b8cd9f8dd7b57439cd3bf80b12933c25a8e42b3fc2f4e545d08beaee8d0c157`. The guarded
+parent `20260913T222057-4e9202550402` (seal
+`94e7a4fbac82d5280d4d7c45e24c0542a805e7a22004435c4bc064d065353de1`) cleanly
+reaped its child `20260913T222057-3d9755d54e9e` (seal
+`ed364475ba7cd3719c5c3f3e66daef46bb513b55c9e39f12686d2f67f67fb229`) after
+197.54 seconds. The child used `mps:0`, retained the 630-action teacher prefix,
+executed 268 learned actions, then failed with `Measured dinner joints exceeded model
+limits`; physical success is false and task success remains null.
+
+Read-only analysis `20260913T222549-a3e16c42c5bf`, seal
+`cd95b38471e8486cb549c4e0b678ab32f2613eacac99b4cb038fb1b9f3505f4d`, verifies no
+forbidden contact events. The sealed final physics state exceeded the right arm's
+fourth joint upper bound by `0.000082220` radians after a target only about
+`0.000334` radians below that hard bound. This is a learned-policy physical failure,
+not an excuse to relax limits or rerun the declaration. The next bar correction must
+first specify and test a source-bound near-limit action/servo safety policy, then
+collect and train a distinct candidate if required.
