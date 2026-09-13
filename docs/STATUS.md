@@ -832,3 +832,12 @@ with 0.001419980 m overlap; it recorded `physical_success=false` and
 success claim. The frozen declaration will not be retried; the next executable step
 is read-only failure analysis followed by a newly declared corrective-data and
 training/evaluation cycle.
+
+Read-only analysis run `20260913T151943-af62c90e4410` (seal
+`f894dc670340ef881958dddeb460e32b9b2f25dff5f8b641a601bc36a3999905`) verified the
+failure signature from the immutable child evidence. The learned policy produced one
+recorded and rejected autonomous action; during `policy/place`, overlap peaked at
+0.001442186 m and the target displaced by at most 0.003464695 m. The guard failure
+was a forbidden left-jaw/bar contact, while the right gripper was still in contact
+with the bar. The corrective work must therefore inspect and augment this placement
+trajectory; it must not weaken the contact guard.
