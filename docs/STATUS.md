@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 12, 2026. Latest implementation: corrective collection foundation on
+Updated September 13, 2026. Latest implementation: bar place-and-return corrective evaluation on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -20,6 +20,15 @@ and pouring remain outside this release. Never relabel teacher success or runtim
 checks as learned task success, generalization or Intel compliance.
 
 ## Active job and next executable step
+
+No model job is active. The current bar place-and-return candidate completed training
+but failed its one permitted frozen MuJoCo evaluation; see the most recent evidence
+record at the end of this file. The next executable step is to freeze a new,
+source-bound corrective data protocol for the observed placement-progress failure,
+collect every allocated teacher episode, and train a fresh candidate. Do not rerun
+the consumed evaluation declaration.
+
+## Historical run record
 
 Corrective training run `20260911T184624-653277cfce84` completed20,000updates
 on native MPS in5,908.77seconds, with fallback disabled and offline caches. Its
@@ -873,3 +882,30 @@ manifest `298187aafe9dac5c2bd73f4333c528bbe09c1d0db9574550923f22c8c53e1b87`.
 This is verified teacher data, not a learned-policy result. The next executable step
 is to add a separate source-bound sampling declaration that weights the `[630,770)`
 policy-entry region, then train and evaluate a fresh candidate once.
+
+The source-bound `bar_entry_contact_sampling_v2` declaration was subsequently
+frozen at `.artifacts/experiments/bar-entry-contact-sampling-v2.json`, manifest
+`3c814ac5d083391947029ee7b7a372d64f9bc12a9dc6080dac784c93878d16c4`.
+The replacement training run `20260913T155504-cfd4c25dcae3` completed 20,000
+native-MPS updates and independently verifies with seal
+`9421be9ad1f5b6d413bdec4c2090552c0f677a5b3ea78773d5efe44b0d633a83`.
+Its checkpoint, processor, sampler, learning-rate, and temporal-loss reload checks
+all passed. Training completion alone does not establish manipulation success.
+
+The resulting one-time MuJoCo simulation declaration
+`.artifacts/experiments/bar-entry-contact-physical-v2.json` is sealed as
+`a8439e6c8e7bdb99dee5aa70e58e50a96bb86badafe66fb0f395c971ade7105e`.
+It was executed once by guarded run `20260913T174016-e382ee8bd3cf` (seal
+`7f1ec667883ce5002e0edc0ef0988e8133197720e50f242be79055345cc2d4b5`). The
+candidate used native `mps:0`, replayed the 630-action teacher prefix, then made
+1,900 accepted autonomous actions. It did not complete the successor-ready
+placement within that frozen action budget, so `component_passed=false` and the
+evaluation is a failed learned-policy result. It is not retriable.
+
+Read-only diagnosis `20260913T175254-ff6435ca575f` (seal
+`e2c60f2e4ac0d5a7ed0887107bf06e0bb15e82891c6f34968ddf84112a887139`) found no
+rejected autonomous actions or forbidden-contact events. The failure is progress,
+not the earlier entry-contact rejection: object displacement reached 0.239851969 m,
+with the peak at policy action 998 in `policy/place`; no successor-ready state was
+recorded. The next corrective cycle must target place-and-return progress while
+retaining the existing contact guard and one-attempt evaluation discipline.
