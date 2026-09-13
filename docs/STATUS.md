@@ -841,3 +841,13 @@ recorded and rejected autonomous action; during `policy/place`, overlap peaked a
 was a forbidden left-jaw/bar contact, while the right gripper was still in contact
 with the bar. The corrective work must therefore inspect and augment this placement
 trajectory; it must not weaken the contact guard.
+
+ADR 0006 defines a separate entry-contact correction boundary. The new
+`bar_left_contact_entry_protocol_v3` is hard-bound to analysis seal
+`f894dc670340ef881958dddeb460e32b9b2f25dff5f8b641a601bc36a3999905`, requires the
+recorded one-action forbidden-left-contact signature, and allocates five fresh cases
+with seeds `54000`–`54004`. Its `[630,1163)` teacher replay includes the exact
+learned-policy handoff window through the successful teacher boundary. The protocol
+contract and CLI creation path pass 34 focused tests. The next executable step is to
+freeze that one-time collection declaration, then collect every outcome without
+retrying a consumed case.

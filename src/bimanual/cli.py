@@ -275,6 +275,21 @@ def main(argv: list[str] | None = None) -> int:
         "bar-overlap-protocol-check", help="Reverify the frozen bar-overlap corrective protocol"
     )
     bar_overlap_protocol_check.add_argument("protocol", type=Path)
+    bar_overlap_protocol_create = commands.add_parser(
+        "bar-overlap-protocol-create",
+        help="Freeze a fresh bar-overlap corrective collection from one sealed failure diagnosis",
+    )
+    bar_overlap_protocol_create.add_argument("--diagnosis-run", required=True)
+    bar_overlap_protocol_create.add_argument("--destination", type=Path, required=True)
+    bar_overlap_protocol_create.add_argument(
+        "--profile",
+        choices=(
+            "bar_overlap_transport_placement_protocol_v1",
+            "bar_overlap_transport_placement_protocol_v2",
+            "bar_left_contact_entry_protocol_v3",
+        ),
+        required=True,
+    )
     bar_overlap_export = commands.add_parser(
         "bar-overlap-export",
         help="Export frozen bar-overlap replay views to local LeRobot",
@@ -999,6 +1014,19 @@ def main(argv: list[str] | None = None) -> int:
             )
 
             emit(load_bar_overlap_correction_protocol(args.protocol).model_dump(mode="json"))
+        elif args.command == "bar-overlap-protocol-create":
+            from bimanual.bar_overlap_correction_protocol import (
+                create_bar_overlap_correction_protocol,
+            )
+
+            emit(
+                create_bar_overlap_correction_protocol(
+                    evidence_root=store.root,
+                    diagnosis_run_id=args.diagnosis_run,
+                    destination=args.destination,
+                    profile=args.profile,
+                ).model_dump(mode="json")
+            )
         elif args.command == "bar-overlap-export":
             from bimanual.bar_overlap_correction_export import export_bar_overlap_dataset
 
