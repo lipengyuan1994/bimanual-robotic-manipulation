@@ -31,6 +31,9 @@ def test_protocol_rejects_a_resealed_incomplete_source_set(tmp_path):
         "skill_views_path": "../views.json",
         "skill_views_sha256": "c" * 64,
         "sampling_declaration_sha256": "d" * 64,
+        "prior_evaluation_run_id": "prior-evaluation",
+        "prior_evaluation_manifest_sha256": "e" * 64,
+        "policy_target_margin_rad": module.MARGIN_RAD,
         "evaluation_sources": {
             name: digest_file(root / name) for name in module._evaluation_source_paths(root)
         },
@@ -70,12 +73,18 @@ def test_interrupted_unsealed_process_blocks_retry(tmp_path, monkeypatch):
         training_run="artifacts/runs/" + training.name,
         dataset_root="dataset",
         skill_views_path="views.json",
+        prior_evaluation_run_id="prior-evaluation",
+        prior_evaluation_manifest_sha256="z" * 64,
         device="mps",
         max_actions=1900,
         execute_chunk_steps=2,
+        policy_target_margin_rad=module.MARGIN_RAD,
         wall_timeout_seconds=1200.0,
     )
     monkeypatch.setattr(module, "load_bar_transport_physical_protocol", lambda _: protocol)
+    monkeypatch.setattr(
+        module, "_verify_prior_failure", lambda *args: SimpleNamespace(manifest_sha256="z" * 64)
+    )
     config = SkillPhysicalEvaluationConfig(
         training_run=training,
         dataset_root=dataset,
@@ -84,6 +93,7 @@ def test_interrupted_unsealed_process_blocks_retry(tmp_path, monkeypatch):
         device="mps",
         max_actions=1900,
         execute_chunk_steps=2,
+        policy_target_margin_rad=module.MARGIN_RAD,
         wall_timeout_seconds=1200.0,
         evaluation_protocol_sha256=protocol.manifest_sha256,
         evaluation_protocol_file_sha256=digest_file(protocol_path),
@@ -101,4 +111,4 @@ def test_protocol_check_cli_loads_the_frozen_declaration(tmp_path, monkeypatch, 
     expected = SimpleNamespace(model_dump=lambda **_: {"profile": module.PROFILE})
     monkeypatch.setattr(module, "load_bar_transport_physical_protocol", lambda path: expected)
     assert main(["bar-transport-physical-protocol-check", str(protocol)]) == 0
-    assert '"profile": "bar_transport_physical_evaluation_protocol_v1"' in capsys.readouterr().out
+    assert f'"profile": "{module.PROFILE}"' in capsys.readouterr().out

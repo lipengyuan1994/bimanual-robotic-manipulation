@@ -346,6 +346,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     bar_physical_create.add_argument("--training-run", type=Path, required=True)
     bar_physical_create.add_argument("--destination", type=Path, required=True)
+    bar_physical_create.add_argument("--prior-evaluation-run", required=True)
     bar_physical_check = commands.add_parser(
         "bar-transport-physical-protocol-check",
         help="Reverify a frozen bar corrective physical-evaluation declaration",
@@ -1131,7 +1132,7 @@ def main(argv: list[str] | None = None) -> int:
 
             emit(
                 create_bar_transport_physical_protocol(
-                    args.training_run, args.destination
+                    args.training_run, args.destination, args.prior_evaluation_run
                 ).model_dump(mode="json")
             )
         elif args.command == "bar-transport-physical-protocol-check":

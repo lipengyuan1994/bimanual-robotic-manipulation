@@ -17,9 +17,10 @@ from bimanual.skill_physical_protocol import _source_paths
 from bimanual.training import ACTTrainingConfig
 from bimanual.worker_lease import WorkerLease
 
-PROFILE = "bar_transport_physical_evaluation_protocol_v1"
+PROFILE = "bar_transport_physical_margin_evaluation_protocol_v2"
 SKILL = "bar_place_and_return"
 KIND = "learned_skill_teacher_prepared_physical_evaluation"
+MARGIN_RAD = 0.001
 
 
 def _evaluation_source_paths(root: Path) -> tuple[str, ...]:
@@ -50,6 +51,21 @@ def _clean_process_child(process, child) -> bool:
     )
 
 
+def _verify_prior_failure(store: EvidenceStore, run_id: str, training_run: Path):
+    prior = store.verify(run_id)
+    if (
+        prior.kind != KIND
+        or prior.outcome != "failed"
+        or prior.config.get("training_run") != str(training_run)
+        or prior.config.get("skill_id") != SKILL
+        or prior.config.get("device") != "mps"
+        or prior.metrics.get("actual_policy_devices") not in (["mps"], ["mps:0"])
+        or prior.metrics.get("error") != "ValueError: Measured dinner joints exceeded model limits"
+    ):
+        raise ValueError("Prior evaluation is not the sealed MPS near-limit bar failure")
+    return prior
+
+
 class BarTransportPhysicalProtocol(Contract):
     profile: Literal[PROFILE] = PROFILE
     training_run: str
@@ -59,6 +75,9 @@ class BarTransportPhysicalProtocol(Contract):
     skill_views_path: str
     skill_views_sha256: Digest
     sampling_declaration_sha256: Digest
+    prior_evaluation_run_id: str
+    prior_evaluation_manifest_sha256: Digest
+    policy_target_margin_rad: Literal[MARGIN_RAD] = MARGIN_RAD
     evaluation_sources: dict[str, Digest]
     device: Literal["mps"] = "mps"
     execute_chunk_steps: Literal[2] = 2
@@ -83,7 +102,7 @@ class BarTransportPhysicalProtocol(Contract):
 
 
 def create_bar_transport_physical_protocol(
-    training_run: Path, destination: Path
+    training_run: Path, destination: Path, prior_evaluation_run: str
 ) -> BarTransportPhysicalProtocol:
     """Freeze one evaluation only after a matching corrective run completed."""
     destination = Path(destination).absolute()
@@ -92,6 +111,7 @@ def create_bar_transport_physical_protocol(
     training_run = Path(training_run).resolve(strict=True)
     store = EvidenceStore(training_run.parents[1])
     manifest = store.verify(training_run.name)
+    prior = _verify_prior_failure(store, prior_evaluation_run, training_run)
     config = ACTTrainingConfig.model_validate(manifest.config)
     if (
         manifest.kind != "act_training"
@@ -125,6 +145,9 @@ def create_bar_transport_physical_protocol(
         skill_views_path=os.path.relpath(config.skill_views_path, destination.parent),
         skill_views_sha256=digest_file(config.skill_views_path),
         sampling_declaration_sha256=digest_file(config.sampling_protocol_run),
+        prior_evaluation_run_id=prior.run_id,
+        prior_evaluation_manifest_sha256=prior.manifest_sha256,
+        policy_target_margin_rad=MARGIN_RAD,
         evaluation_sources={
             name: digest_file(root / name) for name in _evaluation_source_paths(root)
         },
@@ -166,6 +189,9 @@ def run_bar_transport_physical_protocol(path: Path):
     protocol = load_bar_transport_physical_protocol(path)
     training_run = (path.parent / protocol.training_run).resolve(strict=True)
     store = EvidenceStore(training_run.parents[1])
+    prior = _verify_prior_failure(store, protocol.prior_evaluation_run_id, training_run)
+    if prior.manifest_sha256 != protocol.prior_evaluation_manifest_sha256:
+        raise ValueError("Prior near-limit bar failure changed after protocol freeze")
     from bimanual.skill_physical_evaluation import (
         SkillPhysicalEvaluationConfig,
     )
@@ -179,6 +205,7 @@ def run_bar_transport_physical_protocol(path: Path):
         device=protocol.device,
         max_actions=protocol.max_actions,
         execute_chunk_steps=protocol.execute_chunk_steps,
+        policy_target_margin_rad=protocol.policy_target_margin_rad,
         wall_timeout_seconds=protocol.wall_timeout_seconds,
         evaluation_protocol_sha256=protocol.manifest_sha256,
         evaluation_protocol_file_sha256=file_sha256,
