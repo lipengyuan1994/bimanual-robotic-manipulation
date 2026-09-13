@@ -979,6 +979,11 @@ view is `.artifacts/experiments/bar-placement-contact-entry-v5-views.json`, mani
 The local LeRobot export `.artifacts/datasets/bar-placement-contact-entry-v5` passed
 its full offline decoded row-parity audit: five episodes and 2,655 transitions,
 archive manifest `ccea7ee43a458998ba237705c483af510d8d3f53c1da3742546c81614f0222ee`.
-It is validated teacher data only. The next executable step is a fresh sampling
-declaration bound to diagnosis `71c8319e…`, then a new MPS training candidate and
-single frozen MuJoCo evaluation.
+It is validated teacher data only. The source-bound sampling declaration is now
+frozen at `.artifacts/experiments/bar-placement-contact-sampling-v4.json`, manifest
+`d3a0d7ba8dad9b0cb23b09cb4bc99f8c2b6ffb82cb993bf8745f6465d4cf4e3c`. It binds
+only diagnosis `71c8319e6f…`, the audited v5 export and its view, and emphasizes
+source frames `[630,770)` under the distinct `placement_contact_entry` label. A
+direct offline reload completed with exit zero and reproduced the declaration seal.
+The next executable step is a fresh native-MPS training candidate using this exact
+declaration, then one new frozen MuJoCo evaluation after checkpoint verification.
