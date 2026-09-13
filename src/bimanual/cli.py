@@ -556,7 +556,13 @@ def main(argv: list[str] | None = None) -> int:
     train.add_argument("--seed", type=int, default=0)
     train.add_argument(
         "--sampling-profile",
-        choices=["uniform", "approach_regions_v1", "approach_nominal_launch_v1"],
+        choices=[
+            "uniform",
+            "approach_regions_v1",
+            "approach_nominal_launch_v1",
+            "bar_transport_placement_v1",
+            "bar_entry_contact_sampling_v2",
+        ],
         default="uniform",
     )
     train.add_argument("--no-vae", action="store_true", help="Matched-initialization ACT ablation")
