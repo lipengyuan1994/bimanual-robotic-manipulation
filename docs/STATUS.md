@@ -26,8 +26,9 @@ but failed its one permitted frozen MuJoCo evaluation; see the most recent evide
 record at the end of this file. The failure is preserved and the consumed evaluation
 declaration must not be rerun. The separate nine-case hand-off continuity source set
 and offline LeRobot export are sealed teacher data, not learned hand-off evidence.
-Before another bar candidate is trained, diagnose the sealed near-limit servo overshoot
-and freeze a new source-bound corrective boundary.
+The next bar step is to freeze a source-bound calibration for the implemented
+near-limit policy-target margin, then collect/train or evaluate a distinct candidate
+without rerunning the consumed declaration.
 
 ## Historical run record
 
@@ -1042,6 +1043,17 @@ fourth joint upper bound by `0.000082220` radians after a target only about
 not an excuse to relax limits or rerun the declaration. The next bar correction must
 first specify and test a source-bound near-limit action/servo safety policy, then
 collect and train a distinct candidate if required.
+
+Commit `a8b0510` implements that safety-policy mechanism without weakening the
+measured-state guard. A physical evaluator can declare
+`policy_target_margin_rad` in `[0, 0.01]`; targets inside the original hard range
+are clipped only to that range's interior before path checking and stepping. Each
+action retains both raw and applied targets, the selected margin, and clipped joint
+indices. The worker manifest records the configuration, while the strict
+per-physics-step measured-limit failure remains intact. Focused worker, evaluator,
+and CLI tests pass 63 cases, and the documentation gate verifies 513 links. This is
+implementation and unit-level safety evidence only; no new learned bar evaluation,
+training claim, or task success has occurred.
 
 The re-bound hand-off continuity protocol v2 has now executed all nine allocated
 teacher-only physical cases exactly once: baseline plus right shoulder-pan,
