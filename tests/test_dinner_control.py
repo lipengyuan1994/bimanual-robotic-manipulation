@@ -20,7 +20,7 @@ class Clock:
 
 
 @pytest.fixture
-def worker(tmp_path):
+def worker(tmp_path, request):
     clock = Clock()
     cancellation = [False]
     captures = []
@@ -39,6 +39,7 @@ def worker(tmp_path):
         clock_ns=clock,
         cancelled=lambda: cancellation[0],
         render_capture=synthetic_rgb,
+        policy_target_margin_rad=getattr(request, "param", 0.0),
     )
     instance.supervisor.load_task(
         TaskSpec(
@@ -56,12 +57,13 @@ def worker(tmp_path):
     instance.close()
 
 
-def start(worker):
+def start(worker, forecast=None):
     instance, _, _, _ = worker
     observation = instance.capture()
     attempt = instance.supervisor.dispatch(observation)
     instance.bind(attempt.attempt_id, policy_sha256="a" * 64, chunk_size=2, execute_chunk_steps=2)
-    forecast = np.tile(instance._env.data.ctrl[instance._env.actuator_ids], (2, 1))
+    if forecast is None:
+        forecast = np.tile(instance._env.data.ctrl[instance._env.actuator_ids], (2, 1))
     instance.offer(attempt.attempt_id, forecast, observation)
     return attempt, observation, forecast
 
@@ -137,6 +139,29 @@ def test_real_mujoco_step_uses_continuous_environment_and_policy_boundary(worker
         json.loads((instance.directory / "worker.json").read_text())["camera_source"]
         == "injected_unverified"
     )
+
+
+@pytest.mark.parametrize("worker", [0.001], indirect=True)
+def test_policy_target_margin_clips_only_at_the_hard_limit_and_keeps_it_auditable(worker):
+    instance, _, _, _ = worker
+    forecast = np.tile(instance._env.data.ctrl[instance._env.actuator_ids], (2, 1))
+    forecast[0, 9] = instance._env.upper[9]
+    attempt, before, _ = start(worker, forecast)
+    result = instance.step(attempt.attempt_id, before)
+    assert result["applied"] is True
+    assert result["raw_targets_rad"][9] == pytest.approx(instance._env.upper[9])
+    assert result["targets_rad"][9] == pytest.approx(instance._env.upper[9] - 0.001)
+    assert result["policy_target_margin_rad"] == pytest.approx(0.001)
+    assert result["policy_target_clipped_indices"] == [9]
+    instance._trace.flush()
+    assert np.all(instance._env.data.qpos[instance._env.qadr] <= instance._env.upper)
+
+
+@pytest.mark.parametrize("value", [-0.001, 0.0101, float("nan"), True])
+def test_policy_target_margin_rejects_invalid_values_before_worker_allocation(tmp_path, value):
+    with pytest.raises(ValueError, match="Policy target margin"):
+        DinnerControlWorker(tmp_path / "invalid-margin", [], policy_target_margin_rad=value)
+    assert not (tmp_path / "invalid-margin").exists()
 
 
 @pytest.mark.parametrize(

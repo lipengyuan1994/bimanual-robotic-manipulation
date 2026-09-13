@@ -221,6 +221,7 @@ def main(argv: list[str] | None = None) -> int:
     skill_physical.add_argument("--device", choices=["cpu", "mps"], default="mps")
     skill_physical.add_argument("--max-actions", type=int, default=2000)
     skill_physical.add_argument("--execute-chunk-steps", type=int, default=2)
+    skill_physical.add_argument("--policy-target-margin-rad", type=float, default=0.0)
     skill_physical.add_argument("--wall-timeout-seconds", type=float, default=1200)
     physical_protocol_create = commands.add_parser(
         "skill-physical-protocol-create",
@@ -969,6 +970,7 @@ def main(argv: list[str] | None = None) -> int:
                     device=args.device,
                     max_actions=args.max_actions,
                     execute_chunk_steps=args.execute_chunk_steps,
+                    policy_target_margin_rad=args.policy_target_margin_rad,
                     wall_timeout_seconds=args.wall_timeout_seconds,
                 ),
                 store=store,

@@ -38,6 +38,7 @@ class SkillPhysicalEvaluationConfig(BaseModel):
     device: Literal["cpu", "mps"] = "mps"
     max_actions: int = Field(default=2000, strict=True, ge=1, le=20000)
     execute_chunk_steps: int = Field(default=2, strict=True, ge=1, le=100)
+    policy_target_margin_rad: float = Field(default=0.0, strict=True, ge=0, le=0.01)
     wall_timeout_seconds: float = Field(default=1200, gt=0, le=86400)
     evaluation_protocol_sha256: Digest | None = None
     evaluation_protocol_file_sha256: Digest | None = None
@@ -128,6 +129,7 @@ def run_skill_physical_evaluation(
             "release_qualified": False,
             "requested_device": config.device,
             "actual_policy_devices": None,
+            "policy_target_margin_rad": config.policy_target_margin_rad,
         }
         error_text = None
         try:
@@ -204,6 +206,7 @@ def run_skill_physical_evaluation(
                 cancelled=lambda: (
                     cancelled() or time.monotonic() - started >= config.wall_timeout_seconds
                 ),
+                policy_target_margin_rad=config.policy_target_margin_rad,
             )
             worker.supervisor.load_task(
                 TaskSpec(

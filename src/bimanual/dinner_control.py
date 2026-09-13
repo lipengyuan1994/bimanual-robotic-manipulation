@@ -78,7 +78,18 @@ class DinnerControlWorker:
         render_capture: Callable[[DinnerEnvironment], dict[str, np.ndarray]] | None = None,
         planner_render_capture: Callable[[DinnerEnvironment], np.ndarray] | None = None,
         scene_variant_root: Path | None = None,
+        policy_target_margin_rad: float = 0.0,
     ):
+        if (
+            isinstance(policy_target_margin_rad, bool)
+            or not isinstance(policy_target_margin_rad, (int, float))
+            or not np.isfinite(policy_target_margin_rad)
+            or not 0 <= policy_target_margin_rad <= 0.01
+        ):
+            raise ValueError(
+                "Policy target margin must be finite and between zero and 0.01 radians"
+            )
+        self._policy_target_margin_rad = float(policy_target_margin_rad)
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=False)
         (self.directory / "observations").mkdir()
@@ -157,6 +168,11 @@ class DinnerControlWorker:
                         "manipulation_success": None,
                         "operating_inputs": ["three RGB cameras", "twelve joint positions"],
                         "safety_guard_uses_simulator_state": True,
+                        "policy_target_margin_rad": self._policy_target_margin_rad,
+                        "policy_target_margin_behavior": (
+                            "clip policy targets to the interior of hard joint/actuator bounds; "
+                            "retain strict measured-state bounds"
+                        ),
                         "scene_variant": scene_variant,
                     }
                 )
@@ -737,6 +753,25 @@ class DinnerControlWorker:
         else:
             check_joint_path(env, start, targets, env.allowed)
 
+    def _interior_policy_targets(self, targets: np.ndarray) -> tuple[np.ndarray, tuple[int, ...]]:
+        """Apply an explicitly configured target-only interior margin.
+
+        This does not widen a joint range or tolerate a measured overtravel.  The
+        post-physics hard-limit guard remains authoritative.  The returned targets
+        are separately recorded so a candidate evaluation can disclose every clamp.
+        """
+        raw = np.asarray(targets, dtype=float)
+        if raw.shape != (12,) or not np.isfinite(raw).all():
+            raise ValueError("Expected twelve finite policy targets")
+        margin = self._policy_target_margin_rad
+        if margin == 0:
+            return raw.copy(), ()
+        lower, upper = self._env.lower + margin, self._env.upper - margin
+        if np.any(lower > upper):
+            raise ValueError("Policy target margin leaves no feasible joint interval")
+        adjusted = np.clip(raw, lower, upper)
+        return adjusted, tuple(np.flatnonzero(adjusted != raw).tolist())
+
     def step(self, attempt_id: str, observation: Observation) -> dict:
         action = dict(
             episode_id=self._env.episode_id,
@@ -752,8 +787,12 @@ class DinnerControlWorker:
             _, allowed = self._permissions(attempt_id)
             if self._env.active_contacts != allowed:
                 raise ValueError("Physical contact permissions changed after binding")
-            targets = self.control.take(attempt_id, observation)
+            raw_targets = self.control.take(attempt_id, observation)
+            targets, clipped = self._interior_policy_targets(raw_targets)
+            action["raw_targets_rad"] = raw_targets.tolist()
             action["targets_rad"] = targets.tolist()
+            action["policy_target_margin_rad"] = self._policy_target_margin_rad
+            action["policy_target_clipped_indices"] = list(clipped)
             self._check_path(targets)
             # Expensive path checks must not make an earlier authorization sufficient.
             self._validate_capture(observation)

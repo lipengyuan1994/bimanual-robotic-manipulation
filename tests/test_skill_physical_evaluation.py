@@ -230,6 +230,8 @@ def test_cli_forwards_component_limits_and_preserves_failure(tmp_path, monkeypat
                 "700",
                 "--execute-chunk-steps",
                 "5",
+                "--policy-target-margin-rad",
+                "0.001",
                 "--wall-timeout-seconds",
                 "300",
             ]
@@ -239,6 +241,7 @@ def test_cli_forwards_component_limits_and_preserves_failure(tmp_path, monkeypat
     cfg, evidence = seen[0]
     assert cfg.skill_id == "cup_pick_place" and cfg.device == "cpu"
     assert cfg.max_actions == 700 and cfg.execute_chunk_steps == 5
+    assert cfg.policy_target_margin_rad == pytest.approx(0.001)
     assert cfg.wall_timeout_seconds == 300
     assert evidence == tmp_path / "evidence"
     assert '"outcome": "failed"' in capsys.readouterr().out

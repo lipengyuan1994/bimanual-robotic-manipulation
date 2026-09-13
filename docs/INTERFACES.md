@@ -80,6 +80,16 @@ Validation failure never permits clipping or silently selecting a different poli
 An instruction change requires a new revision and fresh observation; changing
 instruction text in the middle of a demonstration requires a new episode record.
 
+Teacher-prepared physical diagnostics may opt into a declared
+`policy_target_margin_rad` from 0 to 0.01 radians. This target-only guard clips a
+**valid** policy target to the interior of the same hard joint/actuator bounds before
+path checking and physics. Each executed action records `raw_targets_rad`, the
+applied `targets_rad`, the configured margin, and clipped joint indices. It neither
+widens a limit nor permits measured overtravel: the per-physics-step measured-state
+hard-limit guard remains unchanged. A nonzero margin therefore defines a distinct,
+fully disclosed evaluation controller configuration rather than an unrecorded output
+adjustment.
+
 ## Supported skill requests
 
 `SkillRequest` validates planner proposals for `open_drawer`, `pick`, `place`,
