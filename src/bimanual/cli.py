@@ -332,6 +332,7 @@ def main(argv: list[str] | None = None) -> int:
             "bar_entry_contact_sampling_v2",
             "bar_placement_progress_sampling_v3",
             "bar_placement_contact_sampling_v4",
+            "bar_margin_completion_sampling_v5",
         ),
         default="bar_transport_placement_sampling_v1",
     )
@@ -579,6 +580,7 @@ def main(argv: list[str] | None = None) -> int:
             "bar_entry_contact_sampling_v2",
             "bar_placement_progress_sampling_v3",
             "bar_placement_contact_sampling_v4",
+            "bar_margin_completion_sampling_v5",
         ],
         default="uniform",
     )

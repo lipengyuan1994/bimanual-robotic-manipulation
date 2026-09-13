@@ -308,7 +308,8 @@ def emphasize_bar_transport_placement(
         groups.setdefault((source, region), []).append(frame)
     required_regions = (
         ("transport_to_placement",)
-        if sampling_profile == "bar_placement_progress_sampling_v3"
+        if sampling_profile
+        in {"bar_placement_progress_sampling_v3", "bar_margin_completion_sampling_v5"}
         else ("transport_to_placement", "remainder")
     )
     expected_groups = {
@@ -358,6 +359,8 @@ def emphasize_bar_transport_placement(
         metadata_key, emphasis_name = "bar_placement_contact", "placement_contact_entry"
     elif sampling_profile == "bar_placement_progress_sampling_v3":
         metadata_key, emphasis_name = "bar_placement_progress", "placement_release_retreat"
+    elif sampling_profile == "bar_margin_completion_sampling_v5":
+        metadata_key, emphasis_name = "bar_margin_completion", "placement_release_retreat"
     else:
         raise ValueError("Unsupported bar sampling profile")
     for frame in corrective:

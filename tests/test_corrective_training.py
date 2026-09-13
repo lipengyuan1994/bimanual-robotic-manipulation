@@ -95,6 +95,19 @@ def test_placement_contact_sampling_is_limited_to_the_selected_bar_skill():
         )
 
 
+def test_margin_completion_profile_is_bound_to_the_margin_evaluation_failure():
+    from bimanual.bar_transport_placement_sampling import (
+        MARGIN_COMPLETION_FAILURE_ANALYSIS_MANIFEST_SHA256,
+        MARGIN_COMPLETION_PROFILE,
+    )
+
+    assert _profile_spec(MARGIN_COMPLETION_PROFILE) == (
+        MARGIN_COMPLETION_FAILURE_ANALYSIS_MANIFEST_SHA256,
+        (770, 1163),
+        "margin_completion",
+    )
+
+
 def test_placement_contact_profile_is_bound_to_the_observed_failure_interval():
     assert _profile_spec(PLACEMENT_CONTACT_PROFILE) == (
         PLACEMENT_CONTACT_FAILURE_ANALYSIS_MANIFEST_SHA256,

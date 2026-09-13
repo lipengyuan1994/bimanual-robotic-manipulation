@@ -28,10 +28,19 @@ declaration must not be rerun. The separate nine-case hand-off continuity source
 and offline LeRobot export are sealed teacher data, not learned hand-off evidence.
 The source-bound completion correction is frozen at
 `.artifacts/experiments/bar-margin-completion-v6-protocol.json`, manifest
-`82233b5bed26e4df1729116f7fc8dc87e4fc5fe3c33ab79b5e2eaa49e2adaad6`; its first
-contact-only teacher case is active. The next executable step after its terminal
-record is to verify the case, then collect additional distinct allocated cases before
-creating an immutable view, export, training candidate, and new evaluation.
+`82233b5bed26e4df1729116f7fc8dc87e4fc5fe3c33ab79b5e2eaa49e2adaad6`. Its first
+three distinct one-attempt teacher cases (seeds 57000–57002) completed successfully,
+are individually evidence-verified, and independently score physical teacher
+completion. The sealed view
+`.artifacts/experiments/bar-margin-completion-v6-views.json`, manifest
+`164daeb0e6ae54645b5277cfce0084290168994608c9b81b4e5efb4311fd83c0`, selects
+1,593 replay actions. The native offline LeRobot v3 export at
+`.artifacts/datasets/bar-margin-completion-v6` decodes and revalidates all 1,593
+transitions; its manifest seal is
+`f4a81d7476a0c6d93870beea48d578e5a8ec2a1c467fbf89d286a376358b5540`. This is
+teacher data only. The next executable step is to freeze the matching sampling
+boundary, then train one distinct local bar candidate and evaluate it under a fresh
+one-time declaration without rerunning either consumed evaluation.
 
 ## Historical run record
 
