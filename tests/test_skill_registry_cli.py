@@ -37,3 +37,19 @@ def test_skill_checkpoint_cli_rejects_invalid_checkpoint(monkeypatch, capsys):
         == 1
     )
     assert json.loads(capsys.readouterr().out)["outcome"] == "failed"
+
+
+def test_bar_overlap_run_cli_preserves_a_completed_teacher_recording(monkeypatch, capsys):
+    from bimanual import bar_overlap_correction_teacher
+
+    seen = {}
+
+    def collect(protocol, case_id, **kwargs):
+        seen.update(protocol=protocol, case_id=case_id, kwargs=kwargs)
+        return SimpleNamespace(outcome="completed", model_dump=lambda **_: {"outcome": "completed"})
+
+    monkeypatch.setattr(bar_overlap_correction_teacher, "run_bar_overlap_correction_case", collect)
+    assert main(["bar-overlap-run", "protocol.json", "bar_contact_avoidance-54000"]) == 0
+    assert seen["protocol"] == Path("protocol.json")
+    assert seen["case_id"] == "bar_contact_avoidance-54000"
+    assert json.loads(capsys.readouterr().out) == {"outcome": "completed"}
