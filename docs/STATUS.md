@@ -806,3 +806,29 @@ corrective training and physical protocol paths pass (28 passed; one existing
 full-dataset test skipped). The next executable step after terminal training is to
 verify its manifest/checkpoint bindings and, only if it is a completed MPS candidate,
 create the fresh one-time physical-evaluation declaration.
+
+That child now completed and independently verifies: manifest
+`7f3f53cf5fbc1cc4cba05a60c5d684d075dfde875e1b50e2cce87df13b0a2422`, 20,000
+updates, actual device `mps`, and checkpoint/processor/sampler/learning-rate and
+temporal-loss reload checks all passed. This is training-completion evidence only;
+it does not establish learned manipulation success. During declaration preparation,
+the registry incorrectly applied a generic run-directory sampling rule and a generic
+corrective-view filename to the bar-specific JSON sampling declaration/archive. The
+registry now reproduces the bar profile's training-time validation exactly, including
+the profile-bound `bar_overlap_views.json` source. Focused registry, corrective and
+physical-protocol tests pass 31 cases.
+
+The one-time declaration `.artifacts/experiments/bar-transport-placement-physical-v1.json`
+was then executed once in MuJoCo after explicit simulation-only authorization. Its
+guarded process `20260913T151615-15c18245b546` (seal
+`a2aab89969cb327c06bedbdd91de62dc69b92bfa25fc8454771cb64674647a1d`) and child
+`20260913T151616-a0548ab450e2` (seal
+`00837fb1fbeadc16b5d2dbdedce8c78690d9c68cbf1307c3ec80a0c594354e1c`) independently
+verify. The child used native `mps:0`, replayed the 630-action teacher prefix, and
+failed safely on its first autonomous action after 111.09 seconds. The contact guard
+reported the left fixed jaw contacting `practice_object` at simulation time 31.584 s
+with 0.001419980 m overlap; it recorded `physical_success=false` and
+`component_passed=false`. This is a failed learned-policy evaluation, not a task
+success claim. The frozen declaration will not be retried; the next executable step
+is read-only failure analysis followed by a newly declared corrective-data and
+training/evaluation cycle.

@@ -15,7 +15,12 @@ from bimanual.dataset_export import CAMERA_FEATURES
 from bimanual.evidence import EvidenceStore, canonical, digest_file
 from bimanual.skill_views import SkillView, load_skill_views
 from bimanual.supervisor import Capability
-from bimanual.training import ACTTrainingConfig, build_sampling_plan, restrict_sampling_plan
+from bimanual.training import (
+    ACTTrainingConfig,
+    build_sampling_plan,
+    corrective_views_filename,
+    restrict_sampling_plan,
+)
 
 _SPECS = {
     "handoff_transfer": ("handoff", "both", "practice_block", "right_gripper", ()),
@@ -249,8 +254,19 @@ def load_skill_checkpoint(
         or metrics.get("dataset_manifest_sha256") != dataset_digest
     ):
         raise ValueError("Training dataset identity mismatch")
+    nominal_sampling_config = config
+    if config.sampling_profile == "bar_transport_placement_v1":
+        # The bar profile is declared by a sealed JSON artifact, rather than the
+        # generic collection-protocol run expected by build_sampling_plan.
+        # Recreate its nominal base exactly as run_train does, then validate and
+        # apply the bar declaration below.
+        nominal_sampling_config = config.model_copy(
+            update={"sampling_profile": "uniform", "sampling_protocol_run": None}
+        )
     plan = restrict_sampling_plan(
-        build_sampling_plan(dataset_root, dataset, config, project_root=root), view, view_digest
+        build_sampling_plan(dataset_root, dataset, nominal_sampling_config, project_root=root),
+        view,
+        view_digest,
     )
     corrective_manifest = None
     corrective_root = None
@@ -266,11 +282,7 @@ def load_skill_checkpoint(
             config, metrics, recorded, corrective_dataset_root
         )
         corrective_manifest = verify_supported_corrective_dataset_binding(corrective_root)
-        views_name = (
-            "skill_corrective_views.json"
-            if corrective_manifest.get("profile") == "six_skill_corrective_lerobot_v1"
-            else "corrective_views.json"
-        )
+        views_name = corrective_views_filename(corrective_manifest.get("profile"))
         views_sha = digest_file(corrective_root / views_name)
         if (
             digest_file(root / "corrective_views.json") != views_sha
@@ -279,6 +291,24 @@ def load_skill_checkpoint(
             raise ValueError("Corrective view identity mismatch")
         if _read(root / "corrective_dataset_manifest.json") != corrective_manifest:
             raise ValueError("Corrective dataset identity mismatch")
+        bar_sampling = None
+        if config.sampling_profile == "bar_transport_placement_v1":
+            from bimanual.bar_transport_placement_sampling import (
+                load_bar_transport_placement_sampling,
+            )
+
+            if corrective_manifest.get("profile") != "bar_overlap_corrective_lerobot_v1":
+                raise ValueError(
+                    "Bar transport sampling requires the bar-overlap corrective archive"
+                )
+            protocol_path = config.sampling_protocol_run
+            if protocol_path is None:
+                raise ValueError("Bar transport sampling declaration is missing")
+            bar_sampling = load_bar_transport_placement_sampling(
+                protocol_path, corrective_export_root=corrective_root
+            )
+            if metrics.get("bar_transport_sampling") != bar_sampling.model_dump(mode="json"):
+                raise ValueError("Bar transport sampling declaration mismatch")
         corrective_episodes = select_corrective_episodes(
             corrective_root, corrective_manifest, config.skill_id
         )
@@ -289,11 +319,19 @@ def load_skill_checkpoint(
             recorded_root=recorded["root"],
             episodes=corrective_episodes,
         )
+        if bar_sampling is not None:
+            from bimanual.corrective_dataset import emphasize_bar_transport_placement
+
+            plan = emphasize_bar_transport_placement(
+                plan,
+                emphasis_start=bar_sampling.emphasis_source_interval[0],
+                emphasis_end=bar_sampling.emphasis_source_interval[1],
+            )
     if (
         _read(root / "sampling-plan.json") != plan
         or _read(root / "checkpoint/training_sampling.json") != plan
         or metrics.get("sampling_plan_sha256") != digest_file(root / "sampling-plan.json")
-        or metrics.get("sampling_profile") != "uniform"
+        or metrics.get("sampling_profile") != config.sampling_profile
     ):
         raise ValueError("Sampler does not preserve the selected skill boundary")
     checkpoint = root / "checkpoint"
