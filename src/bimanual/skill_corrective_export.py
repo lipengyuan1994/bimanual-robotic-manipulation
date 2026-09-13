@@ -285,8 +285,10 @@ def verify_skill_corrective_dataset_binding(root: Path) -> dict:
     if payload.get("profile") != PROFILE or payload.get("format") != "lerobot_v3":
         raise ValueError("Unsupported corrective export profile")
     files = payload.get("files")
-    if not isinstance(files, dict) or "meta/info.json" not in files or not any(
-        name.startswith("data/") and name.endswith(".parquet") for name in files
+    if (
+        not isinstance(files, dict)
+        or "meta/info.json" not in files
+        or not any(name.startswith("data/") and name.endswith(".parquet") for name in files)
     ):
         raise ValueError("Corrective dataset requires sealed local metadata and data")
     views_path = root / "skill_corrective_views.json"
