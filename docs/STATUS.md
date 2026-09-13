@@ -942,3 +942,26 @@ fresh candidate run `20260913T181737-96dea40e7b64` uses native MPS with fallback
 disabled and the exact declaration. It has not completed checkpoint verification or
 a MuJoCo evaluation. The next executable step after its terminal manifest is to
 freeze and execute one new evaluation declaration once.
+
+That candidate completed all 20,000 native-MPS updates and sealed with manifest
+`4c03f438a3b1acc5bf2d7d0078eefd501d559f90708cf654aa9535cb6c45d30f`; its
+checkpoint, processor, sampler, learning-rate, and temporal-loss reload checks all
+passed. The frozen one-time MuJoCo declaration
+`.artifacts/experiments/bar-placement-progress-mps-v4-evaluation.json` has seal
+`2ad287b40b01321641c1cb5f57fe1607c1b0aabe848d290bfbfc997acc0847e0`.
+
+Its guarded evaluation ran once as `20260913T200151-04935f5df24a` (seal
+`16bef56431a2dcab15c37b1c9a6657285bd7ab0f7e7b62b6f33d03a8b443f2ec`) and failed
+after the 630-action teacher prefix plus one autonomous policy action. At policy
+action 2 during `policy/place`, the left gripper contacted `practice_object` with
+maximum overlap `0.001431130` m; the contact guard rejected the action and stopped
+the run. It is a failed learned-policy MuJoCo result, not retriable and not a task
+completion claim. The recorded policy device is `mps:0`; the run used no fallback.
+
+Read-only diagnosis `20260913T200420-58349cf48683` (seal
+`71c8319e42fd9f6c47e82f5d1f69d5b350e9ee6c6f59742f787b601d82b193fb`) confirms the
+single rejected action, 31,580 physics rows, 80 policy-physics rows, no overtravel,
+and a maximum object displacement of `0.001337285` m. The next executable step is
+to inspect and correct the policy trajectory that causes the forbidden left-arm
+contact, without weakening the contact guard, then create a distinct corrective
+dataset, training candidate, and one-time evaluation declaration.
