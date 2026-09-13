@@ -994,3 +994,13 @@ manifests, view, sampling plan, configuration, and live step log. It is unsealed
 no checkpoint quality or manipulation result may be inferred until its terminal
 manifest is independently verified. The next executable step after that verification
 is one new frozen MuJoCo evaluation declaration for the candidate.
+
+The separate pending hand-off recovery chain was revalidated read-only while this
+bar run holds the model lease. Its historical declaration
+`docs/experiments/handoff-continuity-collection-protocol-v1.json` correctly failed
+closed with `Frozen continuity source changed`: only `dinner_teacher.py` differs
+from its recorded runtime digest. No hand-off case was allocated or retried. After
+the bar cycle releases the lease, the hand-off recovery must freeze a fresh
+source-bound declaration for the unchanged nine-case allocation before any teacher
+collection; it must not use the stale declaration or mix its evidence with the bar
+archive.
