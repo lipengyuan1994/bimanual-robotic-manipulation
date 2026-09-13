@@ -401,6 +401,44 @@ def test_chunks_pad_at_each_corrective_source_boundary():
     assert union[2]["action"][:, 0].tolist() == [2, 3, 3]
 
 
+def test_margin_completion_plan_retains_entry_lineage_but_samples_only_completion():
+    plan = {
+        "profile": "uniform",
+        "skill_view": {"skill_id": "bar_place_and_return"},
+        "frames": [
+            {"dataset_source": "nominal", "episode_id": "nominal", "source_frame_index": 1},
+            {
+                "dataset_source": "corrective",
+                "episode_id": "completion",
+                "source_frame_index": 632,
+                "parent_dataset_index": 0,
+            },
+            {
+                "dataset_source": "corrective",
+                "episode_id": "completion",
+                "source_frame_index": 772,
+                "parent_dataset_index": 1,
+            },
+        ],
+        "episodes": [
+            {"source": "nominal", "episode_id": "nominal"},
+            {"source": "corrective", "episode_id": "completion"},
+        ],
+    }
+    result = emphasize_bar_transport_placement(
+        plan,
+        emphasis_start=770,
+        emphasis_end=1163,
+        sampling_profile="bar_margin_completion_sampling_v5",
+    )
+    entry, completion = result["frames"][1:]
+    assert entry["region"] == "remainder"
+    assert entry["probability"] == 0.0
+    assert completion["region"] == "placement_release_retreat"
+    assert completion["probability"] == 0.5
+    assert result["bar_margin_completion"]["emphasis_source_interval"] == [770, 1163]
+
+
 def test_placement_progress_plan_allows_a_full_corrective_replay():
     plan = {
         "profile": "uniform",

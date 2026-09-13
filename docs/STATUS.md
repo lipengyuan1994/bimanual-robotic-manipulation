@@ -38,9 +38,16 @@ completion. The sealed view
 `.artifacts/datasets/bar-margin-completion-v6` decodes and revalidates all 1,593
 transitions; its manifest seal is
 `f4a81d7476a0c6d93870beea48d578e5a8ec2a1c467fbf89d286a376358b5540`. This is
-teacher data only. The next executable step is to freeze the matching sampling
-boundary, then train one distinct local bar candidate and evaluate it under a fresh
-one-time declaration without rerunning either consumed evaluation.
+teacher data only. The matching sampling declaration is frozen at
+`.artifacts/experiments/bar-margin-completion-v6-sampling.json`, manifest
+`acc45d5798f235841a3ee80938897fb730057b6ac84b27826562b5b0aecdcacf`. Its first
+training preflight, run `20260913T235152-8a585a090e24`, is a sealed zero-update
+failure (`c27a5a90adba22d27434e48db959cafa14322aa2df11e301a10df1e9e229c6e7`): the
+completion profile rejected the deliberately retained pre-placement source rows.
+The sampler now records those rows at zero probability and gives all corrective
+mass to `[770,1163)`; focused regression tests cover this full-window case. The next
+executable step is one replacement local MPS candidate with the same frozen inputs,
+followed by a fresh one-time declaration only if it completes training.
 
 ## Historical run record
 

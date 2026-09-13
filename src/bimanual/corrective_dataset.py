@@ -273,12 +273,13 @@ def emphasize_bar_transport_placement(
     emphasis_end: int,
     sampling_profile: str = "bar_transport_placement_v1",
 ) -> dict:
-    """Give each bar corrective replay equal mass to transport and its remainder.
+    """Assign nominal and declared bar-correction probability mass.
 
-    Nominal selected-skill frames retain one half of total mass. The other half is
-    divided equally among every corrective source's emphasis and remainder groups.
-    This makes the correction auditable without turning the archive into a generic
-    task mixture.
+    Nominal selected-skill frames retain one half of total mass. Most corrective
+    profiles split the other half between each source's emphasis and remainder.
+    The margin-completion profile retains pre-placement source rows for lineage but
+    assigns them zero sampling probability, concentrating corrective mass on the
+    declared completion interval.
     """
     if plan.get("profile") != "uniform" or plan.get("skill_view", {}).get("skill_id") != (
         "bar_place_and_return"
@@ -308,8 +309,7 @@ def emphasize_bar_transport_placement(
         groups.setdefault((source, region), []).append(frame)
     required_regions = (
         ("transport_to_placement",)
-        if sampling_profile
-        in {"bar_placement_progress_sampling_v3", "bar_margin_completion_sampling_v5"}
+        if sampling_profile == "bar_placement_progress_sampling_v3"
         else ("transport_to_placement", "remainder")
     )
     expected_groups = {
@@ -322,10 +322,16 @@ def emphasize_bar_transport_placement(
         raise ValueError("Selected bar replay does not match required sampling regions")
     for frame in nominal:
         frame["probability"] = 0.5 / len(nominal)
-    group_mass = 0.5 / len(groups)
-    for frames in groups.values():
+    weighted_groups = (
+        {key: frames for key, frames in groups.items() if key[1] == "transport_to_placement"}
+        if sampling_profile == "bar_margin_completion_sampling_v5"
+        else groups
+    )
+    group_mass = 0.5 / len(weighted_groups)
+    for key, frames in groups.items():
+        probability = group_mass / len(frames) if key in weighted_groups else 0.0
         for frame in frames:
-            frame["probability"] = group_mass / len(frames)
+            frame["probability"] = probability
     probabilities = [frame["probability"] for frame in result["frames"]]
     if not np.isclose(sum(probabilities), 1.0):
         raise ValueError("Bar transport sampling probabilities do not sum to one")
