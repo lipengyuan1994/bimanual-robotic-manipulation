@@ -791,5 +791,18 @@ an evaluation yet, and therefore makes no physical-success claim.
 The sampling declaration now rejects a substituted failure-localization seal; it is
 hard-bound to the immutable bar-placement diagnosis that established this corrective
 work. A focused contract check verifies both the accepted declared seal and rejection
-of a correctly re-hashed but substituted one. Local MPS execution remains pending an
-unlocked desktop surface.
+of a correctly re-hashed but substituted one. The following entry supersedes the
+then-current locked-desktop MPS blocker.
+
+The desktop surface was subsequently unlocked and the one authorized replacement
+training child `20260913T125641-bd72e96fdb59` started under native MPS. It remains
+in progress and unsealed: no checkpoint, model-quality, or task-success result may
+be inferred until its manifest is terminal and independently verified. The evaluator
+was hardened before that checkpoint can be considered: bar physical execution now
+uses the shared guarded-process boundary, serializes coordination, rejects an
+unsealed interrupted request, and accepts a child result only after its guardian
+certifies a clean reap and unchanged binding. Focused native ARM64 tests for the
+corrective training and physical protocol paths pass (28 passed; one existing
+full-dataset test skipped). The next executable step after terminal training is to
+verify its manifest/checkpoint bindings and, only if it is a completed MPS candidate,
+create the fresh one-time physical-evaluation declaration.
