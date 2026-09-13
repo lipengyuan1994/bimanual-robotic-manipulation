@@ -27,8 +27,8 @@ record at the end of this file. The failure is preserved and the consumed evalua
 declaration must not be rerun. The separate nine-case hand-off continuity source set
 and offline LeRobot export are sealed teacher data, not learned hand-off evidence.
 The next bar step is to freeze a source-bound calibration for the implemented
-near-limit policy-target margin, then collect/train or evaluate a distinct candidate
-without rerunning the consumed declaration.
+near-limit policy-target margin, then collect and train a distinct completion-focused
+candidate without rerunning either consumed declaration.
 
 ## Historical run record
 
@@ -1054,6 +1054,29 @@ per-physics-step measured-limit failure remains intact. Focused worker, evaluato
 and CLI tests pass 63 cases, and the documentation gate verifies 513 links. This is
 implementation and unit-level safety evidence only; no new learned bar evaluation,
 training claim, or task success has occurred.
+
+The distinct v2 margin declaration
+`.artifacts/experiments/bar-placement-margin-mps-v6-evaluation.json`, manifest
+`23b9a695b1887f34d1989905eebc478d6dd7c7327419420954d6da114869aff3`, binds the
+prior failed MPS child `20260913T222057-3d9755d54e9e` and applies the fixed
+`0.001`-radian policy-target margin. Its guarded parent
+`20260913T231720-60d65f0bff77` (seal
+`29a1a148a31f1ba2ce2b0fab3faf5a7f703aa02b84c1cdea9177f5e4d8966ab5`) cleanly
+reaped child `20260913T231721-0f277ff9c89a` (seal
+`bedfd660f07018408543c9ff754f1ffcade9ac6ce0e4dc2307c212f8b0f04b2a`) after
+718.41 seconds. The child ran on `mps:0`, recorded 1,900 autonomous actions, and
+failed only `physical_milestone_incomplete`; it did not complete the required
+placement/readiness condition.
+
+Read-only diagnosis `20260913T233014-c9f9c4de21d5`, seal
+`36e2298ebe8d853b2c0d75854dcc3ea9f39d15b5618b06c1c362463b04f94d79`, verifies
+no rejected action, no forbidden-contact event, and no measured joint-limit failure
+across 95,000 policy physics rows. The margin clipped the right wrist-flex target
+at autonomous actions 269 and 271, including the same raw action that led to the
+previous near-limit failure. The target moved up to 0.242 m but the component did
+not finish. This is a safety-boundary improvement, not learned task completion or
+release qualification. The next bar effort must use a separately frozen
+completion-focused corrective data/training boundary.
 
 The re-bound hand-off continuity protocol v2 has now executed all nine allocated
 teacher-only physical cases exactly once: baseline plus right shoulder-pan,
