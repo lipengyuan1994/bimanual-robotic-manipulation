@@ -56,6 +56,7 @@ class ACTTrainingConfig(BaseModel):
         "approach_nominal_launch_v1",
         "bar_transport_placement_v1",
         "bar_entry_contact_sampling_v2",
+        "bar_placement_progress_sampling_v3",
     ] = "uniform"
     sampling_protocol_run: Path | None = None
     use_vae: bool = True
@@ -75,11 +76,13 @@ class ACTTrainingConfig(BaseModel):
             "uniform",
             "bar_transport_placement_v1",
             "bar_entry_contact_sampling_v2",
+            "bar_placement_progress_sampling_v3",
         }:
             raise ValueError("Skill views support only uniform or dedicated bar transport sampling")
         if self.sampling_profile in {
             "bar_transport_placement_v1",
             "bar_entry_contact_sampling_v2",
+            "bar_placement_progress_sampling_v3",
         } and self.skill_id != ("bar_place_and_return"):
             raise ValueError("Bar transport sampling is restricted to bar_place_and_return")
         if (self.sampling_profile == "uniform") != (self.sampling_protocol_run is None):
@@ -90,7 +93,12 @@ class ACTTrainingConfig(BaseModel):
             self.skill_id is None
             or self.skill_views_path is None
             or self.sampling_profile
-            not in {"uniform", "bar_transport_placement_v1", "bar_entry_contact_sampling_v2"}
+            not in {
+                "uniform",
+                "bar_transport_placement_v1",
+                "bar_entry_contact_sampling_v2",
+                "bar_placement_progress_sampling_v3",
+            }
         ):
             raise ValueError(
                 "Corrective training requires a verified selected skill view and supported sampling"
@@ -507,6 +515,7 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
         if config.sampling_profile in {
             "bar_transport_placement_v1",
             "bar_entry_contact_sampling_v2",
+            "bar_placement_progress_sampling_v3",
         }:
             nominal_sampling_config = config.model_copy(
                 update={"sampling_profile": "uniform", "sampling_protocol_run": None}
@@ -553,6 +562,7 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
             if config.sampling_profile in {
                 "bar_transport_placement_v1",
                 "bar_entry_contact_sampling_v2",
+                "bar_placement_progress_sampling_v3",
             }:
                 from bimanual.bar_transport_placement_sampling import (
                     load_bar_transport_placement_sampling,
@@ -593,6 +603,7 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
             if config.sampling_profile in {
                 "bar_transport_placement_v1",
                 "bar_entry_contact_sampling_v2",
+                "bar_placement_progress_sampling_v3",
             }:
                 from bimanual.corrective_dataset import emphasize_bar_transport_placement
 

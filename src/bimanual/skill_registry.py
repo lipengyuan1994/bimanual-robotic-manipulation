@@ -255,7 +255,11 @@ def load_skill_checkpoint(
     ):
         raise ValueError("Training dataset identity mismatch")
     nominal_sampling_config = config
-    if config.sampling_profile in {"bar_transport_placement_v1", "bar_entry_contact_sampling_v2"}:
+    if config.sampling_profile in {
+        "bar_transport_placement_v1",
+        "bar_entry_contact_sampling_v2",
+        "bar_placement_progress_sampling_v3",
+    }:
         # The bar profile is declared by a sealed JSON artifact, rather than the
         # generic collection-protocol run expected by build_sampling_plan.
         # Recreate its nominal base exactly as run_train does, then validate and
@@ -295,6 +299,7 @@ def load_skill_checkpoint(
         if config.sampling_profile in {
             "bar_transport_placement_v1",
             "bar_entry_contact_sampling_v2",
+            "bar_placement_progress_sampling_v3",
         }:
             from bimanual.bar_transport_placement_sampling import (
                 load_bar_transport_placement_sampling,

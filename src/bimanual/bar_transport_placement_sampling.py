@@ -14,11 +14,15 @@ from bimanual.evidence import canonical
 
 PROFILE = "bar_transport_placement_sampling_v1"
 ENTRY_PROFILE = "bar_entry_contact_sampling_v2"
+PLACEMENT_PROGRESS_PROFILE = "bar_placement_progress_sampling_v3"
 FAILURE_LOCALIZATION_MANIFEST_SHA256 = (
     "f4798d6b4412851ee747c7584d37652329f170a5f5c6588f5a2e91d2e8216633"
 )
 ENTRY_CONTACT_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
     "f894dc670340ef881958dddeb460e32b9b2f25dff5f8b641a601bc36a3999905"
+)
+PLACEMENT_PROGRESS_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
+    "e2c60f2e4ac0d5a7ed0887107bf06e0bb15e82891c6f34968ddf84112a887139"
 )
 
 
@@ -30,6 +34,11 @@ def _profile_spec(profile: str) -> tuple[str, tuple[int, int], str]:
             (630, 770),
             "entry_contact",
         ),
+        PLACEMENT_PROGRESS_PROFILE: (
+            PLACEMENT_PROGRESS_FAILURE_ANALYSIS_MANIFEST_SHA256,
+            (770, 1163),
+            "placement_progress",
+        ),
     }
     try:
         return specs[profile]
@@ -38,7 +47,7 @@ def _profile_spec(profile: str) -> tuple[str, tuple[int, int], str]:
 
 
 class BarTransportPlacementSampling(Contract):
-    profile: Literal[PROFILE, ENTRY_PROFILE] = PROFILE
+    profile: Literal[PROFILE, ENTRY_PROFILE, PLACEMENT_PROGRESS_PROFILE] = PROFILE
     corrective_export_root: str
     corrective_export_manifest_sha256: Digest
     corrective_views_sha256: Digest

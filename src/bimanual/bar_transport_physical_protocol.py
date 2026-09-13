@@ -100,7 +100,11 @@ def create_bar_transport_physical_protocol(
         or manifest.metrics.get("actual_device") != "mps"
         or config.skill_id != SKILL
         or config.sampling_profile
-        not in {"bar_transport_placement_v1", "bar_entry_contact_sampling_v2"}
+        not in {
+            "bar_transport_placement_v1",
+            "bar_entry_contact_sampling_v2",
+            "bar_placement_progress_sampling_v3",
+        }
         or config.corrective_dataset_path is None
         or config.sampling_protocol_run is None
     ):

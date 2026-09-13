@@ -306,14 +306,19 @@ def emphasize_bar_transport_placement(
         region = "transport_to_placement" if emphasis_start <= index < emphasis_end else "remainder"
         frame["region"] = region
         groups.setdefault((source, region), []).append(frame)
+    required_regions = (
+        ("transport_to_placement",)
+        if sampling_profile == "bar_placement_progress_sampling_v3"
+        else ("transport_to_placement", "remainder")
+    )
     expected_groups = {
         (episode["episode_id"], region)
         for episode in result["episodes"]
         if episode.get("source") == "corrective"
-        for region in ("transport_to_placement", "remainder")
+        for region in required_regions
     }
     if set(groups) != expected_groups or any(not frames for frames in groups.values()):
-        raise ValueError("Every selected bar replay needs transport and remainder frames")
+        raise ValueError("Selected bar replay does not match required sampling regions")
     for frame in nominal:
         frame["probability"] = 0.5 / len(nominal)
     group_mass = 0.5 / len(groups)
@@ -333,7 +338,7 @@ def emphasize_bar_transport_placement(
         episode["probability"] = sum(frame["probability"] for frame in episode_frames)
         if episode.get("source") == "corrective":
             regions = []
-            for region in ("transport_to_placement", "remainder"):
+            for region in required_regions:
                 frames = [frame for frame in episode_frames if frame["region"] == region]
                 regions.append(
                     dict(
@@ -349,6 +354,8 @@ def emphasize_bar_transport_placement(
         metadata_key, emphasis_name = "bar_transport_placement", "transport_to_placement"
     elif sampling_profile == "bar_entry_contact_sampling_v2":
         metadata_key, emphasis_name = "bar_entry_contact", "policy_entry"
+    elif sampling_profile == "bar_placement_progress_sampling_v3":
+        metadata_key, emphasis_name = "bar_placement_progress", "placement_release_retreat"
     else:
         raise ValueError("Unsupported bar sampling profile")
     for frame in corrective:

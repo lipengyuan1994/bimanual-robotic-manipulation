@@ -324,7 +324,11 @@ def main(argv: list[str] | None = None) -> int:
     bar_sampling_create.add_argument("--failure-localization-seal", required=True)
     bar_sampling_create.add_argument(
         "--profile",
-        choices=("bar_transport_placement_sampling_v1", "bar_entry_contact_sampling_v2"),
+        choices=(
+            "bar_transport_placement_sampling_v1",
+            "bar_entry_contact_sampling_v2",
+            "bar_placement_progress_sampling_v3",
+        ),
         default="bar_transport_placement_sampling_v1",
     )
     bar_sampling_check = commands.add_parser(
@@ -563,6 +567,7 @@ def main(argv: list[str] | None = None) -> int:
             "approach_nominal_launch_v1",
             "bar_transport_placement_v1",
             "bar_entry_contact_sampling_v2",
+            "bar_placement_progress_sampling_v3",
         ],
         default="uniform",
     )

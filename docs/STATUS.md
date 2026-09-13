@@ -920,3 +920,25 @@ The contract rejects any changed allocation or a diagnosis without the exact
 Focused protocol and CLI tests pass. The next executable step is the five allocated
 contact-only teacher collections, one attempt per frozen case, followed by their
 read-only view and export audit.
+
+The placement-progress corrective archive is complete. Its one-time protocol
+`.artifacts/experiments/bar-placement-progress-v4.json` (seal
+`b411ece5ab53e541b42e1467284a34db7672996813adeeffb803c41cb18885e7`) produced five
+completed teacher recordings for seeds `55000`–`55004`, each covering source frames
+`[770,1163)` with no object-state edits, artificial attachments, or external object
+forces. Their sealed view has manifest
+`3760fbaa5440d7c6a45edc72e6e34c1dc8d51616803384850fbacb70bd4359dc`; the local
+LeRobot export `.artifacts/datasets/bar-placement-progress-v4` contains five replay
+episodes and 1,955 frames, manifest
+`e3ff4826df42d6b606310f05507f4e64f955137db2ceb688ec2a04fe496a2e5e`. The full
+export audit completed before use. This is verified scripted-teacher data only.
+
+A new `bar_placement_progress_sampling_v3` profile binds that archive to analysis
+seal `e2c60f2e4ac0d5a7ed0887107bf06e0bb15e82891c6f34968ddf84112a887139` and weights
+the complete `[770,1163)` replay interval. Its declaration is
+`.artifacts/experiments/bar-placement-progress-sampling-v3.json`, seal
+`4aa343344596c058a157e7cf72b0ec4e1cd66e02ada25835fc98028ff2837e89`. The active
+fresh candidate run `20260913T181737-96dea40e7b64` uses native MPS with fallback
+disabled and the exact declaration. It has not completed checkpoint verification or
+a MuJoCo evaluation. The next executable step after its terminal manifest is to
+freeze and execute one new evaluation declaration once.
