@@ -45,9 +45,10 @@ training preflight, run `20260913T235152-8a585a090e24`, is a sealed zero-update
 failure (`c27a5a90adba22d27434e48db959cafa14322aa2df11e301a10df1e9e229c6e7`): the
 completion profile rejected the deliberately retained pre-placement source rows.
 The sampler now records those rows at zero probability and gives all corrective
-mass to `[770,1163)`; focused regression tests cover this full-window case. The next
-executable step is one replacement local MPS candidate with the same frozen inputs,
-followed by a fresh one-time declaration only if it completes training.
+mass to `[770,1163)`; focused regression tests cover this full-window case. The
+replacement local-MPS candidate is active as run `20260913T235437-17291b7b55db`
+with the same frozen inputs and fallback disabled. Its terminal manifest must verify
+20,000 updates before a fresh one-time evaluation declaration can be created.
 
 ## Historical run record
 
