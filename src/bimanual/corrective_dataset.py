@@ -354,6 +354,8 @@ def emphasize_bar_transport_placement(
         metadata_key, emphasis_name = "bar_transport_placement", "transport_to_placement"
     elif sampling_profile == "bar_entry_contact_sampling_v2":
         metadata_key, emphasis_name = "bar_entry_contact", "policy_entry"
+    elif sampling_profile == "bar_placement_contact_sampling_v4":
+        metadata_key, emphasis_name = "bar_placement_contact", "placement_contact_entry"
     elif sampling_profile == "bar_placement_progress_sampling_v3":
         metadata_key, emphasis_name = "bar_placement_progress", "placement_release_retreat"
     else:

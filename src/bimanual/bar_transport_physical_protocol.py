@@ -104,6 +104,7 @@ def create_bar_transport_physical_protocol(
             "bar_transport_placement_v1",
             "bar_entry_contact_sampling_v2",
             "bar_placement_progress_sampling_v3",
+            "bar_placement_contact_sampling_v4",
         }
         or config.corrective_dataset_path is None
         or config.sampling_protocol_run is None

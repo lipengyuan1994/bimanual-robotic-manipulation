@@ -2,6 +2,11 @@ from types import SimpleNamespace
 
 import pytest
 
+from bimanual.bar_transport_placement_sampling import (
+    PLACEMENT_CONTACT_FAILURE_ANALYSIS_MANIFEST_SHA256,
+    PLACEMENT_CONTACT_PROFILE,
+    _profile_spec,
+)
 from bimanual.corrective_dataset import (
     CorrectiveDataset,
     NumericRows,
@@ -69,6 +74,35 @@ def test_entry_contact_sampling_is_limited_to_the_selected_bar_skill():
         )
 
 
+def test_placement_contact_sampling_is_limited_to_the_selected_bar_skill():
+    config = ACTTrainingConfig(
+        dataset_path="nominal",
+        corrective_dataset_path="corrections",
+        skill_id="bar_place_and_return",
+        skill_views_path="views.json",
+        sampling_profile="bar_placement_contact_sampling_v4",
+        sampling_protocol_run="sampling.json",
+    )
+    assert config.sampling_profile == "bar_placement_contact_sampling_v4"
+    with pytest.raises(ValueError, match="restricted"):
+        ACTTrainingConfig(
+            dataset_path="nominal",
+            corrective_dataset_path="corrections",
+            skill_id="plate_pick_place",
+            skill_views_path="views.json",
+            sampling_profile="bar_placement_contact_sampling_v4",
+            sampling_protocol_run="sampling.json",
+        )
+
+
+def test_placement_contact_profile_is_bound_to_the_observed_failure_interval():
+    assert _profile_spec(PLACEMENT_CONTACT_PROFILE) == (
+        PLACEMENT_CONTACT_FAILURE_ANALYSIS_MANIFEST_SHA256,
+        (630, 770),
+        "placement_contact_entry",
+    )
+
+
 def test_entry_contact_plan_names_the_policy_entry_region():
     plan = {
         "profile": "uniform",
@@ -102,6 +136,41 @@ def test_entry_contact_plan_names_the_policy_entry_region():
     assert result["profile"] == "bar_entry_contact_sampling_v2"
     assert result["frames"][1]["region"] == "policy_entry"
     assert result["bar_entry_contact"]["emphasis_source_interval"] == [630, 770]
+
+
+def test_placement_contact_plan_has_distinct_lineage_label():
+    plan = {
+        "profile": "uniform",
+        "skill_view": {"skill_id": "bar_place_and_return"},
+        "frames": [
+            {"dataset_source": "nominal", "episode_id": "nominal", "source_frame_index": 1},
+            {
+                "dataset_source": "corrective",
+                "episode_id": "contact",
+                "source_frame_index": 630,
+                "parent_dataset_index": 0,
+            },
+            {
+                "dataset_source": "corrective",
+                "episode_id": "contact",
+                "source_frame_index": 800,
+                "parent_dataset_index": 1,
+            },
+        ],
+        "episodes": [
+            {"source": "nominal", "episode_id": "nominal"},
+            {"source": "corrective", "episode_id": "contact"},
+        ],
+    }
+    result = emphasize_bar_transport_placement(
+        plan,
+        emphasis_start=630,
+        emphasis_end=770,
+        sampling_profile="bar_placement_contact_sampling_v4",
+    )
+    assert result["profile"] == "bar_placement_contact_sampling_v4"
+    assert result["frames"][1]["region"] == "placement_contact_entry"
+    assert result["bar_placement_contact"]["emphasis_source_interval"] == [630, 770]
 
 
 def test_plan_keeps_full_nominal_and_original_correction_indices(tmp_path):
