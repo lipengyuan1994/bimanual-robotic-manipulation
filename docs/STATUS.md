@@ -999,8 +999,10 @@ The separate pending hand-off recovery chain was revalidated read-only while thi
 bar run holds the model lease. Its historical declaration
 `docs/experiments/handoff-continuity-collection-protocol-v1.json` correctly failed
 closed with `Frozen continuity source changed`: only `dinner_teacher.py` differs
-from its recorded runtime digest. No hand-off case was allocated or retried. After
-the bar cycle releases the lease, the hand-off recovery must freeze a fresh
-source-bound declaration for the unchanged nine-case allocation before any teacher
-collection; it must not use the stale declaration or mix its evidence with the bar
-archive.
+from its recorded runtime digest. No hand-off case was allocated or retried. Its
+unused replacement declaration is now
+`docs/experiments/handoff-continuity-collection-protocol-v2.json`, seal
+`e6af06ae45da5c045a2e024b9aaaa5da60a4ae0b3b38602ae3888cbc7bb289ab`; it retains
+the unchanged nine-case allocation and binds the current teacher source set. After
+the bar cycle releases the lease, collection may use v2 only; it must not use the
+stale declaration or mix hand-off evidence with the bar archive.
