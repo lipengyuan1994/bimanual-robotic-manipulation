@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 13, 2026. Latest implementation: bar place-and-return corrective evaluation on
+Updated September 13, 2026. Latest implementation: sealed hand-off continuity dataset export on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -24,8 +24,10 @@ checks as learned task success, generalization or Intel compliance.
 No model job is active. The current bar place-and-return candidate completed training
 but failed its one permitted frozen MuJoCo evaluation; see the most recent evidence
 record at the end of this file. The failure is preserved and the consumed evaluation
-declaration must not be rerun. Before another bar candidate is trained, diagnose the
-sealed near-limit servo overshoot and freeze a new source-bound corrective boundary.
+declaration must not be rerun. The separate nine-case hand-off continuity source set
+and offline LeRobot export are sealed teacher data, not learned hand-off evidence.
+Before another bar candidate is trained, diagnose the sealed near-limit servo overshoot
+and freeze a new source-bound corrective boundary.
 
 ## Historical run record
 
@@ -1040,3 +1042,22 @@ fourth joint upper bound by `0.000082220` radians after a target only about
 not an excuse to relax limits or rerun the declaration. The next bar correction must
 first specify and test a source-bound near-limit action/servo safety policy, then
 collect and train a distinct candidate if required.
+
+The re-bound hand-off continuity protocol v2 has now executed all nine allocated
+teacher-only physical cases exactly once: baseline plus right shoulder-pan,
+shoulder-lift, elbow-flex, and wrist-flex perturbations at seeds `41000`–`41008`.
+Every sealed source independently reports contact-based physical hand-off success,
+continuous airborne grip, zero forbidden contacts, zero object-state edits, zero
+artificial attachments, and zero external object forces. The immutable train view
+`.artifacts/experiments/handoff-continuity-v2-views.json` has manifest
+`173b7b7fd7b4165efaab1a51b981ebd3708635fe75a8f166ff5b5b549de08026` and passed
+its source-score, action, camera, and lineage revalidation.
+
+The native offline LeRobot v3 export
+`.artifacts/datasets/handoff-continuity-v2` has repo id `local/handoff-continuity-v2`,
+nine episodes, and 1,448 transitions. Its archive manifest is
+`0a62f1b27b578c3876097804e91c37b67954c529629719f32ed73ce1cef8d8c9`; the
+offline verifier passed after checking every retained source hash and decoded RGB,
+joint-observation, action, timestamp, and index mapping. This proves only the
+integrity of teacher demonstration data. It does not establish learned hand-off,
+full-workflow, generalization, or release success.
