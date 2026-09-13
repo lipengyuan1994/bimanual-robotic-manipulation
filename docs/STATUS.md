@@ -21,8 +21,9 @@ checks as learned task success, generalization or Intel compliance.
 
 ## Active job and next executable step
 
-No model job is active. The current bar place-and-return candidate completed training
-but failed its one permitted frozen MuJoCo evaluation; see the most recent evidence
+One native-MPS model job is active: the completion-correction replacement candidate
+`20260913T235437-17291b7b55db`. The preceding bar place-and-return candidate completed
+training but failed its one permitted frozen MuJoCo evaluation; see the most recent evidence
 record at the end of this file. The failure is preserved and the consumed evaluation
 declaration must not be rerun. The separate nine-case hand-off continuity source set
 and offline LeRobot export are sealed teacher data, not learned hand-off evidence.
