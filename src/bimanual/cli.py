@@ -345,6 +345,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     bar_physical_create.add_argument("--training-run", type=Path, required=True)
     bar_physical_create.add_argument("--destination", type=Path, required=True)
+    bar_physical_check = commands.add_parser(
+        "bar-transport-physical-protocol-check",
+        help="Reverify a frozen bar corrective physical-evaluation declaration",
+    )
+    bar_physical_check.add_argument("protocol", type=Path)
     bar_physical_run = commands.add_parser(
         "bar-transport-physical-protocol-run",
         help="Run the one frozen bar corrective physical evaluation",
@@ -1122,6 +1127,12 @@ def main(argv: list[str] | None = None) -> int:
                     args.training_run, args.destination
                 ).model_dump(mode="json")
             )
+        elif args.command == "bar-transport-physical-protocol-check":
+            from bimanual.bar_transport_physical_protocol import (
+                load_bar_transport_physical_protocol,
+            )
+
+            emit(load_bar_transport_physical_protocol(args.protocol).model_dump(mode="json"))
         elif args.command == "bar-transport-physical-protocol-run":
             from bimanual.bar_transport_physical_protocol import run_bar_transport_physical_protocol
 

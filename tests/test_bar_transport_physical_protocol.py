@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 from bimanual import bar_transport_physical_protocol as module
+from bimanual.cli import main
 from bimanual.evidence import EvidenceStore, canonical, digest_file
 from bimanual.skill_physical_evaluation import SkillPhysicalEvaluationConfig
 from bimanual.skill_physical_process import SkillPhysicalProcessConfig
@@ -93,3 +94,11 @@ def test_interrupted_unsealed_process_blocks_retry(tmp_path, monkeypatch):
     )
     with pytest.raises(RuntimeError, match="manual adjudication"):
         module.run_bar_transport_physical_protocol(protocol_path)
+
+
+def test_protocol_check_cli_loads_the_frozen_declaration(tmp_path, monkeypatch, capsys):
+    protocol = tmp_path / "physical.json"
+    expected = SimpleNamespace(model_dump=lambda **_: {"profile": module.PROFILE})
+    monkeypatch.setattr(module, "load_bar_transport_physical_protocol", lambda path: expected)
+    assert main(["bar-transport-physical-protocol-check", str(protocol)]) == 0
+    assert '"profile": "bar_transport_physical_evaluation_protocol_v1"' in capsys.readouterr().out
