@@ -300,6 +300,17 @@ def main(argv: list[str] | None = None) -> int:
     )
     bar_sampling_check.add_argument("declaration", type=Path)
     bar_sampling_check.add_argument("--corrective-export", type=Path, required=True)
+    bar_physical_create = commands.add_parser(
+        "bar-transport-physical-protocol-create",
+        help="Freeze one physical evaluation for a completed bar corrective run",
+    )
+    bar_physical_create.add_argument("--training-run", type=Path, required=True)
+    bar_physical_create.add_argument("--destination", type=Path, required=True)
+    bar_physical_run = commands.add_parser(
+        "bar-transport-physical-protocol-run",
+        help="Run the one frozen bar corrective physical evaluation",
+    )
+    bar_physical_run.add_argument("protocol", type=Path)
     corrective_run = commands.add_parser(
         "skill-corrective-run",
         help="Collect one frozen six-skill corrective teacher source once",
@@ -1027,6 +1038,24 @@ def main(argv: list[str] | None = None) -> int:
                     args.declaration,
                     corrective_export_root=args.corrective_export,
                 ).model_dump(mode="json")
+            )
+        elif args.command == "bar-transport-physical-protocol-create":
+            from bimanual.bar_transport_physical_protocol import (
+                create_bar_transport_physical_protocol,
+            )
+
+            emit(
+                create_bar_transport_physical_protocol(
+                    args.training_run, args.destination
+                ).model_dump(mode="json")
+            )
+        elif args.command == "bar-transport-physical-protocol-run":
+            from bimanual.bar_transport_physical_protocol import run_bar_transport_physical_protocol
+
+            emit(
+                invoke_with_diagnostics(
+                    run_bar_transport_physical_protocol, args.protocol
+                ).model_dump()
             )
         elif args.command == "skill-corrective-run":
             from bimanual.skill_corrective_teacher import run_skill_corrective_case

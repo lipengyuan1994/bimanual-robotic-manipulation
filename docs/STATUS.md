@@ -779,6 +779,15 @@ This repair does not change the frozen archive, sampling declaration, or contact
 guard. One fresh replacement training run is authorized; its result remains
 unpromoted until separately evaluated.
 
+The next evaluation path is implemented before the replacement checkpoint seals.
+`bar-transport-physical-protocol-create` will freeze a one-time, source-bound
+teacher-prepared physical evaluation only for the completed bar corrective run;
+`bar-transport-physical-protocol-run` rejects duplicate results before invoking
+the shared-lease evaluator. The declaration binds the completed MPS training seal,
+checkpoint, nominal dataset/view, sampling declaration, action budget, and the
+evaluator's complete runtime/asset source set. It has not created a protocol or run
+an evaluation yet, and therefore makes no physical-success claim.
+
 The sampling declaration now rejects a substituted failure-localization seal; it is
 hard-bound to the immutable bar-placement diagnosis that established this corrective
 work. A focused contract check verifies both the accepted declared seal and rejection
