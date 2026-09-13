@@ -26,9 +26,12 @@ but failed its one permitted frozen MuJoCo evaluation; see the most recent evide
 record at the end of this file. The failure is preserved and the consumed evaluation
 declaration must not be rerun. The separate nine-case hand-off continuity source set
 and offline LeRobot export are sealed teacher data, not learned hand-off evidence.
-The next bar step is to freeze a source-bound calibration for the implemented
-near-limit policy-target margin, then collect and train a distinct completion-focused
-candidate without rerunning either consumed declaration.
+The source-bound completion correction is frozen at
+`.artifacts/experiments/bar-margin-completion-v6-protocol.json`, manifest
+`82233b5bed26e4df1729116f7fc8dc87e4fc5fe3c33ab79b5e2eaa49e2adaad6`; its first
+contact-only teacher case is active. The next executable step after its terminal
+record is to verify the case, then collect additional distinct allocated cases before
+creating an immutable view, export, training candidate, and new evaluation.
 
 ## Historical run record
 

@@ -31,6 +31,11 @@ V5_CASE_SEEDS = tuple(range(56000, 56005))
 # through retreat window so this new, source-bound archive labels the trajectory
 # that can create that contact.
 V5_SOURCE_INTERVAL = (630, 1163)
+V6_CASE_SEEDS = tuple(range(57000, 57005))
+# The margin-bound candidate stayed within its safety envelope but never became
+# successor-ready.  Capture the complete learned entry, placement, release, and
+# retreat trajectory so corrective labels cover the unresolved completion tail.
+V6_SOURCE_INTERVAL = (630, 1163)
 ENTRY_CONTACT_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
     "f894dc670340ef881958dddeb460e32b9b2f25dff5f8b641a601bc36a3999905"
 )
@@ -39,6 +44,9 @@ PLACEMENT_PROGRESS_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
 )
 PLACEMENT_CONTACT_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
     "71c8319e42fd9f6c47e82f5d1f69d5b350e9ee6c6f59742f787b601d82b193fb"
+)
+MARGIN_COMPLETION_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
+    "36e2298ebe8d853b2c0d75854dcc3ea9f39d15b5618b06c1c362463b04f94d79"
 )
 
 
@@ -52,6 +60,7 @@ class BarOverlapCorrectionProtocol(BaseModel):
         "bar_left_contact_entry_protocol_v3",
         "bar_placement_progress_protocol_v4",
         "bar_placement_contact_entry_protocol_v5",
+        "bar_margin_completion_protocol_v6",
     ]
     evidence_root: str
     diagnosis_run_id: str
@@ -92,6 +101,7 @@ def _allocation(profile: str) -> tuple[tuple[int, int], tuple[int, int, int, int
         "bar_left_contact_entry_protocol_v3": (V3_SOURCE_INTERVAL, V3_CASE_SEEDS),
         "bar_placement_progress_protocol_v4": (V4_SOURCE_INTERVAL, V4_CASE_SEEDS),
         "bar_placement_contact_entry_protocol_v5": (V5_SOURCE_INTERVAL, V5_CASE_SEEDS),
+        "bar_margin_completion_protocol_v6": (V6_SOURCE_INTERVAL, V6_CASE_SEEDS),
     }
     try:
         return allocations[profile]
@@ -128,6 +138,17 @@ def _verified_diagnosis(store: EvidenceStore, run_id: str, *, profile: str):
             and component.get("recorded_autonomous_skill_actions") == 1900
             and component.get("rejected_action_log_actions") == 0
             and component.get("forbidden_contact_events") == []
+            and component.get("maximum_target_displacement_m", 0.0) >= 0.2
+            and "readiness not reached" in str(component.get("failure_reason", ""))
+        )
+    elif profile == "bar_margin_completion_protocol_v6":
+        valid = (
+            diagnosis.manifest_sha256 == MARGIN_COMPLETION_FAILURE_ANALYSIS_MANIFEST_SHA256
+            and component.get("recorded_autonomous_skill_actions") == 1900
+            and component.get("confirmed_action_log_actions") == 1900
+            and component.get("rejected_action_log_actions") == 0
+            and component.get("forbidden_contact_events") == []
+            and component.get("maximum_overtravel_m") == 0.0
             and component.get("maximum_target_displacement_m", 0.0) >= 0.2
             and "readiness not reached" in str(component.get("failure_reason", ""))
         )

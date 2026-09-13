@@ -79,6 +79,60 @@ def test_placement_contact_profile_binds_fresh_cases_and_policy_entry_window():
     assert protocol.case_seeds[0] == 56000
 
 
+def test_margin_completion_profile_binds_fresh_cases_and_full_completion_window():
+    protocol = module.BarOverlapCorrectionProtocol.model_validate(
+        _body(
+            "bar_margin_completion_protocol_v6",
+            source_interval=(630, 1163),
+            case_seeds=(57000, 57001, 57002, 57003, 57004),
+        )
+    )
+    assert protocol.source_interval == (630, 1163)
+    assert protocol.case_seeds[0] == 57000
+
+
+def test_margin_completion_profile_requires_the_exact_sealed_failure_signature():
+    component = {
+        "skill_id": "bar_place_and_return",
+        "physical_success": False,
+        "recorded_autonomous_skill_actions": 1900,
+        "confirmed_action_log_actions": 1900,
+        "rejected_action_log_actions": 0,
+        "maximum_overtravel_m": 0.0,
+        "maximum_target_displacement_m": 0.24196559325406153,
+        "forbidden_contact_events": [],
+        "failure_reason": (
+            "physical_milestone_incomplete: physical completion/readiness not reached "
+            "within action budget"
+        ),
+        "evaluation_run_id": "evaluation",
+        "evaluation_manifest_sha256": "b" * 64,
+    }
+    diagnosis = SimpleNamespace(
+        kind="single_skill_physical_failure_analysis",
+        outcome="completed",
+        manifest_sha256=module.MARGIN_COMPLETION_FAILURE_ANALYSIS_MANIFEST_SHA256,
+        metrics={"component": component},
+    )
+    evaluation = SimpleNamespace(manifest_sha256="b" * 64)
+
+    class Store:
+        def verify(self, run_id):
+            return diagnosis if run_id == "diagnosis" else evaluation
+
+    accepted, bound = module._verified_diagnosis(
+        Store(), "diagnosis", profile="bar_margin_completion_protocol_v6"
+    )
+    assert accepted is diagnosis
+    assert bound is evaluation
+
+    component["confirmed_action_log_actions"] = 1899
+    with pytest.raises(ValueError, match="localized unpromoted"):
+        module._verified_diagnosis(
+            Store(), "diagnosis", profile="bar_margin_completion_protocol_v6"
+        )
+
+
 def test_placement_progress_profile_requires_the_exact_progress_failure():
     component = {
         "skill_id": "bar_place_and_return",
@@ -163,9 +217,7 @@ def test_placement_contact_profile_requires_the_exact_sealed_failure_signature()
         "rejected_action_log_actions": 1,
         "maximum_overlap_m": 0.0014311301641538956,
         "maximum_overtravel_m": 0.0,
-        "forbidden_contact_events": [
-            {"bad": [["left/fixed_jaw_sph_tip2", "practice_object"]]}
-        ],
+        "forbidden_contact_events": [{"bad": [["left/fixed_jaw_sph_tip2", "practice_object"]]}],
         "evaluation_run_id": "evaluation",
         "evaluation_manifest_sha256": "b" * 64,
     }
