@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 13, 2026. Latest implementation: sealed hand-off continuity dataset export on
+Updated September 14, 2026. Latest implementation: sealed hand-off continuity dataset export on
 `codex/preparation-foundation`. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
@@ -19,42 +19,34 @@ Spend stays zero. Existing-code eligibility is unconfirmed. Physical robot deplo
 and pouring remain outside this release. Never relabel teacher success or runtime
 checks as learned task success, generalization or Intel compliance.
 
-## Active job and next executable step
+## Latest evaluation and next executable step
 
-One native-MPS model job is active: the completion-correction replacement candidate
-`20260913T235437-17291b7b55db`. The preceding bar place-and-return candidate completed
-training but failed its one permitted frozen MuJoCo evaluation; see the most recent evidence
-record at the end of this file. The failure is preserved and the consumed evaluation
-declaration must not be rerun. The separate nine-case hand-off continuity source set
-and offline LeRobot export are sealed teacher data, not learned hand-off evidence.
-The source-bound completion correction is frozen at
-`.artifacts/experiments/bar-margin-completion-v6-protocol.json`, manifest
-`82233b5bed26e4df1729116f7fc8dc87e4fc5fe3c33ab79b5e2eaa49e2adaad6`. Its first
-three distinct one-attempt teacher cases (seeds 57000–57002) completed successfully,
-are individually evidence-verified, and independently score physical teacher
-completion. The sealed view
-`.artifacts/experiments/bar-margin-completion-v6-views.json`, manifest
-`164daeb0e6ae54645b5277cfce0084290168994608c9b81b4e5efb4311fd83c0`, selects
-1,593 replay actions. The native offline LeRobot v3 export at
-`.artifacts/datasets/bar-margin-completion-v6` decodes and revalidates all 1,593
-transitions; its manifest seal is
-`f4a81d7476a0c6d93870beea48d578e5a8ec2a1c467fbf89d286a376358b5540`. This is
-teacher data only. The matching sampling declaration is frozen at
-`.artifacts/experiments/bar-margin-completion-v6-sampling.json`, manifest
-`acc45d5798f235841a3ee80938897fb730057b6ac84b27826562b5b0aecdcacf`. Its first
-training preflight, run `20260913T235152-8a585a090e24`, is a sealed zero-update
-failure (`c27a5a90adba22d27434e48db959cafa14322aa2df11e301a10df1e9e229c6e7`): the
-completion profile rejected the deliberately retained pre-placement source rows.
-The sampler now records those rows at zero probability and gives all corrective
-mass to `[770,1163)`; focused regression tests cover this full-window case. The
-replacement local-MPS candidate is active as run `20260913T235437-17291b7b55db`
-with the same frozen inputs and fallback disabled. A guarded local evaluator is queued
-in tmux session `bar_margin_completion_evaluation_v7`: it waits for a zero training
-exit, verifies the terminal manifest, creates and checks the successor declaration at
-`.artifacts/experiments/bar-margin-completion-mps-v7-evaluation.json`, then runs it
-exactly once. Its terminal status and log will be recorded at
-`.artifacts/bar-margin-completion-v7-evaluation.exit` and
-`.artifacts/bar-margin-completion-v7-evaluation.log`.
+The completion-correction candidate `20260913T235437-17291b7b55db` completed all
+20,000 updates on native MPS (`mps:0`) without CPU fallback. Its training manifest,
+checkpoint, processor, sampler and schedule reverify; manifest SHA-256 is
+`9622e9bc2b6140aa8484c36ca7d82ae59352d5bfdd6d2be42a1147742c5503ae`.
+
+Its one permitted successor evaluation declaration is frozen at
+`.artifacts/experiments/bar-margin-completion-mps-v7-evaluation.json`, manifest
+SHA-256 `77b2bb9ad866590748556869dbf5f16a8d78321aabcccb07d332fceaff02e94b`.
+The resulting bounded wrapper run `20260914T013732-0fac09bc35c7` and child
+`20260914T013733-48d18dd52514` both reverify (wrapper SHA-256
+`dc056c15ebd679a60e146f5a2ed98dcbed3642ad95f346ff69cb1087ebb7b9d9`; child
+SHA-256 `535415a0885eeac772da179d8a764ef1b4086e986693cac60389effc6e4cfb7a`).
+
+The physical evaluation failed safely. After a frozen 630-action teacher prefix,
+the learned checkpoint executed 24 autonomous control steps on `mps:0`. The contact
+guard stopped it at simulation time 32.735 s when the practice object contacted the
+left arm (`overlap_m=0.001447668`). It has `physical_success=false`,
+`component_passed=false`, `release_qualified=false`, and no independent task or
+workflow success. The child process exited normally and was reaped; this means the
+evaluation infrastructure completed, not that manipulation succeeded. The consumed
+declaration must not be rerun.
+
+Next: preserve this failure, inspect the sealed action/contact trajectory to define a
+narrow corrective-data hypothesis, then implement and test that hypothesis before any
+new training or evaluation declaration. Intel setup remains deferred until the local
+corrective-training sequence has finished, per the user's direction.
 
 ## Historical run record
 
