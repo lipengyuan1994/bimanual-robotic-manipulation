@@ -50,6 +50,68 @@ def test_protocol_rejects_a_resealed_incomplete_source_set(tmp_path):
         module.BarTransportPhysicalProtocol.model_validate(_reseal(body))
 
 
+def test_completion_profile_binds_the_exact_margin_failure_predecessor(tmp_path):
+    root = module.Path(module.__file__).resolve().parent
+    body = {
+        "schema_version": 1,
+        "profile": module.COMPLETION_PROFILE,
+        "training_run": "../runs/training",
+        "training_manifest_sha256": "a" * 64,
+        "dataset_root": "../dataset",
+        "dataset_manifest_sha256": "b" * 64,
+        "skill_views_path": "../views.json",
+        "skill_views_sha256": "c" * 64,
+        "sampling_declaration_sha256": "d" * 64,
+        "prior_evaluation_run_id": module.COMPLETION_PREDECESSOR_RUN_ID,
+        "prior_evaluation_manifest_sha256": module.COMPLETION_PREDECESSOR_MANIFEST_SHA256,
+        "policy_target_margin_rad": module.MARGIN_RAD,
+        "evaluation_sources": {
+            name: digest_file(root / name) for name in module._evaluation_source_paths(root)
+        },
+        "device": "mps",
+        "execute_chunk_steps": 2,
+        "max_actions": 1900,
+        "wall_timeout_seconds": 1200.0,
+        "execution_authorized_by_this_artifact": False,
+    }
+    accepted = module.BarTransportPhysicalProtocol.model_validate(_reseal(body.copy()))
+    assert accepted.profile == module.COMPLETION_PROFILE
+
+    prior = SimpleNamespace(
+        kind=module.KIND,
+        outcome="failed",
+        run_id=module.COMPLETION_PREDECESSOR_RUN_ID,
+        manifest_sha256=module.COMPLETION_PREDECESSOR_MANIFEST_SHA256,
+        config={"skill_id": module.SKILL, "device": "mps"},
+        metrics={
+            "actual_policy_devices": ["mps:0"],
+            "failure_code": "physical_milestone_incomplete",
+            "reason": (
+                "physical_milestone_incomplete: physical completion/readiness not reached "
+                "within action budget"
+            ),
+            "policy_target_margin_rad": module.MARGIN_RAD,
+            "autonomous_skill_actions": 1900,
+        },
+    )
+
+    class Store:
+        def verify(self, run_id):
+            return prior
+
+    assert (
+        module._verify_prior_failure(
+            Store(), prior.run_id, tmp_path / "new-training", profile=module.COMPLETION_PROFILE
+        )
+        is prior
+    )
+    prior.metrics["autonomous_skill_actions"] = 1899
+    with pytest.raises(ValueError, match="margin completion"):
+        module._verify_prior_failure(
+            Store(), prior.run_id, tmp_path / "new-training", profile=module.COMPLETION_PROFILE
+        )
+
+
 def test_interrupted_unsealed_process_blocks_retry(tmp_path, monkeypatch):
     store = EvidenceStore(tmp_path / "artifacts")
     training = store.new_run()
@@ -70,6 +132,7 @@ def test_interrupted_unsealed_process_blocks_retry(tmp_path, monkeypatch):
     protocol_path.write_text("fixture")
     protocol = SimpleNamespace(
         manifest_sha256="a" * 64,
+        profile=module.PROFILE,
         training_run="artifacts/runs/" + training.name,
         dataset_root="dataset",
         skill_views_path="views.json",
@@ -83,7 +146,9 @@ def test_interrupted_unsealed_process_blocks_retry(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(module, "load_bar_transport_physical_protocol", lambda _: protocol)
     monkeypatch.setattr(
-        module, "_verify_prior_failure", lambda *args: SimpleNamespace(manifest_sha256="z" * 64)
+        module,
+        "_verify_prior_failure",
+        lambda *args, **kwargs: SimpleNamespace(manifest_sha256="z" * 64),
     )
     config = SkillPhysicalEvaluationConfig(
         training_run=training,

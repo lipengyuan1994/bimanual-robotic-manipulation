@@ -18,9 +18,14 @@ from bimanual.training import ACTTrainingConfig
 from bimanual.worker_lease import WorkerLease
 
 PROFILE = "bar_transport_physical_margin_evaluation_protocol_v2"
+COMPLETION_PROFILE = "bar_transport_physical_completion_evaluation_protocol_v3"
 SKILL = "bar_place_and_return"
 KIND = "learned_skill_teacher_prepared_physical_evaluation"
 MARGIN_RAD = 0.001
+COMPLETION_PREDECESSOR_RUN_ID = "20260913T231721-0f277ff9c89a"
+COMPLETION_PREDECESSOR_MANIFEST_SHA256 = (
+    "bedfd660f07018408543c9ff754f1ffcade9ac6ce0e4dc2307c212f8b0f04b2a"
+)
 
 
 def _evaluation_source_paths(root: Path) -> tuple[str, ...]:
@@ -51,23 +56,43 @@ def _clean_process_child(process, child) -> bool:
     )
 
 
-def _verify_prior_failure(store: EvidenceStore, run_id: str, training_run: Path):
+def _verify_prior_failure(store: EvidenceStore, run_id: str, training_run: Path, *, profile: str):
+    """Validate the exact failed predecessor appropriate to a declaration profile."""
+
     prior = store.verify(run_id)
-    if (
+    common = (
         prior.kind != KIND
         or prior.outcome != "failed"
-        or prior.config.get("training_run") != str(training_run)
         or prior.config.get("skill_id") != SKILL
         or prior.config.get("device") != "mps"
         or prior.metrics.get("actual_policy_devices") not in (["mps"], ["mps:0"])
-        or prior.metrics.get("error") != "ValueError: Measured dinner joints exceeded model limits"
-    ):
-        raise ValueError("Prior evaluation is not the sealed MPS near-limit bar failure")
+    )
+    if profile == PROFILE:
+        valid = (
+            prior.config.get("training_run") == str(training_run)
+            and prior.metrics.get("error")
+            == "ValueError: Measured dinner joints exceeded model limits"
+        )
+        error = "Prior evaluation is not the sealed MPS near-limit bar failure"
+    elif profile == COMPLETION_PROFILE:
+        valid = (
+            prior.run_id == COMPLETION_PREDECESSOR_RUN_ID
+            and prior.manifest_sha256 == COMPLETION_PREDECESSOR_MANIFEST_SHA256
+            and prior.metrics.get("failure_code") == "physical_milestone_incomplete"
+            and "readiness not reached" in str(prior.metrics.get("reason", ""))
+            and prior.metrics.get("policy_target_margin_rad") == MARGIN_RAD
+            and prior.metrics.get("autonomous_skill_actions") == 1900
+        )
+        error = "Prior evaluation is not the sealed MPS margin completion failure"
+    else:
+        raise ValueError("Unsupported bar physical evaluation profile")
+    if common or not valid:
+        raise ValueError(error)
     return prior
 
 
 class BarTransportPhysicalProtocol(Contract):
-    profile: Literal[PROFILE] = PROFILE
+    profile: Literal[PROFILE, COMPLETION_PROFILE] = PROFILE
     training_run: str
     training_manifest_sha256: Digest
     dataset_root: str
@@ -111,8 +136,13 @@ def create_bar_transport_physical_protocol(
     training_run = Path(training_run).resolve(strict=True)
     store = EvidenceStore(training_run.parents[1])
     manifest = store.verify(training_run.name)
-    prior = _verify_prior_failure(store, prior_evaluation_run, training_run)
     config = ACTTrainingConfig.model_validate(manifest.config)
+    profile = (
+        COMPLETION_PROFILE
+        if config.sampling_profile == "bar_margin_completion_sampling_v5"
+        else PROFILE
+    )
+    prior = _verify_prior_failure(store, prior_evaluation_run, training_run, profile=profile)
     if (
         manifest.kind != "act_training"
         or manifest.outcome != "completed"
@@ -138,7 +168,7 @@ def create_bar_transport_physical_protocol(
     root = Path(__file__).resolve().parent
     body = dict(
         schema_version=1,
-        profile=PROFILE,
+        profile=profile,
         training_run=os.path.relpath(training_run, destination.parent),
         training_manifest_sha256=manifest.manifest_sha256,
         dataset_root=os.path.relpath(config.dataset_path, destination.parent),
@@ -190,9 +220,11 @@ def run_bar_transport_physical_protocol(path: Path):
     protocol = load_bar_transport_physical_protocol(path)
     training_run = (path.parent / protocol.training_run).resolve(strict=True)
     store = EvidenceStore(training_run.parents[1])
-    prior = _verify_prior_failure(store, protocol.prior_evaluation_run_id, training_run)
+    prior = _verify_prior_failure(
+        store, protocol.prior_evaluation_run_id, training_run, profile=protocol.profile
+    )
     if prior.manifest_sha256 != protocol.prior_evaluation_manifest_sha256:
-        raise ValueError("Prior near-limit bar failure changed after protocol freeze")
+        raise ValueError("Prior bar failure changed after protocol freeze")
     from bimanual.skill_physical_evaluation import (
         SkillPhysicalEvaluationConfig,
     )
