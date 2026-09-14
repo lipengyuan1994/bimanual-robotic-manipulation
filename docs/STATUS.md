@@ -49,10 +49,17 @@ The sealed read-only diagnosis `20260914T033813-d6bb3311734c` (SHA-256
 action 25. The peak allowed right-gripper contact happened earlier at action 21; the
 object moved only 53.95 mm. It changes no dataset, model, scene, or result.
 
-Next: preserve the evaluation and diagnosis, then add a narrowly bound corrective-data
-protocol for the newly localized action-25 left-arm contact. Test its immutable
-bindings before collecting, training, or evaluating. Intel setup remains deferred until
-the local corrective-training sequence has finished, per the user's direction.
+The fresh protocol `bar_late_left_contact_protocol_v7` is implemented and verified,
+binding diagnosis `20260914T033813-d6bb3311734c`, full `[630,1163)` replay coverage,
+and new seeds 58000–58004. Its first allocated teacher collection failed before any
+physics action with `CGLError: invalid CoreGraphics connection`; the one-attempt case
+is preserved as failed and will not be rerun. A current native probe also reports MPS
+built but unavailable. No MPS training, rendering, collection, or evaluation may start
+until the Mac has an active unlocked desktop session.
+
+Next: after an active desktop session is available, verify MPS availability and collect
+the next unused allocated source case. Intel setup remains deferred until the local
+corrective-training sequence has finished, per the user's direction.
 
 ## Historical run record
 
