@@ -43,10 +43,16 @@ workflow success. The child process exited normally and was reaped; this means t
 evaluation infrastructure completed, not that manipulation succeeded. The consumed
 declaration must not be rerun.
 
-Next: preserve this failure, inspect the sealed action/contact trajectory to define a
-narrow corrective-data hypothesis, then implement and test that hypothesis before any
-new training or evaluation declaration. Intel setup remains deferred until the local
-corrective-training sequence has finished, per the user's direction.
+The sealed read-only diagnosis `20260914T033813-d6bb3311734c` (SHA-256
+`feae3370c94f3a873017e59ef257a554c6cc61bde57b4ad9bbfb65131aa9aa41`) confirms
+24 applied and one partial rejected action. It localizes the forbidden contact to
+action 25. The peak allowed right-gripper contact happened earlier at action 21; the
+object moved only 53.95 mm. It changes no dataset, model, scene, or result.
+
+Next: preserve the evaluation and diagnosis, then add a narrowly bound corrective-data
+protocol for the newly localized action-25 left-arm contact. Test its immutable
+bindings before collecting, training, or evaluating. Intel setup remains deferred until
+the local corrective-training sequence has finished, per the user's direction.
 
 ## Historical run record
 
