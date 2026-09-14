@@ -48,8 +48,13 @@ completion profile rejected the deliberately retained pre-placement source rows.
 The sampler now records those rows at zero probability and gives all corrective
 mass to `[770,1163)`; focused regression tests cover this full-window case. The
 replacement local-MPS candidate is active as run `20260913T235437-17291b7b55db`
-with the same frozen inputs and fallback disabled. Its terminal manifest must verify
-20,000 updates before a fresh one-time evaluation declaration can be created.
+with the same frozen inputs and fallback disabled. A guarded local evaluator is queued
+in tmux session `bar_margin_completion_evaluation_v7`: it waits for a zero training
+exit, verifies the terminal manifest, creates and checks the successor declaration at
+`.artifacts/experiments/bar-margin-completion-mps-v7-evaluation.json`, then runs it
+exactly once. Its terminal status and log will be recorded at
+`.artifacts/bar-margin-completion-v7-evaluation.exit` and
+`.artifacts/bar-margin-completion-v7-evaluation.log`.
 
 ## Historical run record
 
