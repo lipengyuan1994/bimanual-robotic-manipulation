@@ -291,6 +291,7 @@ def main(argv: list[str] | None = None) -> int:
             "bar_placement_progress_protocol_v4",
             "bar_placement_contact_entry_protocol_v5",
             "bar_margin_completion_protocol_v6",
+            "bar_late_left_contact_protocol_v7",
         ),
         required=True,
     )

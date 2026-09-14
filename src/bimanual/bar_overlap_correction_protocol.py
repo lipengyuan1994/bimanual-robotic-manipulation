@@ -36,6 +36,11 @@ V6_CASE_SEEDS = tuple(range(57000, 57005))
 # successor-ready.  Capture the complete learned entry, placement, release, and
 # retreat trajectory so corrective labels cover the unresolved completion tail.
 V6_SOURCE_INTERVAL = (630, 1163)
+V7_CASE_SEEDS = tuple(range(58000, 58005))
+# The new evaluation held the bar for 24 learned actions before the left arm
+# entered the object on action 25.  Retain the complete learned entry and
+# completion tail; a shorter replay would omit the state that precedes it.
+V7_SOURCE_INTERVAL = (630, 1163)
 ENTRY_CONTACT_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
     "f894dc670340ef881958dddeb460e32b9b2f25dff5f8b641a601bc36a3999905"
 )
@@ -47,6 +52,9 @@ PLACEMENT_CONTACT_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
 )
 MARGIN_COMPLETION_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
     "36e2298ebe8d853b2c0d75854dcc3ea9f39d15b5618b06c1c362463b04f94d79"
+)
+LATE_LEFT_CONTACT_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
+    "feae3370c94f3a873017e59ef257a554c6cc61bde57b4ad9bbfb65131aa9aa41"
 )
 
 
@@ -61,6 +69,7 @@ class BarOverlapCorrectionProtocol(BaseModel):
         "bar_placement_progress_protocol_v4",
         "bar_placement_contact_entry_protocol_v5",
         "bar_margin_completion_protocol_v6",
+        "bar_late_left_contact_protocol_v7",
     ]
     evidence_root: str
     diagnosis_run_id: str
@@ -102,6 +111,7 @@ def _allocation(profile: str) -> tuple[tuple[int, int], tuple[int, int, int, int
         "bar_placement_progress_protocol_v4": (V4_SOURCE_INTERVAL, V4_CASE_SEEDS),
         "bar_placement_contact_entry_protocol_v5": (V5_SOURCE_INTERVAL, V5_CASE_SEEDS),
         "bar_margin_completion_protocol_v6": (V6_SOURCE_INTERVAL, V6_CASE_SEEDS),
+        "bar_late_left_contact_protocol_v7": (V7_SOURCE_INTERVAL, V7_CASE_SEEDS),
     }
     try:
         return allocations[profile]
@@ -167,6 +177,25 @@ def _verified_diagnosis(store: EvidenceStore, run_id: str, *, profile: str):
             and component.get("rejected_action_log_actions") == 1
             and component.get("maximum_overlap_m", float("inf")) <= 0.0025
             and component.get("maximum_overtravel_m") == 0.0
+            and left_practice_contact
+        )
+    elif profile == "bar_late_left_contact_protocol_v7":
+        forbidden = component.get("forbidden_contact_events")
+        left_practice_contact = any(
+            any(
+                (str(name).startswith("left/") and str(other) == "practice_object")
+                or (str(other).startswith("left/") and str(name) == "practice_object")
+                for name, other in event.get("bad", [])
+            )
+            for event in forbidden or []
+        )
+        valid = (
+            diagnosis.manifest_sha256 == LATE_LEFT_CONTACT_FAILURE_ANALYSIS_MANIFEST_SHA256
+            and component.get("recorded_autonomous_skill_actions") == 24
+            and component.get("confirmed_action_log_actions") == 24
+            and component.get("rejected_action_log_actions") == 1
+            and component.get("maximum_overtravel_m") == 0.0
+            and component.get("maximum_target_displacement_m", 0.0) >= 0.05
             and left_practice_contact
         )
     else:

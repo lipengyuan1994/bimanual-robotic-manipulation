@@ -91,6 +91,18 @@ def test_margin_completion_profile_binds_fresh_cases_and_full_completion_window(
     assert protocol.case_seeds[0] == 57000
 
 
+def test_late_left_contact_profile_binds_fresh_cases_and_full_policy_window():
+    protocol = module.BarOverlapCorrectionProtocol.model_validate(
+        _body(
+            "bar_late_left_contact_protocol_v7",
+            source_interval=(630, 1163),
+            case_seeds=(58000, 58001, 58002, 58003, 58004),
+        )
+    )
+    assert protocol.source_interval == (630, 1163)
+    assert protocol.case_seeds[0] == 58000
+
+
 def test_margin_completion_profile_requires_the_exact_sealed_failure_signature():
     component = {
         "skill_id": "bar_place_and_return",
