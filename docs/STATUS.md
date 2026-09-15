@@ -1,6 +1,6 @@
 # Project status
 
-Updated September 15, 2026. Latest implementation: a source-bound late-contact corrective
+Updated September 15, 2026. Latest implementation: a source-bound workbench-overlap corrective
 candidate is training on native MPS on `codex/preparation-foundation`. Draft PR#1 remains
 unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
@@ -58,13 +58,26 @@ The next correction is frozen at
 analysis, allocates fresh seeds 59000–59004 with one contact-only teacher attempt each,
 and permits the predeclared bar-skill window `[630,1580)`. The physical action count has no
 one-to-one teacher-frame mapping, so this avoids inventing a narrow source interval; each
-teacher source stops at its independent physical-success boundary. Case 59000 completed with
-531 replay actions, contact-only reconstruction, zero artificial attachments and a passing
-independent skill score (run `six-skill-corrective-5ad8aee778dd12ff38513181`, SHA-256
-`b4fa48e85086536d01b18ee5f44e6909bf8c3b4137f59fc62927d06ac7b0825f`). Four remaining
-cases, export, sampling declaration, retraining, and one new frozen physical evaluation remain
-to be performed. M2 remains incomplete. Intel setup remains
-deferred until this local corrective-training sequence finishes, per the user's direction.
+teacher source stops at its independent physical-success boundary. All five cases 59000–59004
+completed with 531 replay actions each, contact-only reconstruction, zero artificial attachments,
+and passing independent skill scores. Their sealed read-only view
+`.artifacts/experiments/bar-late-workbench-overlap-v8-views.json` has SHA-256
+`310acad53b73a566ff3410b04ee7e5a202ed4a2499cf9b216e6a5b19f63bfff9`.
+
+The corrective LeRobot archive `.artifacts/datasets/bar-late-workbench-overlap-v8` independently
+verifies 2,655 synchronized frames from all five sources (archive SHA-256
+`4a10c6a6d439e8b19e17ace9086731ee30e8ca3b20478a740c08da92b16922e4`). Sampling declaration
+`.artifacts/experiments/bar-late-workbench-overlap-v8-sampling.json` binds that archive to the
+failure analysis with SHA-256 `85f9193cba30fed00e372973e8302555e85f7e75d7ae974c691481cb4652c9a7`.
+It assigns half the sampling mass to nominal selected-skill data and half to the declared
+corrective window.
+
+Native MPS training candidate `20260915T133339-d1923fc03a2a` is active with 20,000 updates,
+`PYTORCH_ENABLE_MPS_FALLBACK=0`, and `HF_HUB_OFFLINE=1`. This is training-in-progress, not task
+success. Next: wait for it to seal and independently reverify it. If it completes, freeze exactly
+one new physical successor declaration bound to the workbench-overlap failure, then run it on
+native MPS. M2 remains incomplete. Intel setup remains deferred until this local corrective-
+training sequence finishes, per the user's direction.
 
 ## Historical run record
 
