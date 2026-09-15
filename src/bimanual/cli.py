@@ -575,6 +575,9 @@ def main(argv: list[str] | None = None) -> int:
     train.add_argument("--chunk-size", type=int, default=10)
     train.add_argument("--seed", type=int, default=0)
     train.add_argument(
+        "--cpu-threads", type=int, default=4, help="Native CPU threads for CPU training"
+    )
+    train.add_argument(
         "--sampling-profile",
         choices=[
             "uniform",
@@ -1445,6 +1448,7 @@ def main(argv: list[str] | None = None) -> int:
                     batch_size=args.batch_size,
                     chunk_size=args.chunk_size,
                     seed=args.seed,
+                    cpu_threads=args.cpu_threads,
                     sampling_profile=args.sampling_profile,
                     use_vae=not args.no_vae,
                     dropout=args.dropout,
