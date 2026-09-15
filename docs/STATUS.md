@@ -149,8 +149,13 @@ The read-only CPU-aware diagnosis `20260915T181301-3ff6dd7a5021` (seal
 226.84 mm target displacement. The analyzer previously rejected CPU records despite preserving
 actual device data; it now accepts a supported recorded device and includes it in the diagnosis.
 The next correction is a new source-bound protocol profile with fresh seeds 60000–60004 and the
-predeclared full bar-skill window `[630,1580)`. Its contact-only, one-attempt-per-case collection
-is active; case 60000 has sealed successfully and later cases remain in their declared serial order.
+predeclared full bar-skill window `[630,1580)`. All five contact-only, one-attempt-per-case sources
+have now sealed successfully, each with 531 replay actions and passing independent skill checks.
+Their immutable view is `.artifacts/experiments/bar-cpu-late-workbench-overlap-v9-views.json`
+(seal `016940573b1cbb0075778c241821b69e14ada9358cbbc85875707ecb2deb782e`). Two foreground
+LeRobot exports copied sources and created partial data, but were terminated before their full decoded
+parity pass could write an export manifest. Those partial directories are preserved and excluded from
+training; resumable parity/export infrastructure is the next implementation step.
 A September 15 M2 evidence audit also confirmed that the nominal demonstrations come from one authored scene:
 held-out recorded validation/test scenes and a real seven-step learned workflow remain required.
 M2 remains incomplete. Intel setup remains deferred until this local corrective-training sequence
