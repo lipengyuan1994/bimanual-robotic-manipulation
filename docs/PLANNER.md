@@ -231,11 +231,14 @@ PYTORCH_ENABLE_MPS_FALLBACK=0 .artifacts/reasoning-venv/bin/bimanual \
   planner-suite-run docs/experiments/planner-decision-protocol-v1.json --device mps
 ```
 
-The protocol is intentionally not frozen yet. Dinner skill-start frames need
-higher-resolution source bundles, and rendering or Qwen inference must wait for
+The first protocol is frozen at
+`.artifacts/experiments/planner-decision-protocol-v1.json`, with manifest SHA-256
+`0fd5d9ce9c5628db1f5be9e38e17ed2ed9bccff5f68672616a2ed66c71ca00aa`. It contains
+the visible practice-block and missing-object cases, both captured through sealed
+960px-overhead sensor bundles. The missing-object case is a deliberately narrow,
+zero-action teacher failure that verifies only the pre-action camera observation;
+arbitrary failed manipulation records remain ineligible. MPS inference waits for
 the active serial ACT training sequence to release the shared local job slot.
-Freezing after the inputs exist prevents choosing expectations after seeing model
-answers.
 
 ## Small learning exercise
 

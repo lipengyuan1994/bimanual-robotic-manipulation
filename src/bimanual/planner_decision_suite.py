@@ -128,11 +128,25 @@ class PlannerDecisionProtocol(Contract):
 def _source_recording(path: Path) -> tuple[Manifest, DemonstrationEpisode]:
     path = path.resolve(strict=True)
     manifest = EvidenceStore(path.parent.parent).verify(path.name)
-    if manifest.outcome != "completed" or "demonstration/episode.json" not in manifest.files:
+    completed = manifest.outcome == "completed"
+    safe_missing_object_observation = (
+        manifest.outcome == "failed"
+        and manifest.kind == "contact_grasp_teacher"
+        and manifest.config.get("missing_object") is True
+        and manifest.metrics.get("demonstration_transitions") == 0
+        and manifest.metrics.get("rendered") is True
+        and manifest.metrics.get("error") == "RuntimeError: Practice object is missing; no grasp attempted"
+    )
+    if (
+        not (completed or safe_missing_object_observation)
+        or "demonstration/episode.json" not in manifest.files
+    ):
         raise ValueError("Planner case requires a completed sealed demonstration")
     episode = DemonstrationEpisode.model_validate_json(
         (path / "demonstration/episode.json").read_text()
     )
+    if safe_missing_object_observation and len(episode.frames) != 1:
+        raise ValueError("Missing-object planner case requires exactly one pre-action observation")
     return manifest, episode
 
 

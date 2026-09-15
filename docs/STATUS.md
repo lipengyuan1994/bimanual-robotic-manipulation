@@ -340,9 +340,15 @@ answers, and separates process completion from case success. Five CPU-only fixtu
 pass. The result now retains a full case table plus field-level mismatch counts,
 malformed-case count, decision rate with 95% Wilson interval, and inference-latency
 p50/p95. Every result denies live dispatch, keeps physical manipulation success null
-and carries no evidence claims. The real dinner protocol is deliberately not frozen
-or run until high-resolution inputs can be captured after the active serial ACT
-training finishes. [Planner evaluation boundary](PLANNER.md#frozen-decision-suite).
+and carries no evidence claims. The first real two-case protocol is now frozen at
+`.artifacts/experiments/planner-decision-protocol-v1.json`, SHA-256
+`0fd5d9ce9c5628db1f5be9e38e17ed2ed9bccff5f68672616a2ed66c71ca00aa`. It binds
+one visible practice-block case and one explicit pre-action missing-object case,
+both with sealed 960px overhead sensor bundles. The missing-object admission is
+limited to the teacher's verified zero-action failure shape; arbitrary failed
+recordings remain invalid suite inputs. Its MPS run remains deferred until the
+active serial ACT training releases the shared model job slot. [Planner evaluation
+boundary](PLANNER.md#frozen-decision-suite).
 
 A read-only local-Qwen planner preflight is available as `planner-preflight`. It
 verifies the sealed local snapshot and every declared model file, records native

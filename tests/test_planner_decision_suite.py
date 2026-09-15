@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+import pytest
 from PIL import Image
 
 from bimanual.cli import main
@@ -23,10 +24,20 @@ def _model(root):
     seal_model(root, "a" * 40)
 
 
-def _recording(root):
+def _recording(
+    root,
+    *,
+    kind="planner_suite_test_recording",
+    outcome="completed",
+    config=None,
+    metrics=None,
+    terminal_observation_only=False,
+):
     from test_contracts import episode
 
     data = episode()
+    if terminal_observation_only:
+        data["frames"] = [dict(observation=data["frames"][0]["observation"], action_rad=None)]
     store = EvidenceStore(root)
     directory = store.new_run()
     for item in data["frames"]:
@@ -43,14 +54,30 @@ def _recording(root):
     (directory / "demonstration/episode.json").write_text(json.dumps(data))
     store.seal(
         directory,
-        kind="planner_suite_test_recording",
-        outcome="completed",
-        config={},
-        metrics={},
+        kind=kind,
+        outcome=outcome,
+        config={} if config is None else config,
+        metrics={} if metrics is None else metrics,
         source={"fixture": True},
         claims=[],
     )
     return directory
+
+
+def _missing_object_recording(root):
+    recording = _recording(
+        root,
+        kind="contact_grasp_teacher",
+        outcome="failed",
+        config={"missing_object": True},
+        metrics={
+            "demonstration_transitions": 0,
+            "rendered": True,
+            "error": "RuntimeError: Practice object is missing; no grasp attempted",
+        },
+        terminal_observation_only=True,
+    )
+    return recording
 
 
 def _expected(skill="pick"):
@@ -131,6 +158,26 @@ def test_protocol_check_cli_reports_non_authorizing_scope(tmp_path, capsys):
     assert report["selection_rule"] == "evaluate_every_frozen_case_once"
     assert report["live_dispatch_authorized"] is False
     assert report["manipulation_success"] is None
+
+
+def test_protocol_accepts_only_the_explicit_pre_action_missing_object_source(tmp_path):
+    recording = _missing_object_recording(tmp_path / "source")
+    expected = _expected(skill="clarify") | {
+        "arm": "none",
+        "target": None,
+        "destination": None,
+        "target_visibility": "not_visible",
+    }
+    protocol_path, created = _protocol(
+        tmp_path, [_case(recording.relative_to(tmp_path), "missing", expected)]
+    )
+    assert load_planner_decision_protocol(protocol_path) == created
+
+
+def test_protocol_rejects_an_arbitrary_failed_recording(tmp_path):
+    recording = _recording(tmp_path / "source", outcome="failed")
+    with pytest.raises(ValueError, match="completed sealed demonstration"):
+        _protocol(tmp_path, [_case(recording.relative_to(tmp_path), "failed")])
 
 
 def test_protocol_rejects_changed_source_before_inference(tmp_path, monkeypatch):
