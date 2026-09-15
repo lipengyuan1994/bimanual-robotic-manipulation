@@ -72,12 +72,16 @@ failure analysis with SHA-256 `85f9193cba30fed00e372973e8302555e85f7e75d7ae974c6
 It assigns half the sampling mass to nominal selected-skill data and half to the declared
 corrective window.
 
-Native MPS training candidate `20260915T133339-d1923fc03a2a` is active with 20,000 updates,
-`PYTORCH_ENABLE_MPS_FALLBACK=0`, and `HF_HUB_OFFLINE=1`. This is training-in-progress, not task
-success. Next: wait for it to seal and independently reverify it. If it completes, freeze exactly
-one new physical successor declaration bound to the workbench-overlap failure, then run it on
-native MPS. M2 remains incomplete. Intel setup remains deferred until this local corrective-
-training sequence finishes, per the user's direction.
+Native MPS training candidate `20260915T133339-d1923fc03a2a` stalled at a Metal command-buffer
+synchronization point and was interrupted after 568 recorded updates. Its immutable failed
+manifest SHA-256 is `e9f21bf77b32558832d40ab01500c8a6b9c5b4ef79d76850b192399d05ed4843`, with
+`training_completed=false`; it has no usable checkpoint and is not a candidate. A macOS stack
+sample shows PyTorch waiting in `MPSStream::synchronize` on `MTLCommandBuffer waitUntilCompleted`.
+Next: run a bounded native-MPS health probe, then create a fresh corrective training attempt only
+if it completes. If a candidate completes, freeze exactly one new physical successor declaration
+bound to the workbench-overlap failure, then run it on native MPS. M2 remains incomplete. Intel
+setup remains deferred until this local corrective-training sequence finishes, per the user's
+direction.
 
 ## Historical run record
 
