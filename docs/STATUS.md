@@ -25,8 +25,11 @@ correctly used GitHub Actions but could not publish the current integration bran
 and its generated Lesson 04 retained two repository-only links. The workflow now
 allows only `main` and `codex/preparation-foundation`, binds rewritten source links
 to the deployed commit, and rewrites the new continuity-analysis link. A local
-Node build and navigation check pass; the next relevant push must provide the
-remote deployment evidence.
+Node build and navigation check pass. The Pages environment was explicitly updated
+to allow those same two deployment branches; the rerun from `f3a41aed56811fce659f5707f3b9fc762e594e67`
+completed successfully in [GitHub Actions run 34987615225](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34987615225).
+This is publication evidence for the learning site, not manipulation, model-quality,
+or Intel evidence.
 
 The repository now has a versioned, fail-closed Intel/OpenVINO benchmark record
 and `bimanual intel-benchmark-check` validator. It requires the actual Core Ultra

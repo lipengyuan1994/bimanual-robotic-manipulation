@@ -17,6 +17,11 @@ The seven-lesson curriculum was published from commit
 `598967c9c77ac1a987801c80d474666caad81c24` in [GitHub Actions run 34156905523](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34156905523).
 The public index and lesson 07 were checked directly after that deployment.
 
+The current integration curriculum deployed from commit
+`f3a41aed56811fce659f5707f3b9fc762e594e67` in [GitHub Actions run 34987615225](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34987615225).
+The Pages environment permits deployment only from `main` and
+`codex/preparation-foundation`, matching the workflow branch allowlist.
+
 ## Deployment
 
 [`pages.yml`](../.github/workflows/pages.yml) runs after a relevant change reaches
