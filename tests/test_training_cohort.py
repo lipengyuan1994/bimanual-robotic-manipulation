@@ -98,6 +98,7 @@ def test_exact_write_once_relative_protocol(inputs):
     assert module.load_training_cohort_protocol(inputs[-1]) == result
     assert [c["skill_id"] for c in result.configs] == list(module.COHORT_SKILLS)
     assert all(c["steps"] == 20000 and c["corrective_dataset_path"] is None for c in result.configs)
+    assert all("checkpoint_interval" not in c and "resume_from" not in c for c in result.configs)
     assert result.dataset_root == "dataset"
     assert not result.execution_authorized_by_this_artifact
     assert all(not p.nested_evaluation_verified for p in result.prerequisites)

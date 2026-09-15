@@ -27,8 +27,9 @@ KINDS = (
 
 
 def _configs(dataset, views, corrective_dataset=None):
-    return tuple(
-        ACTTrainingConfig(
+    configs = []
+    for skill in COHORT_SKILLS:
+        config = ACTTrainingConfig(
             dataset_path=dataset,
             corrective_dataset_path=corrective_dataset,
             skill_views_path=views,
@@ -46,8 +47,12 @@ def _configs(dataset, views, corrective_dataset=None):
             use_vae=False,
             dropout=0.0,
         ).model_dump(mode="json")
-        for skill in COHORT_SKILLS
-    )
+        # These defaults disable snapshot/resume behavior.  Keeping them out
+        # of the cohort wire format preserves pre-resume sealed declarations.
+        config.pop("checkpoint_interval", None)
+        config.pop("resume_from", None)
+        configs.append(config)
+    return tuple(configs)
 
 
 class CohortPrerequisite(Contract):
