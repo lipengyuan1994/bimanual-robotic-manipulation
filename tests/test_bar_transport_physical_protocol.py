@@ -150,6 +150,38 @@ def test_late_workbench_overlap_profile_binds_the_exact_physical_predecessor(tmp
         )
 
 
+def test_cpu_overlap_profile_keeps_the_cpu_device_explicit(tmp_path):
+    root = module.Path(module.__file__).resolve().parent
+    body = {
+        "schema_version": 1,
+        "profile": module.CPU_LATE_WORKBENCH_OVERLAP_PROFILE,
+        "training_run": "../runs/training",
+        "training_manifest_sha256": "a" * 64,
+        "dataset_root": "../dataset",
+        "dataset_manifest_sha256": "b" * 64,
+        "skill_views_path": "../views.json",
+        "skill_views_sha256": "c" * 64,
+        "sampling_declaration_sha256": "d" * 64,
+        "prior_evaluation_run_id": "20260915T125916-a7977c78bed6",
+        "prior_evaluation_manifest_sha256": "2cfe4f44685c85dd69b9a85d79f8c065f42022e6335c9fca10c6341246a0b90b",
+        "policy_target_margin_rad": module.MARGIN_RAD,
+        "evaluation_sources": {
+            name: digest_file(root / name) for name in module._evaluation_source_paths(root)
+        },
+        "device": "cpu",
+        "execute_chunk_steps": 2,
+        "max_actions": 1900,
+        "wall_timeout_seconds": 1200.0,
+        "execution_authorized_by_this_artifact": False,
+    }
+    assert (
+        module.BarTransportPhysicalProtocol.model_validate(_reseal(body.copy())).device == "cpu"
+    )
+    body["device"] = "mps"
+    with pytest.raises(ValueError, match="device does not match"):
+        module.BarTransportPhysicalProtocol.model_validate(_reseal(body))
+
+
 def test_interrupted_unsealed_process_blocks_retry(tmp_path, monkeypatch):
     store = EvidenceStore(tmp_path / "artifacts")
     training = store.new_run()

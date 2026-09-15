@@ -1,8 +1,8 @@
 # Project status
 
 Updated September 15, 2026. Latest implementation: a source-bound workbench-overlap corrective
-candidate is training on native MPS on `codex/preparation-foundation`. Draft PR#1 remains
-unmerged.
+candidate is training on native CPU with eight threads on `codex/preparation-foundation`. A separate
+sealed CPU physical-evaluation declaration now preserves its actual device without making MPS or Intel claims. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
 ## Readiness
@@ -83,12 +83,15 @@ manifest SHA-256 is `e9f21bf77b32558832d40ab01500c8a6b9c5b4ef79d76850b192399d05e
 sample shows PyTorch waiting in `MPSStream::synchronize` on `MTLCommandBuffer waitUntilCompleted`.
 A bounded native-MPS probe `20260915T133819-d6bc31ec6046` completed ten optimizer updates and
 inference on `mps:0`; it proves the device is available but does not clear the long-run stall.
-Fresh CPU fallback candidate `20260915T133934-6ae476b0ef36` is active on the identical sealed
-training contract. It remains distinct from MPS evidence and is not a task-success claim. If it
-completes, independently reverify it and freeze exactly one physical successor declaration bound
-to the workbench-overlap failure, reporting its actual CPU device. M2 remains incomplete. Intel
-setup remains deferred until this local corrective-training sequence finishes, per the user's
-direction.
+The first native CPU fallback candidate `20260915T133934-6ae476b0ef36` was deliberately
+interrupted after 860 updates to expose and apply the eight-thread CPU setting; it has no usable
+checkpoint. Its immutable failed manifest SHA-256 is
+`7dbb7163236c735813c93bb8d7a9395d0e84930bd4732d06ab1f6565566d4d44`. Replacement candidate
+`20260915T135153-ae4e47464925` is active on the identical sealed data and sampling contract with
+`cpu_threads=8`. A distinct CPU-only physical declaration profile has been added and tested. When
+this candidate completes, it will bind the prior workbench-overlap failure, report CPU as its actual
+device, and cannot be interpreted as MPS or Intel evidence. M2 remains incomplete. Intel setup
+remains deferred until this local corrective-training sequence finishes, per the user's direction.
 
 ## Historical run record
 

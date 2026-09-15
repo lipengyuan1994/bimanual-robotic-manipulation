@@ -23,6 +23,9 @@ LATE_CONTACT_PROFILE = "bar_transport_physical_late_contact_evaluation_protocol_
 LATE_WORKBENCH_OVERLAP_PROFILE = (
     "bar_transport_physical_late_workbench_overlap_evaluation_protocol_v5"
 )
+CPU_LATE_WORKBENCH_OVERLAP_PROFILE = (
+    "bar_transport_physical_cpu_late_workbench_overlap_evaluation_protocol_v1"
+)
 SKILL = "bar_place_and_return"
 KIND = "learned_skill_teacher_prepared_physical_evaluation"
 MARGIN_RAD = 0.001
@@ -97,7 +100,7 @@ def _verify_prior_failure(store: EvidenceStore, run_id: str, training_run: Path,
             and prior.metrics.get("autonomous_skill_actions") == 24
         )
         error = "Prior evaluation is not the sealed MPS late left-contact failure"
-    elif profile == LATE_WORKBENCH_OVERLAP_PROFILE:
+    elif profile in (LATE_WORKBENCH_OVERLAP_PROFILE, CPU_LATE_WORKBENCH_OVERLAP_PROFILE):
         valid = (
             prior.run_id == "20260915T125916-a7977c78bed6"
             and prior.manifest_sha256
@@ -117,7 +120,11 @@ def _verify_prior_failure(store: EvidenceStore, run_id: str, training_run: Path,
 
 class BarTransportPhysicalProtocol(Contract):
     profile: Literal[
-        PROFILE, COMPLETION_PROFILE, LATE_CONTACT_PROFILE, LATE_WORKBENCH_OVERLAP_PROFILE
+        PROFILE,
+        COMPLETION_PROFILE,
+        LATE_CONTACT_PROFILE,
+        LATE_WORKBENCH_OVERLAP_PROFILE,
+        CPU_LATE_WORKBENCH_OVERLAP_PROFILE,
     ] = PROFILE
     training_run: str
     training_manifest_sha256: Digest
@@ -130,7 +137,7 @@ class BarTransportPhysicalProtocol(Contract):
     prior_evaluation_manifest_sha256: Digest
     policy_target_margin_rad: Literal[MARGIN_RAD] = MARGIN_RAD
     evaluation_sources: dict[str, Digest]
-    device: Literal["mps"] = "mps"
+    device: Literal["cpu", "mps"] = "mps"
     execute_chunk_steps: Literal[2] = 2
     max_actions: Literal[1900] = 1900
     wall_timeout_seconds: Literal[1200.0] = 1200.0
@@ -149,6 +156,11 @@ class BarTransportPhysicalProtocol(Contract):
         body = self.model_dump(mode="json", exclude={"manifest_sha256"})
         if hashlib.sha256(canonical(body)).hexdigest() != self.manifest_sha256:
             raise ValueError("Bar physical evaluation declaration digest mismatch")
+        expected_device = (
+            "cpu" if self.profile == CPU_LATE_WORKBENCH_OVERLAP_PROFILE else "mps"
+        )
+        if self.device != expected_device:
+            raise ValueError("Bar physical evaluation declaration device does not match profile")
         return self
 
 
@@ -163,8 +175,14 @@ def create_bar_transport_physical_protocol(
     store = EvidenceStore(training_run.parents[1])
     manifest = store.verify(training_run.name)
     config = ACTTrainingConfig.model_validate(manifest.config)
+    actual_device = manifest.metrics.get("actual_device")
     profile = (
-        LATE_WORKBENCH_OVERLAP_PROFILE
+        CPU_LATE_WORKBENCH_OVERLAP_PROFILE
+        if (
+            config.sampling_profile == "bar_late_workbench_overlap_sampling_v7"
+            and actual_device == "cpu"
+        )
+        else LATE_WORKBENCH_OVERLAP_PROFILE
         if config.sampling_profile == "bar_late_workbench_overlap_sampling_v7"
         else LATE_CONTACT_PROFILE
         if config.sampling_profile == "bar_late_left_contact_sampling_v6"
@@ -177,7 +195,9 @@ def create_bar_transport_physical_protocol(
         manifest.kind != "act_training"
         or manifest.outcome != "completed"
         or manifest.metrics.get("training_completed") is not True
-        or manifest.metrics.get("actual_device") != "mps"
+        or actual_device not in {"cpu", "mps"}
+        or (actual_device == "cpu" and profile != CPU_LATE_WORKBENCH_OVERLAP_PROFILE)
+        or (actual_device == "mps" and profile == CPU_LATE_WORKBENCH_OVERLAP_PROFILE)
         or config.skill_id != SKILL
         or config.sampling_profile
         not in {
@@ -192,7 +212,7 @@ def create_bar_transport_physical_protocol(
         or config.corrective_dataset_path is None
         or config.sampling_protocol_run is None
     ):
-        raise ValueError("Training run is not a completed MPS bar transport corrective candidate")
+        raise ValueError("Training run is not a completed bar transport corrective candidate")
     from bimanual.skill_registry import load_skill_checkpoint
 
     binding = load_skill_checkpoint(training_run, skill_id=SKILL, dataset_root=config.dataset_path)
@@ -214,7 +234,7 @@ def create_bar_transport_physical_protocol(
         evaluation_sources={
             name: digest_file(root / name) for name in _evaluation_source_paths(root)
         },
-        device="mps",
+        device="cpu" if profile == CPU_LATE_WORKBENCH_OVERLAP_PROFILE else "mps",
         execute_chunk_steps=2,
         max_actions=1900,
         wall_timeout_seconds=1200.0,
