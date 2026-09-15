@@ -134,8 +134,11 @@ checkpoint. Its immutable failed manifest SHA-256 is
 `20260915T135153-ae4e47464925` is active on the identical sealed data and sampling contract with
 `cpu_threads=8`. A distinct CPU-only physical declaration profile has been added and tested. When
 this candidate completes, it will bind the prior workbench-overlap failure, report CPU as its actual
-device, and cannot be interpreted as MPS or Intel evidence. M2 remains incomplete. Intel setup
-remains deferred until this local corrective-training sequence finishes, per the user's direction.
+device, and cannot be interpreted as MPS or Intel evidence. A September 15 M2 evidence audit
+also confirmed that the nominal demonstrations come from one authored scene: held-out recorded
+validation/test scenes and a real seven-step learned workflow remain required after the current
+bar evaluation. M2 remains incomplete. Intel setup remains deferred until this local corrective-training
+sequence finishes, per the user's direction.
 
 For future candidates only, ACT training now supports opt-in atomic recovery snapshots and
 fail-closed resume. A snapshot binds its sealed failed parent, source lineage, normalized training
