@@ -50,9 +50,11 @@ class _FileSender:
 _worker_lease = None
 
 
-def _leased_child(exported_lease, child_entrypoint, *args):
+def _leased_child(start_gate, exported_lease, child_entrypoint, *args):
+    """Wait until the guardian has durably recorded this worker's identity."""
     global _worker_lease
 
+    start_gate.wait()
     if exported_lease is not None:
         _worker_lease = WorkerLease.from_spawn(exported_lease)
     child_entrypoint(*args)
@@ -186,9 +188,14 @@ def guardian_entry(
                 lease = WorkerLease.acquire(Path(lease_path))
                 record("worker_lease_acquired", path=str(lease_path))
             context = mp.get_context("spawn")
+            # A child can execute its entrypoint as soon as ``start`` returns.  Keep
+            # it parked until its PID journal is durable so readiness from the
+            # child always implies an inspectable, guardian-owned worker record.
+            start_gate = context.Event()
             worker = context.Process(
                 target=_leased_child,
                 args=(
+                    start_gate,
                     lease.export_for_spawn() if lease is not None else None,
                     child_entrypoint,
                     config_data,
@@ -207,6 +214,7 @@ def guardian_entry(
             metrics["worker_pid"] = worker.pid
             record("worker_started", pid=worker.pid)
             _atomic(root / "worker.json", dict(worker_pid=worker.pid))
+            start_gate.set()
             while worker.is_alive():
                 reason = stop_reason()
                 if reason is not None:

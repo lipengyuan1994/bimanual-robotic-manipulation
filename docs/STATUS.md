@@ -31,6 +31,16 @@ completed successfully in [GitHub Actions run 34987615225](https://github.com/li
 This is publication evidence for the learning site, not manipulation, model-quality,
 or Intel evidence.
 
+The Python CI run for `f3a41aed56811fce659f5707f3b9fc762e594e67` exposed a
+guardian-startup race: a child could announce readiness after `start()` but before
+its PID journal was durable. The guardian now holds the child at a start gate until
+`guardian/worker.json` is atomically written. The parent-loss regression passes five
+consecutive native runs; the complete non-render suite passes 1,445 tests, and all
+nine MuJoCo render checks pass through the active macOS graphics session. The
+replacement GitHub Actions run is pending; local CoreGraphics is unavailable inside
+the restricted command sandbox, which is an execution-environment limitation rather
+than a simulation outcome.
+
 The repository now has a versioned, fail-closed Intel/OpenVINO benchmark record
 and `bimanual intel-benchmark-check` validator. It requires the actual Core Ultra
 hardware/software identity, requested and actual device/precision, cold and raw
