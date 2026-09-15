@@ -8,7 +8,7 @@ import pytest
 from test_skill_views import make_synthetic_export
 
 from bimanual.evidence import EvidenceStore, digest_file
-from bimanual.visual_source import verify_visual_source
+from bimanual.visual_source import verify_visual_held_out_source, verify_visual_source
 from bimanual.visual_training import create_visual_training_protocol
 from bimanual.visual_variants import visual_variant
 
@@ -23,13 +23,13 @@ def template(tmp_path_factory):
     return make_synthetic_export(base, "v2") / "raw_sources/000000"
 
 
-def fixture(tmp_path, template, mutate=None):
+def fixture(tmp_path, template, mutate=None, *, visual_seed=7, split="train"):
     store = EvidenceStore(tmp_path / "evidence")
     root = store.new_run()
     shutil.copytree(template, root, dirs_exist_ok=True)
     (root / "manifest.json").unlink()
-    config = dict(recipe="v2", render=False, record_demonstration=True, visual_seed=7)
-    scene, report = visual_variant((root / "scene.xml").read_text(), seed=7)
+    config = dict(recipe="v2", render=False, record_demonstration=True, visual_seed=visual_seed)
+    scene, report = visual_variant((root / "scene.xml").read_text(), seed=visual_seed)
     (root / "scene.xml").write_text(scene)
     (root / "teacher-assets/scene.xml").write_text(scene)
     write(root / "teacher-assets/visual-variant.json", report)
@@ -42,10 +42,13 @@ def fixture(tmp_path, template, mutate=None):
     write(root / "teacher-assets/manifest.json", assets)
     write(root / "config.json", config)
     controller = json.loads((root / "controller.json").read_text())
-    controller.update(seed=7, visual_variant="teacher-assets/visual-variant.json")
+    controller.update(
+        seed=visual_seed, split=split, visual_variant="teacher-assets/visual-variant.json"
+    )
     write(root / "controller.json", controller)
     data = json.loads((root / "demonstration/episode.json").read_text())
-    data["lineage"]["seed"] = 7
+    data["lineage"]["seed"] = visual_seed
+    data["lineage"]["split"] = split
     for name in ("scene", "config", "controller"):
         data["lineage"][name]["sha256"] = digest_file(root / data["lineage"][name]["path"])
     write(root / "demonstration/episode.json", data)
@@ -163,3 +166,44 @@ def test_resealed_partial_trajectory_rejected(tmp_path, template):
     root, protocol = fixture(tmp_path, template, mutate)
     with pytest.raises(ValueError, match="complete v2"):
         verify_visual_source(root, protocol_path=protocol)
+
+
+def test_held_out_validation_source_is_verified_but_not_training_authorized(
+    tmp_path, template, monkeypatch
+):
+    root, protocol = fixture(tmp_path, template, visual_seed=100, split="validation")
+    mock_scores(monkeypatch, root)
+    result = verify_visual_held_out_source(root, protocol_path=protocol, split="validation")
+    assert result.split == "validation"
+    with pytest.raises(ValueError, match="training allocation"):
+        verify_visual_source(root, protocol_path=protocol)
+
+
+def test_held_out_split_and_seed_must_match_frozen_allocation(tmp_path, template, monkeypatch):
+    root, protocol = fixture(tmp_path, template, visual_seed=100, split="validation")
+    mock_scores(monkeypatch, root)
+    with pytest.raises(ValueError, match="held-out allocation"):
+        verify_visual_held_out_source(root, protocol_path=protocol, split="test")
+
+
+def test_held_out_recording_requires_matching_controller_and_episode_split(
+    tmp_path, template, monkeypatch
+):
+    def mutate(root):
+        controller = json.loads((root / "controller.json").read_text())
+        controller["split"] = "train"
+        write(root / "controller.json", controller)
+        data = json.loads((root / "demonstration/episode.json").read_text())
+        data["lineage"]["controller"]["sha256"] = digest_file(root / "controller.json")
+        write(root / "demonstration/episode.json", data)
+
+    root, protocol = fixture(tmp_path, template, mutate=mutate, visual_seed=100, split="validation")
+    mock_scores(monkeypatch, root)
+    with pytest.raises(ValueError, match="controller lineage"):
+        verify_visual_held_out_source(root, protocol_path=protocol, split="validation")
+
+
+def test_held_out_verifier_refuses_train_split(tmp_path, template):
+    root, protocol = fixture(tmp_path, template)
+    with pytest.raises(ValueError, match="validation or test"):
+        verify_visual_held_out_source(root, protocol_path=protocol, split="train")

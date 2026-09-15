@@ -141,6 +141,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     visual_source.add_argument("run_root", type=Path)
     visual_source.add_argument("--protocol", type=Path, required=True)
+    visual_held_out_source = commands.add_parser(
+        "visual-held-out-source-check",
+        help="Verify a sealed validation/test visual teacher source without training export",
+    )
+    visual_held_out_source.add_argument("run_root", type=Path)
+    visual_held_out_source.add_argument("--protocol", type=Path, required=True)
+    visual_held_out_source.add_argument("--split", choices=["validation", "test"], required=True)
     scene_protocol_create = commands.add_parser(
         "scene-variant-protocol-create", help="Freeze six-family dinner perturbation seeds"
     )
@@ -927,8 +934,28 @@ def main(argv: list[str] | None = None) -> int:
                     source_manifest_sha256=result.manifest.manifest_sha256,
                     protocol_sha256=result.protocol_sha256,
                     episode_sha256=result.episode_sha256,
+                    split=result.split,
                     physical_layout_count=result.physical_layout_count,
                     lerobot_decoded_parity=result.lerobot_decoded_parity,
+                )
+            )
+        elif args.command == "visual-held-out-source-check":
+            from bimanual.visual_source import verify_visual_held_out_source
+
+            result = verify_visual_held_out_source(
+                args.run_root, protocol_path=args.protocol, split=args.split
+            )
+            emit(
+                dict(
+                    outcome="verified_source_only",
+                    run_id=result.manifest.run_id,
+                    source_manifest_sha256=result.manifest.manifest_sha256,
+                    protocol_sha256=result.protocol_sha256,
+                    episode_sha256=result.episode_sha256,
+                    split=result.split,
+                    training_export_authorized=False,
+                    learned_evaluation_success=None,
+                    physical_layout_count=result.physical_layout_count,
                 )
             )
         elif args.command == "scene-variant-protocol-create":

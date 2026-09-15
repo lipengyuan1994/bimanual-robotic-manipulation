@@ -62,6 +62,17 @@ class VisualTrainingProtocol(Contract):
         if type(seed) is not int or seed not in self.training_seeds:
             raise ValueError("Source seed is outside the frozen training allocation")
 
+    def require_held_out_seed(self, seed: int, split: str) -> None:
+        """Require an allocated validation/test seed without training authorization."""
+        allocations = {
+            "validation": self.validation_seeds,
+            "test": self.test_seeds,
+        }
+        if type(seed) is not int or split not in allocations or seed not in allocations[split]:
+            raise ValueError("Source seed is outside the frozen held-out allocation")
+        if seed in self.training_seeds:
+            raise ValueError("Held-out source seed overlaps frozen training allocation")
+
 
 def _bindings(assets_path: Path | None, generator_path: Path | None) -> dict:
     assets = assets_path or Path(str(files("bimanual") / "models/dinner_teacher_v2"))

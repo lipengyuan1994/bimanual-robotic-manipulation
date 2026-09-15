@@ -25,6 +25,7 @@ class VerifiedVisualSource:
     episode: DemonstrationEpisode
     protocol_sha256: str
     episode_sha256: str
+    split: str = "train"
     physical_layout_count: int = 1
     lerobot_decoded_parity: None = None
 
@@ -39,14 +40,17 @@ def _rows(path):
         yield from (json.loads(line) for line in stream)
 
 
-def verify_visual_source(run_root: Path, *, protocol_path: Path) -> VerifiedVisualSource:
-    """Reverify frozen allocation, source integrity, visual regeneration and physics.
+def _verify_visual_source(
+    run_root: Path, *, protocol_path: Path, expected_split: str
+) -> VerifiedVisualSource:
+    """Reverify one sealed visual teacher source against a frozen split allocation.
 
-    Physics scores describe the logged simulation. Source instrumentation is a
-    declaration, not detection of unlogged edits; RGB semantic grounding and
-    decoded LeRobot parity require subsequent evaluation.
+    This is source integrity only. It neither exports the source nor establishes
+    learned-policy, held-out generalization, or physical-layout diversity.
     """
     protocol = load_visual_training_protocol(protocol_path)
+    if expected_split not in {"train", "validation", "test"}:
+        raise ValueError("Unsupported visual source split")
     root = Path(run_root).resolve(strict=True)
     if root.parent.name != "runs":
         raise ValueError("Expected a sealed evidence run under runs")
@@ -55,7 +59,10 @@ def verify_visual_source(run_root: Path, *, protocol_path: Path) -> VerifiedVisu
     if source.kind != "dinner_teacher" or source.outcome != "completed":
         raise ValueError("Visual source requires completed dinner teacher evidence")
     config = _json(root / "config.json")
-    protocol.require_training_seed(config.get("visual_seed"))
+    if expected_split == "train":
+        protocol.require_training_seed(config.get("visual_seed"))
+    else:
+        protocol.require_held_out_seed(config.get("visual_seed"), expected_split)
     if (
         config != source.config
         or config.get("recipe") != "v2"
@@ -92,7 +99,7 @@ def verify_visual_source(run_root: Path, *, protocol_path: Path) -> VerifiedVisu
             for key, value in dict(
                 kind="scripted_teacher",
                 seed=seed,
-                split="train",
+                split=expected_split,
                 teacher_uses_simulator_truth=True,
                 plan="teacher-assets/plan.json.gz",
                 plan_sha256=protocol.plan_sha256,
@@ -105,11 +112,14 @@ def verify_visual_source(run_root: Path, *, protocol_path: Path) -> VerifiedVisu
         raise ValueError("Visual controller lineage mismatch")
     episode_path = root / "demonstration/episode.json"
     episode = DemonstrationEpisode.model_validate_json(episode_path.read_bytes())
-    require_successful_training_episode(episode)
+    if expected_split == "train":
+        require_successful_training_episode(episode)
+    elif episode.outcome != "success" or episode.interventions != 0:
+        raise ValueError("Held-out visual source requires an uninterrupted successful episode")
     lineage = episode.lineage
     if (
         (lineage.seed, lineage.split, lineage.controller_kind)
-        != (seed, "train", "scripted_teacher")
+        != (seed, expected_split, "scripted_teacher")
         or lineage.code_revision != source.provenance.get("git_revision")
         or lineage.source_sha256 != source.provenance.get("source_sha256")
     ):
@@ -192,5 +202,25 @@ def verify_visual_source(run_root: Path, *, protocol_path: Path) -> VerifiedVisu
     ):
         raise ValueError("Visual source or allocation changed during verification")
     return VerifiedVisualSource(
-        root, source, episode, protocol.manifest_sha256, digest_file(episode_path)
+        root, source, episode, protocol.manifest_sha256, digest_file(episode_path), expected_split
     )
+
+
+def verify_visual_source(run_root: Path, *, protocol_path: Path) -> VerifiedVisualSource:
+    """Verify a training-only visual teacher source before a separate export gate."""
+    return _verify_visual_source(run_root, protocol_path=protocol_path, expected_split="train")
+
+
+def verify_visual_held_out_source(
+    run_root: Path, *, protocol_path: Path, split: str
+) -> VerifiedVisualSource:
+    """Verify a validation/test teacher recording that is forbidden from training export.
+
+    The protocol's ``validated_recordings`` flag deliberately remains false:
+    a static allocation cannot self-certify any recording. This function only
+    validates the named, sealed source; learned-policy evaluation remains a
+    later independently recorded and scored step.
+    """
+    if split not in {"validation", "test"}:
+        raise ValueError("Held-out visual source split must be validation or test")
+    return _verify_visual_source(run_root, protocol_path=protocol_path, expected_split=split)

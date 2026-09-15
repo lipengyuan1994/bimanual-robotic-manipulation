@@ -37,3 +37,25 @@ Current tests use synthetic recorded structures with explicitly mocked passing
 scores to exercise integrity paths. A separate negative test sends that synthetic
 trace through the real scorers and requires rejection. No synthetic fixture may
 be cited as manipulation success.
+
+## Held-out recording intake
+
+The allocation file is **scaffolding**, not evidence that any validation or test
+recording exists. Its permanent `validated_recordings: false` field prevents a
+static JSON declaration from becoming a quality or generalization claim. A named,
+sealed teacher source must separately pass the source-bound verifier before it can
+be used as a held-out recording input:
+
+```sh
+.venv/bin/bimanual visual-held-out-source-check .artifacts/runs/RUN_ID \
+  --protocol docs/experiments/visual-training-protocol-v1.json --split validation
+```
+
+Use `--split test` only for one of the frozen test seeds. The verifier requires the
+source's declared seed, controller split and episode lineage to match the same
+frozen allocation, regenerates the visual scene, and recomputes the teacher's
+physical scores. It rejects a training seed, cross-split seed, or altered lineage.
+It emits `verified_source_only`, `training_export_authorized: false`, and
+`learned_evaluation_success: null`; it does not export data, run a policy, or claim
+held-out generalization. Held-out recordings must be passed to a later independent
+learned-policy evaluation record, never `lerobot-export` as a training source.

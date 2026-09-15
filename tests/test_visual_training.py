@@ -32,9 +32,14 @@ def test_protocol_roundtrip_and_training_membership(tmp_path):
     assert protocol.physical_layout_count == 1
     assert protocol.validated_recordings is False
     protocol.require_training_seed(7)
+    protocol.require_held_out_seed(100, "validation")
+    protocol.require_held_out_seed(200, "test")
     for seed in (True, 7.0, 100, 200, 999):
         with pytest.raises(ValueError, match="allocation"):
             protocol.require_training_seed(seed)
+    for seed, split in ((7, "validation"), (100, "test"), (200, "train"), (True, "test")):
+        with pytest.raises(ValueError, match="held-out allocation"):
+            protocol.require_held_out_seed(seed, split)
     with pytest.raises(FileExistsError):
         create(path)
 
