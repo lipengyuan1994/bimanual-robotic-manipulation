@@ -19,15 +19,15 @@ manifests use v3/v4 respectively.
 Create a new version after explicitly choosing all seven runs:
 
 ```sh
-.venv/bin/bimanual workflow-create \
-  --dataset .artifacts/datasets/dinner-nominal-v1 \
-  --skill-views .artifacts/dinner-skill-views-v1.json \
-  --destination .artifacts/workflows/candidate-v1.json \
+.artifacts/workflow-venv/bin/bimanual workflow-create \
+  --dataset .artifacts/datasets/CANDIDATE_DATASET \
+  --skill-views .artifacts/CANDIDATE-skill-views.json \
+  --destination .artifacts/workflows/CANDIDATE.json \
   --training-run HANDOFF_RUN --training-run BAR_RUN \
   --training-run CUP_RUN --training-run PLATE_RUN \
   --training-run DRAWER_RUN --training-run SPOON_RUN --training-run FORK_RUN
 
-.venv/bin/bimanual workflow-check .artifacts/workflows/candidate-v1.json
+.artifacts/workflow-venv/bin/bimanual workflow-check .artifacts/workflows/CANDIDATE.json
 ```
 
 The uppercase run paths above are placeholders, not existing trained skills.

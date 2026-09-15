@@ -8,10 +8,10 @@ model or claim that the workflow succeeds physically.
 After creating and checking a candidate, activate it:
 
 ```sh
-.venv/bin/bimanual workflow-activate \
-  .artifacts/workflows/candidate-v1.json
+.artifacts/workflow-venv/bin/bimanual workflow-activate \
+  .artifacts/workflows/CANDIDATE.json
 
-.venv/bin/bimanual workflow-deployment-status
+.artifacts/workflow-venv/bin/bimanual workflow-deployment-status
 ```
 
 The default registry is `.artifacts/workflow-deployment`. Use
@@ -40,7 +40,7 @@ independent evaluation boundary.
 To return to the immediately prior verified activation:
 
 ```sh
-.venv/bin/bimanual workflow-rollback
+.artifacts/workflow-venv/bin/bimanual workflow-rollback
 ```
 
 An operator can name an older recorded generation with `--target-id`. Rollback

@@ -43,22 +43,25 @@ frozen test seeds separately, including the observed 10-seed target result.
 `local_prequalification_passed` is true only at 16/16; `release_success` stays null
 and `intel_validated` stays false.
 
-After the serial training cohort and component checks finish, create it with:
+After the serial training cohort and component checks finish, create it with the
+sealed scene-suite index path returned by `scene-variant-suite-prepare`. The
+uppercase values below are intentionally not historical run IDs; a release must
+bind the artifacts selected before its own evaluation.
 
 ```sh
 .artifacts/workflow-venv/bin/bimanual workflow-release-create \
-  --workflow-manifest .artifacts/workflows/candidate-v1.json \
+  --workflow-manifest .artifacts/workflows/CANDIDATE.json \
   --planner-model .artifacts/models/qwen3-vl-4b-instruct \
-  --scene-suite-run .artifacts/runs/20260911T235826-bd7f6e295f30 \
+  --scene-suite-run "$SCENE_SUITE_RUN_ROOT" \
   --perturbation-protocol docs/experiments/dinner-perturbation-protocol-v1.json \
   --instruction "Set the dinner table with the plate, cup, spoon and fork, including the hand-off" \
-  --destination .artifacts/releases/local-candidate-v1.json
+  --destination .artifacts/releases/CANDIDATE.json
 .artifacts/workflow-venv/bin/bimanual workflow-release-check \
-  .artifacts/releases/local-candidate-v1.json
+  .artifacts/releases/CANDIDATE.json
 .artifacts/workflow-venv/bin/bimanual workflow-release-run \
-  .artifacts/releases/local-candidate-v1.json placement-29001
+  .artifacts/releases/CANDIDATE.json combined-30001
 .artifacts/workflow-venv/bin/bimanual workflow-release-suite \
-  .artifacts/releases/local-candidate-v1.json
+  .artifacts/releases/CANDIDATE.json
 ```
 
 The destination is exclusive-create. Any later source, checkpoint, Qwen manifest,

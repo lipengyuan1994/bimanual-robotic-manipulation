@@ -33,6 +33,28 @@ def check_docs(root: Path) -> dict:
     for item in project["milestones"]:
         if item["state"] not in {"complete", "in_progress", "pending", "blocked"}:
             problems.append(f"Unknown milestone state: {item['state']}")
+    release_runbook = root / "docs" / "RELEASE_REPRODUCTION.md"
+    if not release_runbook.is_file():
+        problems.append("Missing M3 release reproduction runbook")
+    else:
+        release_content = release_runbook.read_text()
+        required_release_commands = (
+            "scripts/bootstrap.sh",
+            "scene-variant-suite-prepare",
+            "dataset-export",
+            "train \\",
+            "skill-physical-protocol-run",
+            "planner-suite-create",
+            "planner-suite-run",
+            "workflow-release-create",
+            "workflow-release-suite",
+            "intel-benchmark-check",
+            "submission-create",
+            "bimanual serve",
+        )
+        for command in required_release_commands:
+            if command not in release_content:
+                problems.append(f"Release reproduction runbook omits {command}")
     return {
         "outcome": "passed" if not problems else "failed",
         "links_checked": checked,

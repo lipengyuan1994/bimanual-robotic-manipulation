@@ -40,6 +40,14 @@ The checked example and contract tests validate record shape only; no Intel host
 OpenVINO execution, conversion, or Intel compliance is claimed. See the
 [benchmark contract](EVIDENCE.md#intel-benchmark-contract).
 
+The [release reproduction runbook](RELEASE_REPRODUCTION.md) now keeps the M3
+install, scene, data export, training, physical evaluation, visual-planner,
+workflow, benchmark-record validation, serving, and submission commands in one
+source-checked sequence. It replaces stale historical release paths with explicit
+artifact placeholders and records that this repository has an Intel-record
+validator, not an OpenVINO conversion or benchmark runner. It is reproducibility
+scaffolding only; M2/M3 success and actual Intel execution remain unproven.
+
 ## Latest evaluation and next executable step
 
 The late-contact ACT candidate `20260915T111450-cfbba7aa3ec4` completed all 20,000

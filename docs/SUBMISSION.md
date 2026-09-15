@@ -14,14 +14,14 @@ Inspect every requirement without creating output:
 
 ```sh
 .venv/bin/bimanual submission-check \
-  --revision GIT_HEAD --release-protocol RELEASE.json \
-  --release-suite .artifacts/runs/RELEASE_SUITE \
-  --interactive-url https://example.invalid/app \
+  --revision "$(git rev-parse HEAD)" --release-protocol .artifacts/releases/CANDIDATE.json \
+  --release-suite "$RELEASE_SUITE_RUN_ROOT" \
+  --interactive-url https://YOUR_HOST/app \
   --video demo.mp4 --slides slides.pdf --cover cover.png
 ```
 
 Replace `submission-check` with `submission-create --destination PACKAGE` after the
-report is complete. The destination must not already exist and should be outside the
+report is complete, preserving the same required arguments. The destination must not already exist and should be outside the
 checkout or in an ignored artifact directory so package creation does not dirty the
 bound revision. Recheck it with
 `.venv/bin/bimanual submission-verify PACKAGE` before upload. The equivalent Python
