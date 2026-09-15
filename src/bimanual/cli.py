@@ -292,6 +292,7 @@ def main(argv: list[str] | None = None) -> int:
             "bar_placement_contact_entry_protocol_v5",
             "bar_margin_completion_protocol_v6",
             "bar_late_left_contact_protocol_v7",
+            "bar_late_workbench_overlap_protocol_v8",
         ),
         required=True,
     )
@@ -335,6 +336,7 @@ def main(argv: list[str] | None = None) -> int:
             "bar_placement_contact_sampling_v4",
             "bar_margin_completion_sampling_v5",
             "bar_late_left_contact_sampling_v6",
+            "bar_late_workbench_overlap_sampling_v7",
         ),
         default="bar_transport_placement_sampling_v1",
     )
@@ -584,6 +586,7 @@ def main(argv: list[str] | None = None) -> int:
             "bar_placement_contact_sampling_v4",
             "bar_margin_completion_sampling_v5",
             "bar_late_left_contact_sampling_v6",
+            "bar_late_workbench_overlap_sampling_v7",
         ],
         default="uniform",
     )

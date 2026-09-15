@@ -262,6 +262,7 @@ def load_skill_checkpoint(
         "bar_placement_contact_sampling_v4",
         "bar_margin_completion_sampling_v5",
         "bar_late_left_contact_sampling_v6",
+        "bar_late_workbench_overlap_sampling_v7",
     }:
         # The bar profile is declared by a sealed JSON artifact, rather than the
         # generic collection-protocol run expected by build_sampling_plan.
@@ -306,6 +307,7 @@ def load_skill_checkpoint(
             "bar_placement_contact_sampling_v4",
             "bar_margin_completion_sampling_v5",
             "bar_late_left_contact_sampling_v6",
+            "bar_late_workbench_overlap_sampling_v7",
         }:
             from bimanual.bar_transport_placement_sampling import (
                 load_bar_transport_placement_sampling,

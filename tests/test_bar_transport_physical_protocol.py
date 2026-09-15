@@ -112,6 +112,44 @@ def test_completion_profile_binds_the_exact_margin_failure_predecessor(tmp_path)
         )
 
 
+def test_late_workbench_overlap_profile_binds_the_exact_physical_predecessor(tmp_path):
+    prior = SimpleNamespace(
+        kind=module.KIND,
+        outcome="failed",
+        run_id="20260915T125916-a7977c78bed6",
+        manifest_sha256="2cfe4f44685c85dd69b9a85d79f8c065f42022e6335c9fca10c6341246a0b90b",
+        config={"skill_id": module.SKILL, "device": "mps"},
+        metrics={
+            "actual_policy_devices": ["mps:0"],
+            "component_passed": False,
+            "autonomous_skill_actions": 255,
+            "error": "ValueError: Dinner contact guard: bad_contacts=[]; overlap_m=0.002664566",
+        },
+    )
+
+    class Store:
+        def verify(self, run_id):
+            return prior
+
+    assert (
+        module._verify_prior_failure(
+            Store(),
+            prior.run_id,
+            tmp_path / "new-training",
+            profile=module.LATE_WORKBENCH_OVERLAP_PROFILE,
+        )
+        is prior
+    )
+    prior.metrics["autonomous_skill_actions"] = 254
+    with pytest.raises(ValueError, match="late workbench-overlap"):
+        module._verify_prior_failure(
+            Store(),
+            prior.run_id,
+            tmp_path / "new-training",
+            profile=module.LATE_WORKBENCH_OVERLAP_PROFILE,
+        )
+
+
 def test_interrupted_unsealed_process_blocks_retry(tmp_path, monkeypatch):
     store = EvidenceStore(tmp_path / "artifacts")
     training = store.new_run()

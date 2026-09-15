@@ -20,6 +20,9 @@ from bimanual.worker_lease import WorkerLease
 PROFILE = "bar_transport_physical_margin_evaluation_protocol_v2"
 COMPLETION_PROFILE = "bar_transport_physical_completion_evaluation_protocol_v3"
 LATE_CONTACT_PROFILE = "bar_transport_physical_late_contact_evaluation_protocol_v4"
+LATE_WORKBENCH_OVERLAP_PROFILE = (
+    "bar_transport_physical_late_workbench_overlap_evaluation_protocol_v5"
+)
 SKILL = "bar_place_and_return"
 KIND = "learned_skill_teacher_prepared_physical_evaluation"
 MARGIN_RAD = 0.001
@@ -94,6 +97,17 @@ def _verify_prior_failure(store: EvidenceStore, run_id: str, training_run: Path,
             and prior.metrics.get("autonomous_skill_actions") == 24
         )
         error = "Prior evaluation is not the sealed MPS late left-contact failure"
+    elif profile == LATE_WORKBENCH_OVERLAP_PROFILE:
+        valid = (
+            prior.run_id == "20260915T125916-a7977c78bed6"
+            and prior.manifest_sha256
+            == "2cfe4f44685c85dd69b9a85d79f8c065f42022e6335c9fca10c6341246a0b90b"
+            and prior.metrics.get("component_passed") is False
+            and prior.metrics.get("autonomous_skill_actions") == 255
+            and "overlap_m=" in str(prior.metrics.get("error", ""))
+            and "bad_contacts=[]" in str(prior.metrics.get("error", ""))
+        )
+        error = "Prior evaluation is not the sealed MPS late workbench-overlap failure"
     else:
         raise ValueError("Unsupported bar physical evaluation profile")
     if common or not valid:
@@ -102,7 +116,9 @@ def _verify_prior_failure(store: EvidenceStore, run_id: str, training_run: Path,
 
 
 class BarTransportPhysicalProtocol(Contract):
-    profile: Literal[PROFILE, COMPLETION_PROFILE, LATE_CONTACT_PROFILE] = PROFILE
+    profile: Literal[
+        PROFILE, COMPLETION_PROFILE, LATE_CONTACT_PROFILE, LATE_WORKBENCH_OVERLAP_PROFILE
+    ] = PROFILE
     training_run: str
     training_manifest_sha256: Digest
     dataset_root: str
@@ -148,7 +164,9 @@ def create_bar_transport_physical_protocol(
     manifest = store.verify(training_run.name)
     config = ACTTrainingConfig.model_validate(manifest.config)
     profile = (
-        LATE_CONTACT_PROFILE
+        LATE_WORKBENCH_OVERLAP_PROFILE
+        if config.sampling_profile == "bar_late_workbench_overlap_sampling_v7"
+        else LATE_CONTACT_PROFILE
         if config.sampling_profile == "bar_late_left_contact_sampling_v6"
         else COMPLETION_PROFILE
         if config.sampling_profile == "bar_margin_completion_sampling_v5"
@@ -169,6 +187,7 @@ def create_bar_transport_physical_protocol(
             "bar_placement_contact_sampling_v4",
             "bar_margin_completion_sampling_v5",
             "bar_late_left_contact_sampling_v6",
+            "bar_late_workbench_overlap_sampling_v7",
         }
         or config.corrective_dataset_path is None
         or config.sampling_protocol_run is None

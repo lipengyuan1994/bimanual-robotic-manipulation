@@ -18,6 +18,7 @@ PLACEMENT_PROGRESS_PROFILE = "bar_placement_progress_sampling_v3"
 PLACEMENT_CONTACT_PROFILE = "bar_placement_contact_sampling_v4"
 MARGIN_COMPLETION_PROFILE = "bar_margin_completion_sampling_v5"
 LATE_LEFT_CONTACT_PROFILE = "bar_late_left_contact_sampling_v6"
+LATE_WORKBENCH_OVERLAP_PROFILE = "bar_late_workbench_overlap_sampling_v7"
 FAILURE_LOCALIZATION_MANIFEST_SHA256 = (
     "f4798d6b4412851ee747c7584d37652329f170a5f5c6588f5a2e91d2e8216633"
 )
@@ -35,6 +36,9 @@ MARGIN_COMPLETION_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
 )
 LATE_LEFT_CONTACT_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
     "feae3370c94f3a873017e59ef257a554c6cc61bde57b4ad9bbfb65131aa9aa41"
+)
+LATE_WORKBENCH_OVERLAP_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
+    "ff7e077ebc969293afcca0f0591928ac65ebbaf757e9e432c36e1be36b25ba33"
 )
 
 
@@ -66,6 +70,11 @@ def _profile_spec(profile: str) -> tuple[str, tuple[int, int], str]:
             (630, 1163),
             "late_left_contact",
         ),
+        LATE_WORKBENCH_OVERLAP_PROFILE: (
+            LATE_WORKBENCH_OVERLAP_FAILURE_ANALYSIS_MANIFEST_SHA256,
+            (630, 1580),
+            "late_workbench_overlap",
+        ),
     }
     try:
         return specs[profile]
@@ -81,6 +90,7 @@ class BarTransportPlacementSampling(Contract):
         PLACEMENT_CONTACT_PROFILE,
         MARGIN_COMPLETION_PROFILE,
         LATE_LEFT_CONTACT_PROFILE,
+        LATE_WORKBENCH_OVERLAP_PROFILE,
     ] = PROFILE
     corrective_export_root: str
     corrective_export_manifest_sha256: Digest

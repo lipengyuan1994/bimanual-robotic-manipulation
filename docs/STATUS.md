@@ -22,61 +22,49 @@ checks as learned task success, generalization or Intel compliance.
 
 ## Latest evaluation and next executable step
 
-The completion-correction candidate `20260913T235437-17291b7b55db` completed all
-20,000 updates on native MPS (`mps:0`) without CPU fallback. Its training manifest,
-checkpoint, processor, sampler and schedule reverify; manifest SHA-256 is
-`9622e9bc2b6140aa8484c36ca7d82ae59352d5bfdd6d2be42a1147742c5503ae`.
+The late-contact ACT candidate `20260915T111450-cfbba7aa3ec4` completed all 20,000
+updates on native MPS (`mps:0`) with `PYTORCH_ENABLE_MPS_FALLBACK=0` and offline model
+caches. Its training manifest SHA-256 is
+`b3f0b503cbfb064c4545c6cc9d0366f5276cba6ff6eb0947b8332c9788278cb6`; its independently
+reverified policy and checkpoint seals are
+`9188055431f3950c052717566a4b77a48151ca32b34cd95ff018a374b0edd2c4` and
+`5290dcbd9b1860752b231134a5892b1d16486c0a897c9d4fe4b4a1ffc7bd2758`. Training completion
+is not learned manipulation success.
 
-Its one permitted successor evaluation declaration is frozen at
-`.artifacts/experiments/bar-margin-completion-mps-v7-evaluation.json`, manifest
-SHA-256 `77b2bb9ad866590748556869dbf5f16a8d78321aabcccb07d332fceaff02e94b`.
-The resulting bounded wrapper run `20260914T013732-0fac09bc35c7` and child
-`20260914T013733-48d18dd52514` both reverify (wrapper SHA-256
-`dc056c15ebd679a60e146f5a2ed98dcbed3642ad95f346ff69cb1087ebb7b9d9`; child
-SHA-256 `535415a0885eeac772da179d8a764ef1b4086e986693cac60389effc6e4cfb7a`).
+Its one permitted frozen successor declaration
+`.artifacts/experiments/bar-late-left-contact-mps-v8-evaluation.json` has SHA-256
+`49cc10fc9937e79740e7c7af43460f5f508902d1f266f5b0de1c8d9a20fc0caf`. The bounded wrapper
+`20260915T125915-7f94342c532b` (SHA-256
+`554ddc03896977ee59a3c86a524a734043ecfa8d7132e2b3990ce3908bf5b0ab`) and child
+`20260915T125916-a7977c78bed6` (SHA-256
+`2cfe4f44685c85dd69b9a85d79f8c065f42022e6335c9fca10c6341246a0b90b`) reverify. The
+process guardian reaped the child normally, but the child failed safely: after a
+630-action teacher prefix and 255 autonomous MPS actions, the guard stopped at 44.277 s
+when the practice object overlapped the workbench by 2.665 mm. It has
+`physical_success=false`, `component_passed=false`, `release_qualified=false`, and no
+independent task or workflow success. The consumed declaration must not be rerun.
 
-The physical evaluation failed safely. After a frozen 630-action teacher prefix,
-the learned checkpoint executed 24 autonomous control steps on `mps:0`. The contact
-guard stopped it at simulation time 32.735 s when the practice object contacted the
-left arm (`overlap_m=0.001447668`). It has `physical_success=false`,
-`component_passed=false`, `release_qualified=false`, and no independent task or
-workflow success. The child process exited normally and was reaped; this means the
-evaluation infrastructure completed, not that manipulation succeeded. The consumed
-declaration must not be rerun.
+Read-only analysis `20260915T130326-330256137bb1` (SHA-256
+`ff7e077ebc969293afcca0f0591928ac65ebbaf757e9e432c36e1be36b25ba33`) preserves the
+failure without changing model, data, scene, or result. It confirms 255 recorded actions,
+one rejected action, zero overtravel, 160.14 mm target displacement, and the peak
+workbench/practice-object contact at policy action 256 during `policy/place`. It explicitly
+recommends inspecting the learned trajectory rather than weakening the guard or claiming
+partial execution as success.
 
-The sealed read-only diagnosis `20260914T033813-d6bb3311734c` (SHA-256
-`feae3370c94f3a873017e59ef257a554c6cc61bde57b4ad9bbfb65131aa9aa41`) confirms
-24 applied and one partial rejected action. It localizes the forbidden contact to
-action 25. The peak allowed right-gripper contact happened earlier at action 21; the
-object moved only 53.95 mm. It changes no dataset, model, scene, or result.
-
-The fresh protocol `bar_late_left_contact_protocol_v7` is implemented and verified,
-binding diagnosis `20260914T033813-d6bb3311734c`, full `[630,1163)` replay coverage,
-and new seeds 58000–58004. Case 58000 failed before physics action with `CGLError:
-invalid CoreGraphics connection` and remains consumed. The four remaining cases
-(58001–58004) completed contact-only teacher collection with 531 replay actions each,
-zero artificial attachments or state edits, and independent physical-score evidence.
-Their immutable views seal is `d81ae1c72773c7855e2a87859348ef7f2eed99b7ca8a5eaaa0eb43b569e8b44f`.
-
-The corrective LeRobot export `.artifacts/datasets/bar-late-left-contact-v7` verifies
-under the native training environment in offline mode. Its archive seal is
-`c6d867f3c67f660e6251884009765da4e4de65b4ebc312d43a67835fd04406c5` and it retains
-2,124 synchronized frames from the four successful sources. The new sampling declaration
-`.artifacts/experiments/bar-late-left-contact-v7-sampling.json` seals that archive to the
-late-contact diagnosis (`0d2368e2b188ba144c290ce6714569dc113354abf1525f97c94a9b84f7b3308b`).
-It assigns half the sampling mass to nominal selected-skill data and half to the declared
-full corrective replay window `[630,1163)`.
-
-Native MPS training candidate `20260915T111450-cfbba7aa3ec4` is active with 20,000
-updates, `PYTORCH_ENABLE_MPS_FALLBACK=0`, and `HF_HUB_OFFLINE=1`. This is training-in-
-progress, not task success. MPS and offscreen MuJoCo render now work through the logged-in
-desktop session; the earlier CoreGraphics/Metal failures are a restricted tool-sandbox
-boundary and are preserved only for their already-consumed collection case.
-
-Next: wait for this candidate to seal and independently reverify it. If it completes,
-freeze exactly one new physical successor declaration bound to the late-contact failure,
-then run that evaluation on native MPS. Intel setup remains deferred until the local
-corrective-training sequence has finished, per the user's direction.
+The next correction is frozen at
+`.artifacts/experiments/bar-late-workbench-overlap-v8-protocol.json` (SHA-256
+`9591946cc1fd2f01463a3cf74835b045724729f4543f2937d20956959533598c`). It binds that
+analysis, allocates fresh seeds 59000–59004 with one contact-only teacher attempt each,
+and permits the predeclared bar-skill window `[630,1580)`. The physical action count has no
+one-to-one teacher-frame mapping, so this avoids inventing a narrow source interval; each
+teacher source stops at its independent physical-success boundary. Case 59000 completed with
+531 replay actions, contact-only reconstruction, zero artificial attachments and a passing
+independent skill score (run `six-skill-corrective-5ad8aee778dd12ff38513181`, SHA-256
+`b4fa48e85086536d01b18ee5f44e6909bf8c3b4137f59fc62927d06ac7b0825f`). Four remaining
+cases, export, sampling declaration, retraining, and one new frozen physical evaluation remain
+to be performed. M2 remains incomplete. Intel setup remains
+deferred until this local corrective-training sequence finishes, per the user's direction.
 
 ## Historical run record
 
