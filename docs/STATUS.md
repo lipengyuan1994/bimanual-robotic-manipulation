@@ -20,6 +20,14 @@ Spend stays zero. Existing-code eligibility is unconfirmed. Physical robot deplo
 and pouring remain outside this release. Never relabel teacher success or runtime
 checks as learned task success, generalization or Intel compliance.
 
+On September 15, the Pages deployment audit found that the learning-site workflow
+correctly used GitHub Actions but could not publish the current integration branch,
+and its generated Lesson 04 retained two repository-only links. The workflow now
+allows only `main` and `codex/preparation-foundation`, binds rewritten source links
+to the deployed commit, and rewrites the new continuity-analysis link. A local
+Node build and navigation check pass; the next relevant push must provide the
+remote deployment evidence.
+
 The repository now has a versioned, fail-closed Intel/OpenVINO benchmark record
 and `bimanual intel-benchmark-check` validator. It requires the actual Core Ultra
 hardware/software identity, requested and actual device/precision, cold and raw

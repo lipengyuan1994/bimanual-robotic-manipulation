@@ -2,7 +2,10 @@ name: Publish learning site
 
 on:
   push:
-    branches: [main]
+    # The active integration branch is the source of the currently published
+    # curriculum until its work is merged to main.  Keep this explicit rather
+    # than deploying arbitrary feature branches.
+    branches: [main, codex/preparation-foundation]
     paths:
       - "assets/learning/**"
       - "lessons/**"
@@ -28,6 +31,10 @@ jobs:
     defaults:
       run:
         working-directory: web
+    env:
+      # Repository-document links in the generated site must resolve to the
+      # exact commit that produced the deployed artifact.
+      LEARNING_SITE_SOURCE_REF: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6

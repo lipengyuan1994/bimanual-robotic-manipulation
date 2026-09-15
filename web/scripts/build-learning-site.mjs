@@ -6,26 +6,35 @@ const projectRoot = resolve(webRoot, "..");
 const outputRoot = resolve(webRoot, "dist-learning");
 const repositoryUrl =
   "https://github.com/lipengyuan1994/bimanual-robotic-manipulation";
+const sourceRef = process.env.LEARNING_SITE_SOURCE_REF || "main";
+const repositoryFile = (path) => `${repositoryUrl}/blob/${sourceRef}/${path}`;
 
 const replacements = new Map([
-  ['href="../docs/STATUS.md"', `href="${repositoryUrl}/blob/main/docs/STATUS.md"`],
-  ['href="../docs/SKILL_TRAINING.md"', `href="${repositoryUrl}/blob/main/docs/SKILL_TRAINING.md"`],
+  ['href="../docs/STATUS.md"', `href="${repositoryFile("docs/STATUS.md")}"`],
+  [
+    'href="../docs/SKILL_TRAINING.md"',
+    `href="${repositoryFile("docs/SKILL_TRAINING.md")}"`,
+  ],
+  [
+    'href="../docs/HANDOFF_FAILURE_ANALYSIS.md"',
+    `href="${repositoryFile("docs/HANDOFF_FAILURE_ANALYSIS.md")}"`,
+  ],
   ['href="../README.md"', 'href="../index.html"'],
   ['href="../docs/LEARNING.md"', 'href="../index.html#learning-path"'],
-  ['href="../docs/SETUP.md"', `href="${repositoryUrl}/blob/main/docs/SETUP.md"`],
-  ['href="../RESOURCES.md"', `href="${repositoryUrl}/blob/main/RESOURCES.md"`],
+  ['href="../docs/SETUP.md"', `href="${repositoryFile("docs/SETUP.md")}"`],
+  ['href="../RESOURCES.md"', `href="${repositoryFile("RESOURCES.md")}"`],
   [
     'href="../docs/ARCHITECTURE.md"',
-    `href="${repositoryUrl}/blob/main/docs/ARCHITECTURE.md"`,
+    `href="${repositoryFile("docs/ARCHITECTURE.md")}"`,
   ],
-  ['href="../docs/EVIDENCE.md"', `href="${repositoryUrl}/blob/main/docs/EVIDENCE.md"`],
+  ['href="../docs/EVIDENCE.md"', `href="${repositoryFile("docs/EVIDENCE.md")}"`],
   [
     'href="../docs/REQUIREMENTS.md"',
-    `href="${repositoryUrl}/blob/main/docs/REQUIREMENTS.md"`,
+    `href="${repositoryFile("docs/REQUIREMENTS.md")}"`,
   ],
   [
     'href="../docs/DEPLOYMENT.md"',
-    `href="${repositoryUrl}/blob/main/docs/DEPLOYMENT.md"`,
+    `href="${repositoryFile("docs/DEPLOYMENT.md")}"`,
   ],
 ]);
 

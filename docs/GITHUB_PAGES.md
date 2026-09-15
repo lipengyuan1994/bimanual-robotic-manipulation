@@ -20,16 +20,23 @@ The public index and lesson 07 were checked directly after that deployment.
 ## Deployment
 
 [`pages.yml`](../.github/workflows/pages.yml) runs after a relevant change reaches
-`main`, and can also be started manually from the Actions tab. It pins Node 24,
-installs the lockfile with `npm ci`, type-checks the TypeScript portal, generates
-the learning artifact, verifies the generated navigation, configures Pages, then
-uses GitHub's official Pages artifact/deployment actions. The workflow uses the
-current Node-24-compatible action releases to avoid the GitHub-hosted runner's
-Node 20 deprecation path.
+`main` or the explicitly named active integration branch
+`codex/preparation-foundation`; it can also be started manually from the Actions
+tab. This narrow branch list prevents arbitrary feature branches from replacing the
+public site while allowing the current curriculum to publish before the long-running
+training integration work is merged. It pins Node 24, installs the lockfile with
+`npm ci`, type-checks the TypeScript portal, generates the learning artifact,
+verifies the generated navigation, configures Pages, then uses GitHub's official
+Pages artifact/deployment actions. The workflow uses the current
+Node-24-compatible action releases to avoid the GitHub-hosted runner's Node 20
+deprecation path.
 
 The Pages build copies tracked learning sources into `web/dist-learning` and
 rewrites only repository-only navigation to static-site or source-repository URLs.
-That generated directory is ignored and must never become the source of truth.
+On Actions it binds source-repository links to the exact deployment commit, so a
+page published from the integration branch does not silently point readers at stale
+`main` documentation. Local builds default those links to `main`. That generated
+directory is ignored and must never become the source of truth.
 
 ## Operational checks
 

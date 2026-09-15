@@ -5,9 +5,10 @@ guide the sequence. Lessons are in English, short, and built around one observab
 win. Ask the agent follow-up questions whenever an explanation is unclear.
 
 The static [public learning site](https://lipengyuan1994.github.io/bimanual-robotic-manipulation/)
-is deployed from `main` through GitHub Pages. It includes only the educational
-material and static client-side interactions; it does not expose the local control
-portal, simulator artifacts, or any control endpoint.
+is deployed through GitHub Pages from `main` and the explicitly named active
+integration branch while that branch carries the current curriculum. It includes
+only the educational material and static client-side interactions; it does not
+expose the local control portal, simulator artifacts, or any control endpoint.
 
 | Stage | Lesson / exercise | Availability |
 |---|---|---|
