@@ -37,9 +37,10 @@ its PID journal was durable. The guardian now holds the child at a start gate un
 `guardian/worker.json` is atomically written. The parent-loss regression passes five
 consecutive native runs; the complete non-render suite passes 1,445 tests, and all
 nine MuJoCo render checks pass through the active macOS graphics session. The
-replacement GitHub Actions run is pending; local CoreGraphics is unavailable inside
-the restricted command sandbox, which is an execution-environment limitation rather
-than a simulation outcome.
+replacement [GitHub Actions run 34991357342](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34991357342)
+passed both the Linux/OSMesa Python and portal jobs for `dcc7309`. Local CoreGraphics
+is unavailable inside the restricted command sandbox, which is an execution-environment
+limitation rather than a simulation outcome.
 
 The repository now has a versioned, fail-closed Intel/OpenVINO benchmark record
 and `bimanual intel-benchmark-check` validator. It requires the actual Core Ultra
