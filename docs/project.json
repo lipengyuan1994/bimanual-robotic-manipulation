@@ -31,7 +31,7 @@
       "id": "M3",
       "title": "Intel / hackathon release",
       "state": "in_progress",
-      "detail": "Local evaluation and release scaffolding are active. Final qualification still requires a working learned system and actual Core Ultra execution after the local corrective sequence."
+      "detail": "Local evaluation and release scaffolding are active, including a fail-closed Intel/OpenVINO benchmark-record validator. Final qualification still requires a working learned system and actual Core Ultra execution after the local corrective sequence."
     },
     {
       "id": "M4",

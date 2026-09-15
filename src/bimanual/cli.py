@@ -640,6 +640,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Verify local Qwen files and runtime readiness without loading the model",
     )
     planner_preflight.add_argument("--model-root", type=Path, required=True)
+    intel_benchmark_check = commands.add_parser(
+        "intel-benchmark-check",
+        help="Validate a recorded Intel/OpenVINO benchmark contract; never runs a benchmark",
+    )
+    intel_benchmark_check.add_argument("record", type=Path)
     planner_suite_create = commands.add_parser(
         "planner-suite-create", help="Freeze source-bound visual-planner evaluation cases"
     )
@@ -804,6 +809,24 @@ def main(argv: list[str] | None = None) -> int:
             )
             emit(result.model_dump(exclude={"provenance"}))
             return 0 if result.outcome == "completed" else 1
+        elif args.command == "intel-benchmark-check":
+            from bimanual.intel_benchmark_contract import load_intel_openvino_benchmark
+
+            record = load_intel_openvino_benchmark(args.record)
+            emit(
+                {
+                    "validated": True,
+                    "kind": record.kind,
+                    "cpu_series": record.hardware.cpu_series,
+                    "requested_device": record.inference.requested_device,
+                    "actual_device": record.inference.actual_device,
+                    "requested_precision": record.inference.requested_precision,
+                    "actual_precision": record.inference.actual_precision,
+                    "fallback_occurred": record.fallback.occurred,
+                    "intel_validated": False,
+                    "note": "Contract validation does not establish target-hardware execution.",
+                }
+            )
         elif args.command == "handoff-continuity-protocol-create":
             from bimanual.handoff_continuity_protocol import (
                 create_handoff_continuity_protocol,

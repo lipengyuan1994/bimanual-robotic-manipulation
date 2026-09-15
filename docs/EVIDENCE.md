@@ -73,3 +73,27 @@ inference device, precision, cold load/compile, warm p50/p95 latency, throughput
 memory, and available utilization counters. Separate model-only from end-to-end
 timings and simulation time from wall time. Report unsupported devices and
 fallbacks explicitly. Never infer power savings without measurement.
+
+Before running on an eligible Core Ultra Series 2/3 host, create one JSON record
+per model/device/precision configuration and validate it locally with:
+
+```bash
+.venv/bin/bimanual intel-benchmark-check path/to/intel-openvino-benchmark.json
+```
+
+The versioned `intel_openvino_benchmark_v1` contract rejects records that omit
+hardware or software identity, the OpenVINO artifact and frozen-input hashes,
+raw warm samples, independently recomputable
+p50/p95 and throughput values, peak process/device memory, separate simulation
+and wall-clock time, unavailable devices, or a visible device fallback. It also
+requires the actual device to appear in the target's OpenVINO device inventory.
+The contract validates evidence shape only: it performs no OpenVINO import,
+conversion, inference, hardware discovery, or benchmark execution, and its
+successful validation is **not** Intel compliance.
+
+A future runner must retain the raw benchmark record with its sealed inference
+and simulation artifacts. It must compare PyTorch and OpenVINO on the same
+frozen inputs and report any quality difference separately. If the requested
+device or precision differs from the actual value, `fallback.occurred` must be
+true with a reason; otherwise validation fails rather than silently crediting
+the requested configuration.

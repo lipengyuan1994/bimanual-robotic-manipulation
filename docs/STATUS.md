@@ -20,6 +20,15 @@ Spend stays zero. Existing-code eligibility is unconfirmed. Physical robot deplo
 and pouring remain outside this release. Never relabel teacher success or runtime
 checks as learned task success, generalization or Intel compliance.
 
+The repository now has a versioned, fail-closed Intel/OpenVINO benchmark record
+and `bimanual intel-benchmark-check` validator. It requires the actual Core Ultra
+hardware/software identity, requested and actual device/precision, cold and raw
+warm model-only/end-to-end timings with recomputed p50/p95 and throughput, memory,
+separate simulation/wall time, and explicit device/precision fallback evidence.
+The checked example and contract tests validate record shape only; no Intel host,
+OpenVINO execution, conversion, or Intel compliance is claimed. See the
+[benchmark contract](EVIDENCE.md#intel-benchmark-contract).
+
 ## Latest evaluation and next executable step
 
 The late-contact ACT candidate `20260915T111450-cfbba7aa3ec4` completed all 20,000

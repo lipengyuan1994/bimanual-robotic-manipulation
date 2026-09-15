@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "intel_openvino_benchmark_v1",
+  "scope": "intel_core_ultra_openvino_inference_and_simulation_benchmark",
+  "hardware": {
+    "cpu_model": "Intel Core Ultra Series 3 example processor",
+    "cpu_series": "Core Ultra Series 3",
+    "system_model": "replace-with-observed-system-model",
+    "ram_bytes": 32000000000
+  },
+  "software": {
+    "os_name": "replace-with-observed-os",
+    "os_version": "replace-with-observed-version",
+    "python_version": "3.12.x",
+    "mujoco_version": "3.12.0",
+    "openvino_version": "replace-with-observed-version",
+    "driver_versions": {
+      "intel_gpu": "replace-with-observed-driver-version"
+    }
+  },
+  "inference": {
+    "model_id": "replace-with-model-id",
+    "model_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "openvino_model_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "input_manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "runtime_backend": "openvino",
+    "requested_device": "GPU",
+    "actual_device": "GPU",
+    "requested_precision": "FP16",
+    "actual_precision": "FP16",
+    "batch_size": 1
+  },
+  "timings": {
+    "cold_load_compile_seconds": 1.0,
+    "batch_size": 1,
+    "warm_model_only_seconds": [0.1, 0.1, 0.1, 0.1, 0.1],
+    "warm_end_to_end_seconds": [0.2, 0.2, 0.2, 0.2, 0.2],
+    "warm_model_only_p50_seconds": 0.1,
+    "warm_model_only_p95_seconds": 0.1,
+    "warm_end_to_end_p50_seconds": 0.2,
+    "warm_end_to_end_p95_seconds": 0.2,
+    "throughput_items_per_second": 10.0,
+    "end_to_end_items_per_second": 5.0
+  },
+  "memory": {
+    "process_peak_rss_bytes": 1000000,
+    "device_peak_memory_bytes": 1000000
+  },
+  "simulation": {
+    "simulation_seconds": 10.0,
+    "wall_clock_seconds": 12.0
+  },
+  "devices": {
+    "available_devices": ["CPU", "GPU"],
+    "unsupported_devices": ["NPU"]
+  },
+  "fallback": {
+    "occurred": false,
+    "reason": null
+  }
+}
