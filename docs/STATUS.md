@@ -77,9 +77,12 @@ synchronization point and was interrupted after 568 recorded updates. Its immuta
 manifest SHA-256 is `e9f21bf77b32558832d40ab01500c8a6b9c5b4ef79d76850b192399d05ed4843`, with
 `training_completed=false`; it has no usable checkpoint and is not a candidate. A macOS stack
 sample shows PyTorch waiting in `MPSStream::synchronize` on `MTLCommandBuffer waitUntilCompleted`.
-Next: run a bounded native-MPS health probe, then create a fresh corrective training attempt only
-if it completes. If a candidate completes, freeze exactly one new physical successor declaration
-bound to the workbench-overlap failure, then run it on native MPS. M2 remains incomplete. Intel
+A bounded native-MPS probe `20260915T133819-d6bc31ec6046` completed ten optimizer updates and
+inference on `mps:0`; it proves the device is available but does not clear the long-run stall.
+Fresh CPU fallback candidate `20260915T133934-6ae476b0ef36` is active on the identical sealed
+training contract. It remains distinct from MPS evidence and is not a task-success claim. If it
+completes, independently reverify it and freeze exactly one physical successor declaration bound
+to the workbench-overlap failure, reporting its actual CPU device. M2 remains incomplete. Intel
 setup remains deferred until this local corrective-training sequence finishes, per the user's
 direction.
 
