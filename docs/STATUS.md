@@ -72,7 +72,9 @@ failure analysis with SHA-256 `85f9193cba30fed00e372973e8302555e85f7e75d7ae974c6
 It assigns half the sampling mass to nominal selected-skill data and half to the declared
 corrective window. Focused M2 control-safety coverage passes 89 tests, including stale actions,
 malformed planner output, cancellation, action-range rejection, and recovery boundaries
-(`tests/test_contracts.py`, `tests/test_dinner_control.py`).
+(`tests/test_contracts.py`, `tests/test_dinner_control.py`). Workflow-level planner, recovery,
+cancellation, and guardian coverage passes 33 further tests (`tests/test_workflow_runner.py`,
+`tests/test_workflow_guardian.py`, `tests/test_planner_decision_suite.py`).
 
 Native MPS training candidate `20260915T133339-d1923fc03a2a` stalled at a Metal command-buffer
 synchronization point and was interrupted after 568 recorded updates. Its immutable failed
