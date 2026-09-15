@@ -71,9 +71,15 @@ def test_valid_record_requires_all_benchmark_evidence_fields():
     "mutate, message",
     [
         (lambda item: item["timings"].pop("warm_end_to_end_seconds"), "warm_end_to_end_seconds"),
-        (lambda item: item["timings"].__setitem__("warm_model_only_p95_seconds", 0.47), "raw warm samples"),
+        (
+            lambda item: item["timings"].__setitem__("warm_model_only_p95_seconds", 0.47),
+            "raw warm samples",
+        ),
         (lambda item: item["inference"].__setitem__("actual_device", "CPU"), "visible fallback"),
-        (lambda item: item["inference"].__setitem__("actual_precision", "FP32"), "visible fallback"),
+        (
+            lambda item: item["inference"].__setitem__("actual_precision", "FP32"),
+            "visible fallback",
+        ),
         (lambda item: item["fallback"].update(occurred=True, reason=None), "fallback reason"),
         (lambda item: item["hardware"].__setitem__("cpu_series", "Xeon"), "cpu_series"),
     ],

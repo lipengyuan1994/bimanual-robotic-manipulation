@@ -163,7 +163,9 @@ def test_cpu_overlap_profile_keeps_the_cpu_device_explicit(tmp_path):
         "skill_views_sha256": "c" * 64,
         "sampling_declaration_sha256": "d" * 64,
         "prior_evaluation_run_id": "20260915T125916-a7977c78bed6",
-        "prior_evaluation_manifest_sha256": "2cfe4f44685c85dd69b9a85d79f8c065f42022e6335c9fca10c6341246a0b90b",
+        "prior_evaluation_manifest_sha256": (
+            "2cfe4f44685c85dd69b9a85d79f8c065f42022e6335c9fca10c6341246a0b90b"
+        ),
         "policy_target_margin_rad": module.MARGIN_RAD,
         "evaluation_sources": {
             name: digest_file(root / name) for name in module._evaluation_source_paths(root)
@@ -174,9 +176,7 @@ def test_cpu_overlap_profile_keeps_the_cpu_device_explicit(tmp_path):
         "wall_timeout_seconds": 1200.0,
         "execution_authorized_by_this_artifact": False,
     }
-    assert (
-        module.BarTransportPhysicalProtocol.model_validate(_reseal(body.copy())).device == "cpu"
-    )
+    assert module.BarTransportPhysicalProtocol.model_validate(_reseal(body.copy())).device == "cpu"
     body["device"] = "mps"
     with pytest.raises(ValueError, match="device does not match"):
         module.BarTransportPhysicalProtocol.model_validate(_reseal(body))

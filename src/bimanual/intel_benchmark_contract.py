@@ -99,23 +99,35 @@ class BenchmarkTimings(Contract):
     @model_validator(mode="after")
     def aggregates_match_raw_samples(self) -> Self:
         checks = (
-            ("warm_model_only_p50_seconds", self.warm_model_only_p50_seconds,
-             _percentile(self.warm_model_only_seconds, 0.5)),
-            ("warm_model_only_p95_seconds", self.warm_model_only_p95_seconds,
-             _percentile(self.warm_model_only_seconds, 0.95)),
-            ("warm_end_to_end_p50_seconds", self.warm_end_to_end_p50_seconds,
-             _percentile(self.warm_end_to_end_seconds, 0.5)),
-            ("warm_end_to_end_p95_seconds", self.warm_end_to_end_p95_seconds,
-             _percentile(self.warm_end_to_end_seconds, 0.95)),
+            (
+                "warm_model_only_p50_seconds",
+                self.warm_model_only_p50_seconds,
+                _percentile(self.warm_model_only_seconds, 0.5),
+            ),
+            (
+                "warm_model_only_p95_seconds",
+                self.warm_model_only_p95_seconds,
+                _percentile(self.warm_model_only_seconds, 0.95),
+            ),
+            (
+                "warm_end_to_end_p50_seconds",
+                self.warm_end_to_end_p50_seconds,
+                _percentile(self.warm_end_to_end_seconds, 0.5),
+            ),
+            (
+                "warm_end_to_end_p95_seconds",
+                self.warm_end_to_end_p95_seconds,
+                _percentile(self.warm_end_to_end_seconds, 0.95),
+            ),
         )
         for name, reported, calculated in checks:
             if not math.isclose(reported, calculated, rel_tol=1e-9, abs_tol=1e-12):
                 raise ValueError(f"{name} does not match raw warm samples")
-        expected_model = self.batch_size / sum(self.warm_model_only_seconds) * len(
-            self.warm_model_only_seconds
+        expected_model = (
+            self.batch_size / sum(self.warm_model_only_seconds) * len(self.warm_model_only_seconds)
         )
-        expected_e2e = self.batch_size / sum(self.warm_end_to_end_seconds) * len(
-            self.warm_end_to_end_seconds
+        expected_e2e = (
+            self.batch_size / sum(self.warm_end_to_end_seconds) * len(self.warm_end_to_end_seconds)
         )
         if not math.isclose(self.throughput_items_per_second, expected_model, rel_tol=1e-9):
             raise ValueError("throughput_items_per_second does not match model-only samples")
@@ -184,7 +196,9 @@ class IntelOpenVINOBenchmark(Contract):
         changed_device = requested != actual
         changed_precision = self.inference.requested_precision != self.inference.actual_precision
         if (changed_device or changed_precision) and not self.fallback.occurred:
-            raise ValueError("requested/actual device or precision mismatch requires visible fallback")
+            raise ValueError(
+                "requested/actual device or precision mismatch requires visible fallback"
+            )
         if not changed_device and not changed_precision and self.fallback.occurred:
             raise ValueError("fallback cannot be reported when device and precision both match")
         if requested in self.devices.unsupported_devices and requested == actual:

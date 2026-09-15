@@ -156,9 +156,7 @@ class BarTransportPhysicalProtocol(Contract):
         body = self.model_dump(mode="json", exclude={"manifest_sha256"})
         if hashlib.sha256(canonical(body)).hexdigest() != self.manifest_sha256:
             raise ValueError("Bar physical evaluation declaration digest mismatch")
-        expected_device = (
-            "cpu" if self.profile == CPU_LATE_WORKBENCH_OVERLAP_PROFILE else "mps"
-        )
+        expected_device = "cpu" if self.profile == CPU_LATE_WORKBENCH_OVERLAP_PROFILE else "mps"
         if self.device != expected_device:
             raise ValueError("Bar physical evaluation declaration device does not match profile")
         return self

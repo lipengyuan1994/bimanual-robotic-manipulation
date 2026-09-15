@@ -135,7 +135,8 @@ def _source_recording(path: Path) -> tuple[Manifest, DemonstrationEpisode]:
         and manifest.config.get("missing_object") is True
         and manifest.metrics.get("demonstration_transitions") == 0
         and manifest.metrics.get("rendered") is True
-        and manifest.metrics.get("error") == "RuntimeError: Practice object is missing; no grasp attempted"
+        and manifest.metrics.get("error")
+        == "RuntimeError: Practice object is missing; no grasp attempted"
     )
     if (
         not (completed or safe_missing_object_observation)
