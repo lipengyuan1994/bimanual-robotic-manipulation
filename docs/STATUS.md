@@ -149,8 +149,9 @@ The read-only CPU-aware diagnosis `20260915T181301-3ff6dd7a5021` (seal
 226.84 mm target displacement. The analyzer previously rejected CPU records despite preserving
 actual device data; it now accepts a supported recorded device and includes it in the diagnosis.
 The next correction is a new source-bound protocol profile with fresh seeds 60000–60004 and the
-predeclared full bar-skill window `[630,1580)`. Collection has not started. A September 15 M2
-evidence audit also confirmed that the nominal demonstrations come from one authored scene:
+predeclared full bar-skill window `[630,1580)`. Its contact-only, one-attempt-per-case collection
+is active; case 60000 has sealed successfully and later cases remain in their declared serial order.
+A September 15 M2 evidence audit also confirmed that the nominal demonstrations come from one authored scene:
 held-out recorded validation/test scenes and a real seven-step learned workflow remain required.
 M2 remains incomplete. Intel setup remains deferred until this local corrective-training sequence
 finishes, per the user's direction.
