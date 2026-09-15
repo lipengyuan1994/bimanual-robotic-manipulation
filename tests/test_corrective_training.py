@@ -100,6 +100,7 @@ def test_margin_completion_profile_is_bound_to_the_margin_evaluation_failure():
         MARGIN_COMPLETION_FAILURE_ANALYSIS_MANIFEST_SHA256,
         MARGIN_COMPLETION_PROFILE,
     )
+
     assert _profile_spec(MARGIN_COMPLETION_PROFILE) == (
         MARGIN_COMPLETION_FAILURE_ANALYSIS_MANIFEST_SHA256,
         (770, 1163),
@@ -118,6 +119,7 @@ def test_late_left_contact_profile_is_bound_to_the_sealed_contact_failure():
         (630, 1163),
         "late_left_contact",
     )
+
 
 def test_placement_contact_profile_is_bound_to_the_observed_failure_interval():
     assert _profile_spec(PLACEMENT_CONTACT_PROFILE) == (
@@ -192,9 +194,7 @@ def test_late_left_contact_plan_weights_the_full_declared_replay_window():
         emphasis_end=1163,
         sampling_profile="bar_late_left_contact_sampling_v6",
     )
-    assert {frame["region"] for frame in result["frames"][1:]} == {
-        "late_left_contact_window"
-    }
+    assert {frame["region"] for frame in result["frames"][1:]} == {"late_left_contact_window"}
     assert result["bar_late_left_contact"]["emphasis_source_interval"] == [630, 1163]
 
 
