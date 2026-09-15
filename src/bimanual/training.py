@@ -9,8 +9,10 @@ import json
 import os
 import platform
 import random
+import shutil
 import time
 import traceback
+import uuid
 from pathlib import Path
 from typing import Literal
 
@@ -68,6 +70,8 @@ class ACTTrainingConfig(BaseModel):
     skill_views_path: Path | None = None
     skill_id: str | None = None
     reference_initial_state_sha256: str | None = Field(default=None, pattern="^[a-f0-9]{64}$")
+    checkpoint_interval: int = Field(default=0, ge=0, le=100_000)
+    resume_from: Path | None = None
 
     @model_validator(mode="after")
     def sampling_configuration(self):
@@ -120,6 +124,243 @@ class ACTTrainingConfig(BaseModel):
                 "Corrective training requires a verified selected skill view and supported sampling"
             )
         return self
+
+
+RESUME_SNAPSHOT_SCHEMA_VERSION = 1
+
+
+def _resolved_path_for_identity(path: Path | None, project_root: Path) -> str | None:
+    if path is None:
+        return None
+    return str((path if path.is_absolute() else project_root / path).resolve())
+
+
+def resume_config_identity(config: ACTTrainingConfig, *, project_root: Path) -> dict:
+    """Return the exact behavior-bearing configuration for snapshot binding.
+
+    ``resume_from`` selects an already sealed source run; it cannot affect a model
+    update. All other settings, including checkpoint cadence, remain bound.
+    Paths are made absolute so a resume is not accidentally tied to a shell CWD.
+    """
+    identity = config.model_dump(mode="json")
+    identity.pop("resume_from", None)
+    for name in (
+        "dataset_path",
+        "corrective_dataset_path",
+        "skill_views_path",
+        "sampling_protocol_run",
+    ):
+        value = getattr(config, name)
+        identity[name] = _resolved_path_for_identity(value, project_root)
+    return identity
+
+
+def _numpy_rng_state() -> dict:
+    state = np.random.get_state()
+    return {
+        "kind": state[0],
+        "keys": state[1].tolist(),
+        "position": state[2],
+        "has_gauss": state[3],
+        "cached_gaussian": state[4],
+    }
+
+
+def _restore_numpy_rng_state(state: dict) -> None:
+    required = {"kind", "keys", "position", "has_gauss", "cached_gaussian"}
+    if set(state) != required or not isinstance(state["keys"], list):
+        raise ValueError("Resume snapshot has an invalid NumPy RNG state")
+    np.random.set_state(
+        (
+            state["kind"],
+            np.asarray(state["keys"], dtype=np.uint32),
+            state["position"],
+            state["has_gauss"],
+            state["cached_gaussian"],
+        )
+    )
+
+
+def _snapshot_metadata(
+    *,
+    directory: Path,
+    step: int,
+    config_identity: dict,
+    source: dict,
+    dataset_digest: str,
+    corrective_dataset_digest: str | None,
+    sampling_digest: str,
+    actual_device: str,
+    versions: dict[str, str],
+    initial_state_sha256: str,
+    state_digest: str,
+) -> dict:
+    payload = {
+        "schema_version": RESUME_SNAPSHOT_SCHEMA_VERSION,
+        "parent_run_id": directory.name,
+        "completed_updates": step,
+        "training_config": config_identity,
+        "training_config_sha256": hashlib.sha256(canonical(config_identity)).hexdigest(),
+        "source_sha256": source["source_sha256"],
+        "dataset_manifest_sha256": dataset_digest,
+        "corrective_dataset_manifest_sha256": corrective_dataset_digest,
+        "sampling_plan_sha256": sampling_digest,
+        "actual_device": actual_device,
+        "versions": versions,
+        "initial_state_sha256": initial_state_sha256,
+        "state_file": "trainer_state.pt",
+        "state_sha256": state_digest,
+    }
+    payload["snapshot_sha256"] = hashlib.sha256(canonical(payload)).hexdigest()
+    return payload
+
+
+def _verify_snapshot_metadata(payload: dict) -> dict:
+    expected = {key: value for key, value in payload.items() if key != "snapshot_sha256"}
+    if payload.get("schema_version") != RESUME_SNAPSHOT_SCHEMA_VERSION:
+        raise ValueError("Unsupported resume snapshot schema")
+    if hashlib.sha256(canonical(expected)).hexdigest() != payload.get("snapshot_sha256"):
+        raise ValueError("Resume snapshot metadata digest mismatch")
+    if (
+        not isinstance(payload.get("parent_run_id"), str)
+        or not isinstance(payload.get("completed_updates"), int)
+        or payload["completed_updates"] < 1
+        or not isinstance(payload.get("training_config"), dict)
+        or not isinstance(payload.get("versions"), dict)
+        or payload.get("state_file") != "trainer_state.pt"
+    ):
+        raise ValueError("Resume snapshot metadata is invalid")
+    return payload
+
+
+def write_resume_snapshot(
+    *,
+    torch,
+    directory: Path,
+    step: int,
+    policy,
+    optimizer,
+    sampler,
+    config_identity: dict,
+    source: dict,
+    dataset_digest: str,
+    corrective_dataset_digest: str | None,
+    sampling_digest: str,
+    actual_device: str,
+    versions: dict[str, str],
+    initial_state_sha256: str,
+) -> Path:
+    """Atomically publish a complete recovery point inside an unsealed run.
+
+    A snapshot is intentionally usable only after its parent run is later sealed
+    as failed. This prevents a second worker from treating a live run as a source.
+    """
+    snapshots = directory / "snapshots"
+    snapshots.mkdir(exist_ok=True)
+    name = f"checkpoint-{step:08d}"
+    destination = snapshots / name
+    if destination.exists():
+        raise RuntimeError("Refusing to overwrite an existing training snapshot")
+    temporary = snapshots / f".{name}-{uuid.uuid4().hex}.tmp"
+    temporary.mkdir()
+    try:
+        state_path = temporary / "trainer_state.pt"
+        torch.save(
+            {
+                "schema_version": RESUME_SNAPSHOT_SCHEMA_VERSION,
+                "step": step,
+                "model": policy.state_dict(),
+                "optimizer": optimizer.state_dict(),
+                "sampler_rng_state": sampler.get_state(),
+                "torch_rng_state": torch.get_rng_state(),
+                "mps_rng_state": torch.mps.get_rng_state() if actual_device == "mps" else None,
+                "python_rng_state": random.getstate(),
+                "numpy_rng_state": _numpy_rng_state(),
+            },
+            state_path,
+        )
+        metadata = _snapshot_metadata(
+            directory=directory,
+            step=step,
+            config_identity=config_identity,
+            source=source,
+            dataset_digest=dataset_digest,
+            corrective_dataset_digest=corrective_dataset_digest,
+            sampling_digest=sampling_digest,
+            actual_device=actual_device,
+            versions=versions,
+            initial_state_sha256=initial_state_sha256,
+            state_digest=digest_file(state_path),
+        )
+        (temporary / "snapshot.json").write_bytes(canonical(metadata))
+        os.replace(temporary, destination)
+    except BaseException:
+        shutil.rmtree(temporary, ignore_errors=True)
+        raise
+    return destination
+
+
+def load_resume_snapshot(
+    *,
+    torch,
+    snapshot_path: Path,
+    store: EvidenceStore,
+    config: ACTTrainingConfig,
+    project_root: Path,
+    source: dict,
+    dataset_digest: str,
+    corrective_dataset_digest: str | None,
+    sampling_digest: str,
+    versions: dict[str, str],
+    initial_state_sha256: str,
+) -> tuple[dict, dict]:
+    """Verify a sealed interrupted parent and return trusted state plus metadata."""
+    snapshot_path = snapshot_path.resolve(strict=True)
+    try:
+        parent = snapshot_path.parent.parent
+        runs = parent.parent
+    except IndexError as exc:  # pragma: no cover - Path always has parents
+        raise ValueError("Invalid resume snapshot path") from exc
+    if runs.name != "runs" or runs.parent != store.root or snapshot_path.parent.name != "snapshots":
+        raise ValueError("Resume snapshot must belong to this evidence store")
+    manifest = store.verify(parent.name)
+    if manifest.kind != "act_training" or manifest.outcome != "failed":
+        raise ValueError("Resume source must be a sealed failed ACT training run")
+    relative = snapshot_path.relative_to(parent).as_posix()
+    state_relative = f"{relative}/trainer_state.pt"
+    metadata_relative = f"{relative}/snapshot.json"
+    if state_relative not in manifest.files or metadata_relative not in manifest.files:
+        raise ValueError("Resume snapshot is not bound by the parent manifest")
+    payload = _verify_snapshot_metadata(json.loads((snapshot_path / "snapshot.json").read_text()))
+    if payload["parent_run_id"] != manifest.run_id:
+        raise ValueError("Resume snapshot parent identity mismatch")
+    expected_identity = resume_config_identity(config, project_root=project_root)
+    bindings = {
+        "training_config": expected_identity,
+        "training_config_sha256": hashlib.sha256(canonical(expected_identity)).hexdigest(),
+        "source_sha256": source["source_sha256"],
+        "dataset_manifest_sha256": dataset_digest,
+        "corrective_dataset_manifest_sha256": corrective_dataset_digest,
+        "sampling_plan_sha256": sampling_digest,
+        "actual_device": config.device,
+        "versions": versions,
+        "initial_state_sha256": initial_state_sha256,
+    }
+    for key, expected in bindings.items():
+        if payload.get(key) != expected:
+            raise ValueError(f"Resume snapshot {key} binding mismatch")
+    state_path = snapshot_path / payload["state_file"]
+    if digest_file(state_path) != payload["state_sha256"]:
+        raise ValueError("Resume snapshot state digest mismatch")
+    # The digest and parent manifest were verified before deserializing this local state.
+    state = torch.load(state_path, map_location="cpu", weights_only=False)
+    if (
+        not isinstance(state, dict)
+        or state.get("schema_version") != RESUME_SNAPSHOT_SCHEMA_VERSION
+        or state.get("step") != payload["completed_updates"]
+    ):
+        raise ValueError("Resume snapshot state identity mismatch")
+    return state, payload
 
 
 def learning_rate_for_step(config: ACTTrainingConfig, step: int) -> float:
@@ -504,6 +745,7 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
         raise ValueError("Training evidence store must be outside the immutable dataset")
     directory = store.new_run()
     source = provenance(project_root)
+    config_identity = resume_config_identity(config, project_root=project_root)
     metrics = {
         "requested_device": config.device,
         "actual_device": None,
@@ -564,6 +806,7 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
             metrics["skill_views_file_sha256"] = view_digest
         corrective_manifest = None
         corrective_root = None
+        corrective_dataset_digest = None
         bar_sampling = None
         if config.corrective_dataset_path is not None:
             from bimanual.corrective_dataset import (
@@ -579,6 +822,7 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
             if store.root.resolve().is_relative_to(corrective_root):
                 raise ValueError("Training evidence must be outside the corrective dataset")
             corrective_manifest = verify_supported_corrective_dataset_binding(corrective_root)
+            corrective_dataset_digest = digest_file(corrective_root / "export_manifest.json")
             if config.sampling_profile in {
                 "bar_transport_placement_v1",
                 "bar_entry_contact_sampling_v2",
@@ -770,29 +1014,81 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
         preprocessor, postprocessor = make_act_pre_post_processors(policy_config, stats)
         optimizer_config = policy_config.get_optimizer_preset()
         optimizer = optimizer_config.build(policy.get_optim_params())
+        versions = {
+            name: importlib.metadata.version(name)
+            for name in ("torch", "torchvision", "lerobot", "numpy", "datasets", "pyarrow")
+        }
+        initial_state_sha256 = _tensor_digest(policy.state_dict())
         metrics.update(
             {
                 "actual_device": config.device,
                 "precision": "float32",
                 "parameter_count": sum(p.numel() for p in policy.parameters()),
-                "initial_state_sha256": _tensor_digest(policy.state_dict()),
+                "initial_state_sha256": initial_state_sha256,
                 "dataset_manifest_sha256": dataset_digest,
                 "dataset_frames": len(dataset),
-                "versions": {
-                    name: importlib.metadata.version(name)
-                    for name in ("torch", "torchvision", "lerobot", "numpy", "datasets", "pyarrow")
-                },
+                "versions": versions,
                 "optimizer_weight_decay": optimizer_config.weight_decay,
                 "gradient_clip_norm": optimizer_config.grad_clip_norm,
                 "deterministic_algorithms_enabled": torch.are_deterministic_algorithms_enabled(),
             }
         )
 
+        completed_before_resume = 0
+        if config.resume_from is not None:
+            resume_state, resume_metadata = load_resume_snapshot(
+                torch=torch,
+                snapshot_path=config.resume_from,
+                store=store,
+                config=config,
+                project_root=project_root,
+                source=source,
+                dataset_digest=dataset_digest,
+                corrective_dataset_digest=corrective_dataset_digest,
+                sampling_digest=sampling_digest,
+                versions=versions,
+                initial_state_sha256=initial_state_sha256,
+            )
+            completed_before_resume = resume_metadata["completed_updates"]
+            if completed_before_resume >= config.steps:
+                raise ValueError("Resume snapshot already reaches the configured update budget")
+            parent_manifest = store.verify(resume_metadata["parent_run_id"])
+            parent_steps = parent_manifest.metrics.get("steps")
+            if (
+                not isinstance(parent_steps, list)
+                or len(parent_steps) != completed_before_resume
+                or [item.get("step") for item in parent_steps]
+                != list(range(1, completed_before_resume + 1))
+            ):
+                raise ValueError("Resume parent does not retain a complete ordered step record")
+            policy.load_state_dict(resume_state["model"], strict=True)
+            optimizer.load_state_dict(resume_state["optimizer"])
+            sampler.set_state(resume_state["sampler_rng_state"])
+            torch.set_rng_state(resume_state["torch_rng_state"])
+            if config.device == "mps":
+                if resume_state.get("mps_rng_state") is None:
+                    raise ValueError("Resume snapshot is missing MPS RNG state")
+                torch.mps.set_rng_state(resume_state["mps_rng_state"])
+            elif resume_state.get("mps_rng_state") is not None:
+                raise ValueError("CPU resume snapshot unexpectedly contains MPS RNG state")
+            random.setstate(resume_state["python_rng_state"])
+            _restore_numpy_rng_state(resume_state["numpy_rng_state"])
+            metrics["steps"] = copy.deepcopy(parent_steps)
+            metrics["resumed_from"] = {
+                "run_id": parent_manifest.run_id,
+                "snapshot": str(config.resume_from.resolve()),
+                "snapshot_sha256": resume_metadata["snapshot_sha256"],
+                "completed_updates": completed_before_resume,
+            }
+            with (directory / "steps.jsonl").open("w") as stream:
+                for item in metrics["steps"]:
+                    stream.write(json.dumps(item, allow_nan=False) + "\n")
+
         def synchronize():
             if config.device == "mps":
                 torch.mps.synchronize()
 
-        for step in range(config.steps):
+        for step in range(completed_before_resume, config.steps):
             step_start = time.perf_counter()
             indices = sample_training_indices(torch, sampler, sampling_plan, config.batch_size)
             allowed = set(input_features) | {"action", "action_is_pad"}
@@ -836,6 +1132,27 @@ def _run_train(config: ACTTrainingConfig, *, store: EvidenceStore, project_root:
             metrics["steps"].append(item)
             with (directory / "steps.jsonl").open("a") as stream:
                 stream.write(json.dumps(item, allow_nan=False) + "\n")
+            if (
+                config.checkpoint_interval > 0
+                and step + 1 < config.steps
+                and (step + 1) % config.checkpoint_interval == 0
+            ):
+                write_resume_snapshot(
+                    torch=torch,
+                    directory=directory,
+                    step=step + 1,
+                    policy=policy,
+                    optimizer=optimizer,
+                    sampler=sampler,
+                    config_identity=config_identity,
+                    source=source,
+                    dataset_digest=dataset_digest,
+                    corrective_dataset_digest=corrective_dataset_digest,
+                    sampling_digest=sampling_digest,
+                    actual_device=config.device,
+                    versions=versions,
+                    initial_state_sha256=initial_state_sha256,
+                )
         metrics["updated_state_sha256"] = _tensor_digest(policy.state_dict())
         if metrics["updated_state_sha256"] == metrics["initial_state_sha256"]:
             raise RuntimeError("Optimizer did not change model parameters")

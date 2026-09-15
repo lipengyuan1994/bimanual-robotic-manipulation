@@ -107,6 +107,13 @@ this candidate completes, it will bind the prior workbench-overlap failure, repo
 device, and cannot be interpreted as MPS or Intel evidence. M2 remains incomplete. Intel setup
 remains deferred until this local corrective-training sequence finishes, per the user's direction.
 
+For future candidates only, ACT training now supports opt-in atomic recovery snapshots and
+fail-closed resume. A snapshot binds its sealed failed parent, source lineage, normalized training
+configuration, dataset and corrective-dataset manifests, actual device, package versions,
+initial state, sampling plan, model/optimizer, and all RNG states. The active CPU candidate
+`20260915T135153-ae4e47464925` predates this feature and was not modified or restarted. This is
+recovery infrastructure, not a new training, learned-policy, or physical-evaluation result.
+
 ## Historical run record
 
 Corrective training run `20260911T184624-653277cfce84` completed20,000updates

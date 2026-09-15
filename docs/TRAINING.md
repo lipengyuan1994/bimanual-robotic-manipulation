@@ -244,8 +244,33 @@ the sealed collection protocol. The same plan is copied into the checkpoint as
 `training_sampling.json`; its digest and the sampler RNG state are preserved in
 `trainer_state.pt`. Each update records the selected source-frame identities.
 After saving, training reloads that state and verifies the next batch matches,
-without advancing the persisted RNG state. This is RNG continuation evidence;
-a general interrupted-training resume command is not implemented.
+without advancing the persisted RNG state.
+
+## Resuming an interrupted future candidate
+
+Snapshots are disabled by default. A new candidate can opt in with
+`--checkpoint-interval N`; each non-final multiple of `N` atomically writes a
+model, optimizer, sampler, Torch/MPS, Python and NumPy RNG snapshot. A snapshot
+is not usable while its parent is running. It becomes eligible only if that
+parent later seals as a failed `act_training` record, so interruption evidence is
+preserved rather than overwritten.
+
+Resume only from that snapshot directory and repeat every original training
+argument, including device, update budget and checkpoint interval:
+
+```sh
+.artifacts/training-venv/bin/bimanual train \
+  --dataset DATASET --device cpu --architecture small --steps 20000 \
+  --batch-size 4 --chunk-size 10 --seed 0 --checkpoint-interval 500 \
+  --resume-from .artifacts/runs/FAILED_RUN/snapshots/checkpoint-00000500
+```
+
+Before loading state, the trainer verifies the parent manifest and snapshot file
+hashes, then rejects changes to source lineage, normalized training configuration,
+dataset or corrective-dataset manifest, actual device, sampling-plan digest,
+package versions, or initial model state. It copies the prior ordered step record
+into the child evidence and continues at the next update. Resume records remain
+training-completion evidence only; they do not imply manipulation success.
 
 Focused tests verify exact default sampling compatibility, per-episode/region
 probability mass, complete source-index coverage, deterministic RNG restoration,

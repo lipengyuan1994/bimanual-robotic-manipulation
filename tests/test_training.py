@@ -15,12 +15,16 @@ from bimanual.dual_arm import CAMERAS, JOINT_ORDER
 from bimanual.evidence import EvidenceStore, canonical, digest_file
 from bimanual.training import (
     ACTTrainingConfig,
+    _snapshot_metadata,
     build_sampling_plan,
     initialize_act_policy,
+    load_resume_snapshot,
+    resume_config_identity,
     run_train,
     sample_training_indices,
     stable_numeric_stats,
     verify_training_dataset,
+    write_resume_snapshot,
 )
 from bimanual.training_probe import CAMERA_KEYS, _tensor_digest
 
@@ -307,6 +311,180 @@ def test_keyboard_interrupt_seals_failure(manifest_dataset, tmp_path, monkeypatc
     (result,) = store.list_runs()
     assert result["outcome"] == "failed" and result["metrics"]["interrupted"] is True
     assert "metrics.json" in result["files"]
+
+
+def _sealed_resume_snapshot(tmp_path, *, outcome="failed"):
+    store = EvidenceStore(tmp_path / "evidence")
+    parent = store.new_run()
+    snapshot = parent / "snapshots" / "checkpoint-00000002"
+    snapshot.mkdir(parents=True)
+    state = snapshot / "trainer_state.pt"
+    state.write_bytes(b"opaque-fixture-state")
+    config = ACTTrainingConfig(
+        dataset_path=tmp_path / "dataset",
+        steps=4,
+        batch_size=1,
+        checkpoint_interval=2,
+    )
+    source = {"source_sha256": "a" * 64}
+    versions = {"torch": "fixture"}
+    metadata = _snapshot_metadata(
+        directory=parent,
+        step=2,
+        config_identity=resume_config_identity(config, project_root=tmp_path),
+        source=source,
+        dataset_digest="b" * 64,
+        corrective_dataset_digest=None,
+        sampling_digest="c" * 64,
+        actual_device="cpu",
+        versions=versions,
+        initial_state_sha256="d" * 64,
+        state_digest=digest_file(state),
+    )
+    (snapshot / "snapshot.json").write_bytes(canonical(metadata))
+    store.seal(
+        parent,
+        kind="act_training",
+        outcome=outcome,
+        config=config.model_dump(mode="json"),
+        metrics={"steps": [{"step": 1}, {"step": 2}], "training_completed": False},
+        source={},
+        claims=[],
+    )
+    return store, snapshot, config, source, versions
+
+
+def test_resume_snapshot_rejects_changed_training_bindings(tmp_path):
+    store, snapshot, config, source, versions = _sealed_resume_snapshot(tmp_path)
+
+    with pytest.raises(ValueError, match="training_config binding mismatch"):
+        load_resume_snapshot(
+            torch=None,
+            snapshot_path=snapshot,
+            store=store,
+            config=config.model_copy(update={"batch_size": 2}),
+            project_root=tmp_path,
+            source=source,
+            dataset_digest="b" * 64,
+            corrective_dataset_digest=None,
+            sampling_digest="c" * 64,
+            versions=versions,
+            initial_state_sha256="d" * 64,
+        )
+    with pytest.raises(ValueError, match="dataset_manifest_sha256 binding mismatch"):
+        load_resume_snapshot(
+            torch=None,
+            snapshot_path=snapshot,
+            store=store,
+            config=config,
+            project_root=tmp_path,
+            source=source,
+            dataset_digest="e" * 64,
+            corrective_dataset_digest=None,
+            sampling_digest="c" * 64,
+            versions=versions,
+            initial_state_sha256="d" * 64,
+        )
+    with pytest.raises(ValueError, match="sampling_plan_sha256 binding mismatch"):
+        load_resume_snapshot(
+            torch=None,
+            snapshot_path=snapshot,
+            store=store,
+            config=config,
+            project_root=tmp_path,
+            source=source,
+            dataset_digest="b" * 64,
+            corrective_dataset_digest=None,
+            sampling_digest="f" * 64,
+            versions=versions,
+            initial_state_sha256="d" * 64,
+        )
+    assert store.verify(snapshot.parents[1].name).outcome == "failed"
+
+
+def test_resume_snapshot_requires_sealed_failed_parent(tmp_path):
+    store, snapshot, config, source, versions = _sealed_resume_snapshot(
+        tmp_path, outcome="completed"
+    )
+    with pytest.raises(ValueError, match="sealed failed"):
+        load_resume_snapshot(
+            torch=None,
+            snapshot_path=snapshot,
+            store=store,
+            config=config,
+            project_root=tmp_path,
+            source=source,
+            dataset_digest="b" * 64,
+            corrective_dataset_digest=None,
+            sampling_digest="c" * 64,
+            versions=versions,
+            initial_state_sha256="d" * 64,
+        )
+
+
+def test_resume_snapshot_round_trip_requires_sealed_interrupted_parent(tmp_path):
+    torch = pytest.importorskip("torch")
+    store = EvidenceStore(tmp_path / "evidence")
+    parent = store.new_run()
+    config = ACTTrainingConfig(dataset_path=tmp_path / "dataset", steps=4, checkpoint_interval=2)
+    source = {"source_sha256": "a" * 64}
+    versions = {"torch": "fixture"}
+    policy = torch.nn.Linear(2, 2)
+    initial = _tensor_digest(policy.state_dict())
+    optimizer = torch.optim.Adam(policy.parameters(), lr=0.01)
+    loss = policy(torch.ones((1, 2))).sum()
+    loss.backward()
+    optimizer.step()
+    sampler = torch.Generator(device="cpu").manual_seed(7)
+    snapshot = write_resume_snapshot(
+        torch=torch,
+        directory=parent,
+        step=2,
+        policy=policy,
+        optimizer=optimizer,
+        sampler=sampler,
+        config_identity=resume_config_identity(config, project_root=tmp_path),
+        source=source,
+        dataset_digest="b" * 64,
+        corrective_dataset_digest=None,
+        sampling_digest="c" * 64,
+        actual_device="cpu",
+        versions=versions,
+        initial_state_sha256=initial,
+    )
+    expected_model = {name: value.detach().clone() for name, value in policy.state_dict().items()}
+    expected_sampler = sampler.get_state().clone()
+    store.seal(
+        parent,
+        kind="act_training",
+        outcome="failed",
+        config=config.model_dump(mode="json"),
+        metrics={"steps": [{"step": 1}, {"step": 2}], "training_completed": False},
+        source={},
+        claims=[],
+    )
+    with torch.no_grad():
+        for parameter in policy.parameters():
+            parameter.zero_()
+    state, metadata = load_resume_snapshot(
+        torch=torch,
+        snapshot_path=snapshot,
+        store=store,
+        config=config,
+        project_root=tmp_path,
+        source=source,
+        dataset_digest="b" * 64,
+        corrective_dataset_digest=None,
+        sampling_digest="c" * 64,
+        versions=versions,
+        initial_state_sha256=initial,
+    )
+    assert metadata["completed_updates"] == 2
+    assert torch.equal(state["sampler_rng_state"], expected_sampler)
+    for name, value in expected_model.items():
+        torch.testing.assert_close(state["model"][name], value)
+    assert state["optimizer"]["state"]
+    assert store.verify(parent.name).outcome == "failed"
 
 
 @pytest.fixture

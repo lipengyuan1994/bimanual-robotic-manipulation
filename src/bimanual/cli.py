@@ -575,6 +575,17 @@ def main(argv: list[str] | None = None) -> int:
     train.add_argument("--chunk-size", type=int, default=10)
     train.add_argument("--seed", type=int, default=0)
     train.add_argument(
+        "--checkpoint-interval",
+        type=int,
+        default=0,
+        help="Write an atomic resume snapshot every N updates; 0 disables snapshots",
+    )
+    train.add_argument(
+        "--resume-from",
+        type=Path,
+        help="Snapshot directory from a sealed failed run in this evidence store",
+    )
+    train.add_argument(
         "--cpu-threads", type=int, default=4, help="Native CPU threads for CPU training"
     )
     train.add_argument(
@@ -1471,6 +1482,8 @@ def main(argv: list[str] | None = None) -> int:
                     batch_size=args.batch_size,
                     chunk_size=args.chunk_size,
                     seed=args.seed,
+                    checkpoint_interval=args.checkpoint_interval,
+                    resume_from=args.resume_from,
                     cpu_threads=args.cpu_threads,
                     sampling_profile=args.sampling_profile,
                     use_vae=not args.no_vae,
