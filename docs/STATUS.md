@@ -1,8 +1,9 @@
 # Project status
 
-Updated September 15, 2026. Latest implementation: a source-bound workbench-overlap corrective
-candidate is training on native CPU with eight threads on `codex/preparation-foundation`. A separate
-sealed CPU physical-evaluation declaration now preserves its actual device without making MPS or Intel claims. Draft PR#1 remains unmerged.
+Updated September 15, 2026. Latest implementation: the source-bound workbench-overlap corrective
+candidate completed on native CPU with eight threads, then failed its one sealed physical evaluation
+at the unchanged workbench-overlap guard. A CPU-aware read-only diagnosis and a fresh corrective-data
+protocol preserve the failure without making MPS or Intel claims. Draft PR#1 remains unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
 ## Readiness
@@ -131,14 +132,28 @@ The first native CPU fallback candidate `20260915T133934-6ae476b0ef36` was delib
 interrupted after 860 updates to expose and apply the eight-thread CPU setting; it has no usable
 checkpoint. Its immutable failed manifest SHA-256 is
 `7dbb7163236c735813c93bb8d7a9395d0e84930bd4732d06ab1f6565566d4d44`. Replacement candidate
-`20260915T135153-ae4e47464925` is active on the identical sealed data and sampling contract with
-`cpu_threads=8`. A distinct CPU-only physical declaration profile has been added and tested. When
-this candidate completes, it will bind the prior workbench-overlap failure, report CPU as its actual
-device, and cannot be interpreted as MPS or Intel evidence. A September 15 M2 evidence audit
-also confirmed that the nominal demonstrations come from one authored scene: held-out recorded
-validation/test scenes and a real seven-step learned workflow remain required after the current
-bar evaluation. M2 remains incomplete. Intel setup remains deferred until this local corrective-training
-sequence finishes, per the user's direction.
+`20260915T135153-ae4e47464925` completed all 20,000 updates on CPU with eight threads in
+14,958.39 seconds; its sealed training manifest is
+`458dc34c1ff1a92b4dd4505003c874f6347f590b9abbbb6543458278d207b7da`. Its one permitted
+CPU declaration `.artifacts/experiments/bar-late-workbench-overlap-v8-cpu-evaluation.json`
+(seal `c79e6f5e37967803a2a27a27f34941568c1a9110a8a8c28e8ec53fe081ca46dc`) was consumed once.
+The reaped wrapper `20260915T180615-0798049ce512` and child
+`20260915T180615-359d349edfce` preserve the actual failure: after a 630-action teacher prefix and
+381 completed autonomous CPU actions, the guard stopped during `policy/place` at 50.579 s with
+practice-object/workbench overlap of 2.536942 mm. This is not a component success, MPS result,
+or Intel result; the declaration must not be rerun.
+
+The read-only CPU-aware diagnosis `20260915T181301-3ff6dd7a5021` (seal
+`4b741f952b66bfa787b22014ed29feabf01e7664bfd6253e7c71e493bb297de8`) independently confirms
+381 applied controls, one rejected partial tail, zero forbidden contacts, zero overtravel, and
+226.84 mm target displacement. The analyzer previously rejected CPU records despite preserving
+actual device data; it now accepts a supported recorded device and includes it in the diagnosis.
+The next correction is a new source-bound protocol profile with fresh seeds 60000–60004 and the
+predeclared full bar-skill window `[630,1580)`. Collection has not started. A September 15 M2
+evidence audit also confirmed that the nominal demonstrations come from one authored scene:
+held-out recorded validation/test scenes and a real seven-step learned workflow remain required.
+M2 remains incomplete. Intel setup remains deferred until this local corrective-training sequence
+finishes, per the user's direction.
 
 For future candidates only, ACT training now supports opt-in atomic recovery snapshots and
 fail-closed resume. A snapshot binds its sealed failed parent, source lineage, normalized training

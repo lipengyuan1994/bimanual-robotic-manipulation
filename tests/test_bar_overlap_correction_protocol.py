@@ -115,6 +115,58 @@ def test_late_workbench_overlap_profile_binds_fresh_cases_and_full_bar_skill_win
     assert protocol.case_seeds[0] == 59000
 
 
+def test_cpu_late_workbench_overlap_profile_binds_new_cases_and_full_skill_window():
+    protocol = module.BarOverlapCorrectionProtocol.model_validate(
+        _body(
+            "bar_cpu_late_workbench_overlap_protocol_v9",
+            source_interval=(630, 1580),
+            case_seeds=(60000, 60001, 60002, 60003, 60004),
+        )
+    )
+    assert protocol.source_interval == (630, 1580)
+    assert protocol.case_seeds[0] == 60000
+
+
+def test_cpu_late_workbench_overlap_profile_requires_cpu_failure_signature():
+    component = {
+        "skill_id": "bar_place_and_return",
+        "physical_success": False,
+        "actual_policy_devices": ["cpu"],
+        "recorded_autonomous_skill_actions": 381,
+        "confirmed_action_log_actions": 381,
+        "rejected_action_log_actions": 1,
+        "maximum_overlap_m": 0.0025369423499991624,
+        "maximum_overtravel_m": 0.0,
+        "maximum_target_displacement_m": 0.2268403599730528,
+        "overlap_peak": {"contacts": [["workbench", "practice_object"]]},
+        "evaluation_run_id": "evaluation",
+        "evaluation_manifest_sha256": "b" * 64,
+    }
+    diagnosis = SimpleNamespace(
+        kind="single_skill_physical_failure_analysis",
+        outcome="completed",
+        manifest_sha256=module.CPU_LATE_WORKBENCH_OVERLAP_FAILURE_ANALYSIS_MANIFEST_SHA256,
+        metrics={"component": component},
+    )
+    evaluation = SimpleNamespace(manifest_sha256="b" * 64)
+
+    class Store:
+        def verify(self, run_id):
+            return diagnosis if run_id == "diagnosis" else evaluation
+
+    accepted, bound = module._verified_diagnosis(
+        Store(), "diagnosis", profile="bar_cpu_late_workbench_overlap_protocol_v9"
+    )
+    assert accepted is diagnosis
+    assert bound is evaluation
+
+    component["actual_policy_devices"] = ["mps:0"]
+    with pytest.raises(ValueError, match="localized unpromoted"):
+        module._verified_diagnosis(
+            Store(), "diagnosis", profile="bar_cpu_late_workbench_overlap_protocol_v9"
+        )
+
+
 def test_late_workbench_overlap_profile_requires_the_exact_sealed_failure_signature():
     component = {
         "skill_id": "bar_place_and_return",

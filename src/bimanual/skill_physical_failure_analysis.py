@@ -24,6 +24,7 @@ TARGETS = {
     "spoon_retrieve_place": "spoon",
     "fork_retrieve_place": "fork",
 }
+SUPPORTED_POLICY_DEVICES = (["cpu"], ["mps"], ["mps:0"])
 
 
 class SkillPhysicalFailureAnalysisConfig(BaseModel):
@@ -172,9 +173,11 @@ def _analyse_child(store: EvidenceStore, child: Manifest, expected_skill: str) -
         child.kind != EVALUATION_KIND
         or child.config.get("skill_id") != expected_skill
         or child.metrics.get("component_passed") is not False
-        or child.metrics.get("actual_policy_devices") not in (["mps"], ["mps:0"])
+        or child.metrics.get("actual_policy_devices") not in SUPPORTED_POLICY_DEVICES
     ):
-        raise ValueError("Suite member is not a failed, actual-MPS learned-skill evaluation")
+        raise ValueError(
+            "Suite member is not a failed learned-skill evaluation on a supported device"
+        )
     actions_path, physics_path = _sealed_worker_paths(store, child)
     actions, rows, total_physics_rows, rejected_actions = _rows_for_actions(
         actions_path,
@@ -197,6 +200,7 @@ def _analyse_child(store: EvidenceStore, child: Manifest, expected_skill: str) -
         "skill_id": expected_skill,
         "evaluation_run_id": child.run_id,
         "evaluation_manifest_sha256": child.manifest_sha256,
+        "actual_policy_devices": child.metrics["actual_policy_devices"],
         "recorded_autonomous_skill_actions": child.metrics.get("autonomous_skill_actions"),
         "confirmed_action_log_actions": len(actions),
         "rejected_action_log_actions": rejected_actions,
@@ -247,7 +251,7 @@ def analyse_single_skill_physical_failure(
     store: EvidenceStore,
     project_root: Path,
 ) -> Manifest:
-    """Seal a read-only diagnosis for one actual-MPS component failure."""
+    """Seal a read-only diagnosis for one failed component on its recorded device."""
 
     config = SingleSkillPhysicalFailureAnalysisConfig.model_validate(config.model_dump())
     child = store.verify(config.evaluation_run_id)

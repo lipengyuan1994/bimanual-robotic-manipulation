@@ -147,3 +147,30 @@ def test_seals_single_component_overlap_diagnosis(tmp_path):
     assert peak["target_position_m"] == [0.0, 0.0, 0.4]
     assert peak["control_targets_rad"] is None
     assert "exceeded the overlap guard" in result.metrics["component"]["recommended_next_step"]
+
+
+def test_seals_cpu_component_diagnosis_without_relabeling_it_as_mps(tmp_path):
+    store = EvidenceStore(tmp_path / "evidence")
+    directory = store.new_run()
+    _worker(directory, skill="bar_place_and_return", actions=1, overlap=0.003)
+    child = store.seal(
+        directory,
+        kind="learned_skill_teacher_prepared_physical_evaluation",
+        outcome="failed",
+        config={"skill_id": "bar_place_and_return"},
+        metrics={
+            "component_passed": False,
+            "actual_policy_devices": ["cpu"],
+            "autonomous_skill_actions": 1,
+            "teacher_prefix_actions": 0,
+            "reason": "guarded overlap",
+        },
+        source={},
+        claims=[],
+    )
+    result = analyse_single_skill_physical_failure(
+        SingleSkillPhysicalFailureAnalysisConfig(evaluation_run_id=child.run_id),
+        store=store,
+        project_root=tmp_path,
+    )
+    assert result.metrics["component"]["actual_policy_devices"] == ["cpu"]

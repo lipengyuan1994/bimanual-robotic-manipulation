@@ -47,6 +47,12 @@ V8_CASE_SEEDS = tuple(range(59000, 59005))
 # be mapped one-to-one to a teacher frame, so retain the complete, predeclared
 # bar skill view [630, 1580) instead of inventing a narrower correspondence.
 V8_SOURCE_INTERVAL = (630, 1580)
+# The CPU v8 candidate retained the bar into the placement phase, then exceeded
+# the unchanged workbench-overlap guard.  As with v8, a learned control count
+# does not identify a teacher frame, so retain the entire predeclared skill
+# interval rather than fabricate a narrow correspondence.
+V9_CASE_SEEDS = tuple(range(60000, 60005))
+V9_SOURCE_INTERVAL = (630, 1580)
 ENTRY_CONTACT_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
     "f894dc670340ef881958dddeb460e32b9b2f25dff5f8b641a601bc36a3999905"
 )
@@ -65,6 +71,9 @@ LATE_LEFT_CONTACT_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
 LATE_WORKBENCH_OVERLAP_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
     "ff7e077ebc969293afcca0f0591928ac65ebbaf757e9e432c36e1be36b25ba33"
 )
+CPU_LATE_WORKBENCH_OVERLAP_FAILURE_ANALYSIS_MANIFEST_SHA256 = (
+    "4b741f952b66bfa787b22014ed29feabf01e7664bfd6253e7c71e493bb297de8"
+)
 
 
 class BarOverlapCorrectionProtocol(BaseModel):
@@ -80,6 +89,7 @@ class BarOverlapCorrectionProtocol(BaseModel):
         "bar_margin_completion_protocol_v6",
         "bar_late_left_contact_protocol_v7",
         "bar_late_workbench_overlap_protocol_v8",
+        "bar_cpu_late_workbench_overlap_protocol_v9",
     ]
     evidence_root: str
     diagnosis_run_id: str
@@ -123,6 +133,7 @@ def _allocation(profile: str) -> tuple[tuple[int, int], tuple[int, int, int, int
         "bar_margin_completion_protocol_v6": (V6_SOURCE_INTERVAL, V6_CASE_SEEDS),
         "bar_late_left_contact_protocol_v7": (V7_SOURCE_INTERVAL, V7_CASE_SEEDS),
         "bar_late_workbench_overlap_protocol_v8": (V8_SOURCE_INTERVAL, V8_CASE_SEEDS),
+        "bar_cpu_late_workbench_overlap_protocol_v9": (V9_SOURCE_INTERVAL, V9_CASE_SEEDS),
     }
     try:
         return allocations[profile]
@@ -218,6 +229,20 @@ def _verified_diagnosis(store: EvidenceStore, run_id: str, *, profile: str):
             and component.get("maximum_overtravel_m") == 0.0
             and component.get("maximum_overlap_m", 0.0) > 0.0025
             and component.get("maximum_target_displacement_m", 0.0) >= 0.15
+            and ["workbench", "practice_object"]
+            in component.get("overlap_peak", {}).get("contacts", [])
+        )
+    elif profile == "bar_cpu_late_workbench_overlap_protocol_v9":
+        valid = (
+            diagnosis.manifest_sha256
+            == CPU_LATE_WORKBENCH_OVERLAP_FAILURE_ANALYSIS_MANIFEST_SHA256
+            and component.get("actual_policy_devices") == ["cpu"]
+            and component.get("recorded_autonomous_skill_actions") == 381
+            and component.get("confirmed_action_log_actions") == 381
+            and component.get("rejected_action_log_actions") == 1
+            and component.get("maximum_overtravel_m") == 0.0
+            and component.get("maximum_overlap_m", 0.0) > 0.0025
+            and component.get("maximum_target_displacement_m", 0.0) >= 0.2
             and ["workbench", "practice_object"]
             in component.get("overlap_peak", {}).get("contacts", [])
         )
