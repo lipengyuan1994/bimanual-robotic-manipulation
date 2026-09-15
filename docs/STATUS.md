@@ -70,7 +70,9 @@ verifies 2,655 synchronized frames from all five sources (archive SHA-256
 `.artifacts/experiments/bar-late-workbench-overlap-v8-sampling.json` binds that archive to the
 failure analysis with SHA-256 `85f9193cba30fed00e372973e8302555e85f7e75d7ae974c691481cb4652c9a7`.
 It assigns half the sampling mass to nominal selected-skill data and half to the declared
-corrective window.
+corrective window. Focused M2 control-safety coverage passes 89 tests, including stale actions,
+malformed planner output, cancellation, action-range rejection, and recovery boundaries
+(`tests/test_contracts.py`, `tests/test_dinner_control.py`).
 
 Native MPS training candidate `20260915T133339-d1923fc03a2a` stalled at a Metal command-buffer
 synchronization point and was interrupted after 568 recorded updates. Its immutable failed
