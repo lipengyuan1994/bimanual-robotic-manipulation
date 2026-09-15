@@ -1,7 +1,7 @@
 # Remaining dinner-skill training cohort
 
 The frozen cohort protocol is
-[`experiments/six-skill-training-protocol-v1.json`](experiments/six-skill-training-protocol-v1.json).
+[`experiments/six-skill-corrective-training-protocol-v2.json`](experiments/six-skill-corrective-training-protocol-v2.json).
 It covers, in order: bar placement/return, cup placement, plate placement, drawer
 opening, spoon retrieval, and fork retrieval. Each uses the verified nominal-v2
 skill view, small ACT, horizon10, batch4, seed0,20,000 native-MPS updates, terminal
@@ -35,7 +35,7 @@ Reverify the protocol before starting or resuming any skill:
 
 ```sh
 .venv/bin/bimanual training-cohort-check \
-  docs/experiments/six-skill-training-protocol-v1.json
+  docs/experiments/six-skill-corrective-training-protocol-v2.json
 ```
 
 Run exactly one skill from the native training environment:
@@ -43,7 +43,7 @@ Run exactly one skill from the native training environment:
 ```sh
 PYTORCH_ENABLE_MPS_FALLBACK=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
   .artifacts/training-venv/bin/bimanual training-cohort-run \
-  docs/experiments/six-skill-training-protocol-v1.json \
+  docs/experiments/six-skill-corrective-training-protocol-v2.json \
   --skill bar_place_and_return
 ```
 
@@ -64,7 +64,7 @@ one replacement; it never deletes the failure or makes a training/quality claim:
 ```sh
 PYTORCH_ENABLE_MPS_FALLBACK=0 \
   .artifacts/training-venv/bin/bimanual training-cohort-adjudicate-preflight \
-  docs/experiments/six-skill-training-protocol-v1.json \
+  docs/experiments/six-skill-corrective-training-protocol-v2.json \
   --attempt FAILED_COHORT_ATTEMPT
 ```
 
@@ -78,7 +78,7 @@ without manually starting each model job:
 ```sh
 PYTORCH_ENABLE_MPS_FALLBACK=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
   .artifacts/training-venv/bin/bimanual training-cohort-run-all \
-  docs/experiments/six-skill-training-protocol-v1.json \
+  docs/experiments/six-skill-corrective-training-protocol-v2.json \
   --wait-for-active-seconds 7200
 ```
 

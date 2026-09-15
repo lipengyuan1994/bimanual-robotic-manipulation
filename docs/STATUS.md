@@ -809,6 +809,15 @@ accepts the explicit v2 corrective profile and rechecks its archive binding on l
 future corrective cohorts no longer require manual protocol construction. Focused
 native-ARM64 protocol and CLI checks pass 19 tests.
 
+On September 15, the active v2 cohort was revalidated end to end after the
+training-resume feature added disabled snapshot fields to its in-memory configuration.
+The cohort wire format now omits those no-op defaults, preserving the frozen v2 seal
+`08f59ef6a7a5f4524d0b0958ee19318270c304e238ef65a4a5ad1ce2c83257e1`; the exact
+`bimanual training-cohort-check docs/experiments/six-skill-corrective-training-protocol-v2.json`
+command passes with the sealed archive and historical prerequisite records. The operator
+guide now names this active v2 declaration in every executable cohort command. This
+preflight repair changes no model run, checkpoint, or physical-quality claim.
+
 Corrective v2 bar training wrapper `20260912T125007-553bada5f697` then completed
 all 20,000 native-MPS updates and its checkpoint/archive bindings independently
 reverified. The checkpoint is not promoted. Its first evaluator declaration is
