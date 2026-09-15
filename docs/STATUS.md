@@ -83,6 +83,11 @@ manifest SHA-256 is `e9f21bf77b32558832d40ab01500c8a6b9c5b4ef79d76850b192399d05e
 sample shows PyTorch waiting in `MPSStream::synchronize` on `MTLCommandBuffer waitUntilCompleted`.
 A bounded native-MPS probe `20260915T133819-d6bc31ec6046` completed ten optimizer updates and
 inference on `mps:0`; it proves the device is available but does not clear the long-run stall.
+The September 15 runtime diagnosis separately reverified the exact native training interpreter
+outside the restricted command sandbox: ARM64 PyTorch 2.11.0 reports MPS built and available with
+one device when `PYTORCH_ENABLE_MPS_FALLBACK=0`. The restricted sandbox reports no MPS device,
+so future MPS-required runs must use the unrestricted local execution path and preserve actual-device
+evidence. This is an execution-environment constraint, not a Mac or dependency regression.
 The first native CPU fallback candidate `20260915T133934-6ae476b0ef36` was deliberately
 interrupted after 860 updates to expose and apply the eight-thread CPU setting; it has no usable
 checkpoint. Its immutable failed manifest SHA-256 is

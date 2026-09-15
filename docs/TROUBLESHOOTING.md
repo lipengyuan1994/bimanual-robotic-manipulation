@@ -4,7 +4,7 @@
 |---|---|
 | Python reports x86_64 on this Mac | Stop using that environment; select the verified aarch64 path with the bootstrap. Do not reuse ambient `python3`. |
 | `uv sync --frozen` reports stale lock | Inspect dependency changes; regenerate deliberately on native Python, review the diff, then repeat checks. |
-| MPS is unavailable | Inspect `doctor` output; use the explicit CPU profile for preparation and record the limitation. |
+| MPS is unavailable in a restricted command runner | Verify the same native interpreter through the unrestricted local execution path with `PYTORCH_ENABLE_MPS_FALLBACK=0`. The Codex sandbox can hide an otherwise healthy MPS device. Use that unrestricted path for MPS-required runs; preserve requested and actual-device evidence. A CPU fallback remains CPU evidence. |
 | MPS arithmetic fails | Preserve the failed probe and use CPU; do not claim a model works on MPS. |
 | Blank or failed render | Inspect `lab` failure evidence and run the render test; offscreen OpenGL is separate from MPS. |
 | Native viewer fails on macOS | Use `.venv/bin/mjpython`, as described in setup. |
