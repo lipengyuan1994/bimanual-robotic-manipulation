@@ -100,13 +100,24 @@ def test_margin_completion_profile_is_bound_to_the_margin_evaluation_failure():
         MARGIN_COMPLETION_FAILURE_ANALYSIS_MANIFEST_SHA256,
         MARGIN_COMPLETION_PROFILE,
     )
-
     assert _profile_spec(MARGIN_COMPLETION_PROFILE) == (
         MARGIN_COMPLETION_FAILURE_ANALYSIS_MANIFEST_SHA256,
         (770, 1163),
         "margin_completion",
     )
 
+
+def test_late_left_contact_profile_is_bound_to_the_sealed_contact_failure():
+    from bimanual.bar_transport_placement_sampling import (
+        LATE_LEFT_CONTACT_FAILURE_ANALYSIS_MANIFEST_SHA256,
+        LATE_LEFT_CONTACT_PROFILE,
+    )
+
+    assert _profile_spec(LATE_LEFT_CONTACT_PROFILE) == (
+        LATE_LEFT_CONTACT_FAILURE_ANALYSIS_MANIFEST_SHA256,
+        (630, 1163),
+        "late_left_contact",
+    )
 
 def test_placement_contact_profile_is_bound_to_the_observed_failure_interval():
     assert _profile_spec(PLACEMENT_CONTACT_PROFILE) == (
@@ -149,6 +160,42 @@ def test_entry_contact_plan_names_the_policy_entry_region():
     assert result["profile"] == "bar_entry_contact_sampling_v2"
     assert result["frames"][1]["region"] == "policy_entry"
     assert result["bar_entry_contact"]["emphasis_source_interval"] == [630, 770]
+
+
+def test_late_left_contact_plan_weights_the_full_declared_replay_window():
+    plan = {
+        "profile": "uniform",
+        "skill_view": {"skill_id": "bar_place_and_return"},
+        "frames": [
+            {"dataset_source": "nominal", "episode_id": "nominal", "source_frame_index": 1},
+            {
+                "dataset_source": "corrective",
+                "episode_id": "late-contact",
+                "source_frame_index": 632,
+                "parent_dataset_index": 0,
+            },
+            {
+                "dataset_source": "corrective",
+                "episode_id": "late-contact",
+                "source_frame_index": 1162,
+                "parent_dataset_index": 530,
+            },
+        ],
+        "episodes": [
+            {"source": "nominal", "episode_id": "nominal"},
+            {"source": "corrective", "episode_id": "late-contact"},
+        ],
+    }
+    result = emphasize_bar_transport_placement(
+        plan,
+        emphasis_start=630,
+        emphasis_end=1163,
+        sampling_profile="bar_late_left_contact_sampling_v6",
+    )
+    assert {frame["region"] for frame in result["frames"][1:]} == {
+        "late_left_contact_window"
+    }
+    assert result["bar_late_left_contact"]["emphasis_source_interval"] == [630, 1163]
 
 
 def test_placement_contact_plan_has_distinct_lineage_label():

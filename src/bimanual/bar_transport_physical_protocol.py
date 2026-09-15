@@ -19,6 +19,7 @@ from bimanual.worker_lease import WorkerLease
 
 PROFILE = "bar_transport_physical_margin_evaluation_protocol_v2"
 COMPLETION_PROFILE = "bar_transport_physical_completion_evaluation_protocol_v3"
+LATE_CONTACT_PROFILE = "bar_transport_physical_late_contact_evaluation_protocol_v4"
 SKILL = "bar_place_and_return"
 KIND = "learned_skill_teacher_prepared_physical_evaluation"
 MARGIN_RAD = 0.001
@@ -84,6 +85,15 @@ def _verify_prior_failure(store: EvidenceStore, run_id: str, training_run: Path,
             and prior.metrics.get("autonomous_skill_actions") == 1900
         )
         error = "Prior evaluation is not the sealed MPS margin completion failure"
+    elif profile == LATE_CONTACT_PROFILE:
+        valid = (
+            prior.run_id == "20260914T013733-48d18dd52514"
+            and prior.manifest_sha256
+            == "535415a0885eeac772da179d8a764ef1b4086e986693cac60389effc6e4cfb7a"
+            and prior.metrics.get("component_passed") is False
+            and prior.metrics.get("autonomous_skill_actions") == 24
+        )
+        error = "Prior evaluation is not the sealed MPS late left-contact failure"
     else:
         raise ValueError("Unsupported bar physical evaluation profile")
     if common or not valid:
@@ -92,7 +102,7 @@ def _verify_prior_failure(store: EvidenceStore, run_id: str, training_run: Path,
 
 
 class BarTransportPhysicalProtocol(Contract):
-    profile: Literal[PROFILE, COMPLETION_PROFILE] = PROFILE
+    profile: Literal[PROFILE, COMPLETION_PROFILE, LATE_CONTACT_PROFILE] = PROFILE
     training_run: str
     training_manifest_sha256: Digest
     dataset_root: str
@@ -138,7 +148,9 @@ def create_bar_transport_physical_protocol(
     manifest = store.verify(training_run.name)
     config = ACTTrainingConfig.model_validate(manifest.config)
     profile = (
-        COMPLETION_PROFILE
+        LATE_CONTACT_PROFILE
+        if config.sampling_profile == "bar_late_left_contact_sampling_v6"
+        else COMPLETION_PROFILE
         if config.sampling_profile == "bar_margin_completion_sampling_v5"
         else PROFILE
     )
@@ -156,6 +168,7 @@ def create_bar_transport_physical_protocol(
             "bar_placement_progress_sampling_v3",
             "bar_placement_contact_sampling_v4",
             "bar_margin_completion_sampling_v5",
+            "bar_late_left_contact_sampling_v6",
         }
         or config.corrective_dataset_path is None
         or config.sampling_protocol_run is None

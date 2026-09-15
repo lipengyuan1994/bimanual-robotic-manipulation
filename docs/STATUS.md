@@ -1,7 +1,8 @@
 # Project status
 
-Updated September 14, 2026. Latest implementation: sealed hand-off continuity dataset export on
-`codex/preparation-foundation`. Draft PR#1 remains unmerged.
+Updated September 15, 2026. Latest implementation: a source-bound late-contact corrective
+candidate is training on native MPS on `codex/preparation-foundation`. Draft PR#1 remains
+unmerged.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
 ## Readiness
@@ -51,14 +52,30 @@ object moved only 53.95 mm. It changes no dataset, model, scene, or result.
 
 The fresh protocol `bar_late_left_contact_protocol_v7` is implemented and verified,
 binding diagnosis `20260914T033813-d6bb3311734c`, full `[630,1163)` replay coverage,
-and new seeds 58000–58004. Its first allocated teacher collection failed before any
-physics action with `CGLError: invalid CoreGraphics connection`; the one-attempt case
-is preserved as failed and will not be rerun. A current native probe also reports MPS
-built but unavailable. No MPS training, rendering, collection, or evaluation may start
-until the Mac has an active unlocked desktop session.
+and new seeds 58000–58004. Case 58000 failed before physics action with `CGLError:
+invalid CoreGraphics connection` and remains consumed. The four remaining cases
+(58001–58004) completed contact-only teacher collection with 531 replay actions each,
+zero artificial attachments or state edits, and independent physical-score evidence.
+Their immutable views seal is `d81ae1c72773c7855e2a87859348ef7f2eed99b7ca8a5eaaa0eb43b569e8b44f`.
 
-Next: after an active desktop session is available, verify MPS availability and collect
-the next unused allocated source case. Intel setup remains deferred until the local
+The corrective LeRobot export `.artifacts/datasets/bar-late-left-contact-v7` verifies
+under the native training environment in offline mode. Its archive seal is
+`c6d867f3c67f660e6251884009765da4e4de65b4ebc312d43a67835fd04406c5` and it retains
+2,124 synchronized frames from the four successful sources. The new sampling declaration
+`.artifacts/experiments/bar-late-left-contact-v7-sampling.json` seals that archive to the
+late-contact diagnosis (`0d2368e2b188ba144c290ce6714569dc113354abf1525f97c94a9b84f7b3308b`).
+It assigns half the sampling mass to nominal selected-skill data and half to the declared
+full corrective replay window `[630,1163)`.
+
+Native MPS training candidate `20260915T111450-cfbba7aa3ec4` is active with 20,000
+updates, `PYTORCH_ENABLE_MPS_FALLBACK=0`, and `HF_HUB_OFFLINE=1`. This is training-in-
+progress, not task success. MPS and offscreen MuJoCo render now work through the logged-in
+desktop session; the earlier CoreGraphics/Metal failures are a restricted tool-sandbox
+boundary and are preserved only for their already-consumed collection case.
+
+Next: wait for this candidate to seal and independently reverify it. If it completes,
+freeze exactly one new physical successor declaration bound to the late-contact failure,
+then run that evaluation on native MPS. Intel setup remains deferred until the local
 corrective-training sequence has finished, per the user's direction.
 
 ## Historical run record
