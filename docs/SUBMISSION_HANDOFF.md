@@ -92,3 +92,4 @@ site links with the limitations above stated plainly.
 - [Reproduction runbook](RELEASE_REPRODUCTION.md)
 - [Evidence contract](EVIDENCE.md)
 - [Learning site](GITHUB_PAGES.md)
+- [Product demo](https://lipengyuan1994.github.io/bimanual-robotic-manipulation/demo/)

@@ -7,6 +7,12 @@ The public site contains seven lessons, their browser-only exercises, the shared
 learning CSS/JavaScript, and the glossary. It contains no local run records,
 operator controls, credentials, or simulator service.
 
+The static product demo is available at
+<https://lipengyuan1994.github.io/bimanual-robotic-manipulation/demo/>. It presents
+the TableMate workflow, cover image, and recorded teacher-evidence replay while
+stating the learned-policy and Intel validation limits. It is a public evidence
+showcase; the API-backed operator controls remain local to the repository.
+
 First publication completed on 2026-09-07 from commit
 `239005e83dc13ba8200c5d7a7645e231237fedf8`. The clean build and deployment are
 recorded in [GitHub Actions run 34139968641](https://github.com/lipengyuan1994/bimanual-robotic-manipulation/actions/runs/34139968641).

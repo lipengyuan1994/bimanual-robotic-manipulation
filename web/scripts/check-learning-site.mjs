@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 const root = resolve(import.meta.dirname, "..", "dist-learning");
 const required = [
   "index.html",
+  "demo/index.html",
   "assets/learning/lesson.css",
   "assets/learning/lesson.js",
   "lessons/0001-observe-act-step.html",
@@ -24,6 +25,10 @@ if (!home.includes('href="lessons/0001-observe-act-step.html"')) {
 }
 if (!home.includes('href="lessons/0007-openvino-and-benchmarks.html"')) {
   throw new Error("Learning-site index does not link to lesson 07");
+}
+const demo = await readFile(resolve(root, "demo/index.html"), "utf8");
+if (!demo.includes("tablemate-teacher-evidence.mp4") || !demo.includes("Evidence boundary")) {
+  throw new Error("Product demo is missing its evidence video or boundary statement");
 }
 for (const path of required.filter((path) => path.startsWith("lessons/") || path.startsWith("reference/"))) {
   const lesson = await readFile(resolve(root, path), "utf8");
