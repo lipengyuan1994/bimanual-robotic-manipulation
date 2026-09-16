@@ -57,6 +57,19 @@ training inputs and must not be submitted as datasets.
 
 ## Submission inputs
 
+Prepared upload assets are under `assets/submission/`:
+
+- `tablemate-cover.png` — 1672×941 16:9 cover image.
+- `tablemate-teacher-evidence.mp4` — 58-second camera replay of a sealed,
+  contact-based corrective teacher run. It is teacher evidence; it does not
+  claim learned full-task success.
+- `tablemate-submission-final.pdf` — six-slide 16:9 presentation PDF.
+- `tablemate-submission-final.pptx` — editable source deck; the PDF is the
+  required upload for the slide field.
+
+The deck passed package integrity, layout, font, and Artifact Tool import checks;
+the validation receipt is kept in `.presentation-build/finalizer/`.
+
 The packager remains the final gate:
 
 ```sh

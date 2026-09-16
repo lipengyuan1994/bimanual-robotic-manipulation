@@ -6,6 +6,9 @@ at the unchanged workbench-overlap guard. A CPU-aware read-only diagnosis and a 
 protocol preserve the failure without making MPS or Intel claims. Draft PR#1 remains unmerged.
 The final-window submission handoff is in [SUBMISSION_HANDOFF.md](SUBMISSION_HANDOFF.md); the
 full non-render release gate passes 1,453 tests, 523 documentation links, and README synchronization.
+Submission assets are prepared under `assets/submission/`: a 16:9 cover image, a 58-second
+teacher-evidence MP4, and a validated six-slide PDF/PPTX deck. These materials preserve the
+teacher-versus-learned evidence boundary; they do not establish M2/M3 completion.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
 ## Readiness
