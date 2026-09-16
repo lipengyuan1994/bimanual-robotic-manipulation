@@ -234,8 +234,7 @@ def _verified_diagnosis(store: EvidenceStore, run_id: str, *, profile: str):
         )
     elif profile == "bar_cpu_late_workbench_overlap_protocol_v9":
         valid = (
-            diagnosis.manifest_sha256
-            == CPU_LATE_WORKBENCH_OVERLAP_FAILURE_ANALYSIS_MANIFEST_SHA256
+            diagnosis.manifest_sha256 == CPU_LATE_WORKBENCH_OVERLAP_FAILURE_ANALYSIS_MANIFEST_SHA256
             and component.get("actual_policy_devices") == ["cpu"]
             and component.get("recorded_autonomous_skill_actions") == 381
             and component.get("confirmed_action_log_actions") == 381
