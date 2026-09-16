@@ -12,6 +12,7 @@ Read [STATUS](STATUS.md) first when resuming work.
 | Native install and commands | [Setup](SETUP.md) |
 | Reproducibility and release evidence | [Evidence](EVIDENCE.md) |
 | End-to-end M3 command order | [Release reproduction runbook](RELEASE_REPRODUCTION.md) |
+| Final submission handoff | [Submission handoff](SUBMISSION_HANDOFF.md) |
 | Assemble final event artifacts | [Submission package](SUBMISSION.md) |
 | Activate or roll back a verified cohort | [Local workflow deployment](WORKFLOW_DEPLOYMENT.md) |
 | Future Intel deployment | [Deployment](DEPLOYMENT.md) |

@@ -1,9 +1,11 @@
 # Project status
 
-Updated September 15, 2026. Latest implementation: the source-bound workbench-overlap corrective
+Updated September 16, 2026. Latest implementation: the source-bound workbench-overlap corrective
 candidate completed on native CPU with eight threads, then failed its one sealed physical evaluation
 at the unchanged workbench-overlap guard. A CPU-aware read-only diagnosis and a fresh corrective-data
 protocol preserve the failure without making MPS or Intel claims. Draft PR#1 remains unmerged.
+The final-window submission handoff is in [SUBMISSION_HANDOFF.md](SUBMISSION_HANDOFF.md); the
+full non-render release gate passes 1,453 tests, 523 documentation links, and README synchronization.
 [Roadmap](ROADMAP.md), [accepted plan](PLAN.md), [history](STATUS_HISTORY.md).
 
 ## Readiness
